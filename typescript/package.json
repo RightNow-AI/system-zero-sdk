@@ -1,0 +1,53 @@
+{
+  "name": "@rightnow/system-zero",
+  "version": "0.1.0",
+  "license": "Apache-2.0",
+  "homepage": "https://github.com/RightNow-AI/system-zero-sdk",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "description": "System Zero API client with typed decisions and client-side workflows.",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./integrations/function-tools": {
+      "types": "./dist/integrations/function-tools/index.d.ts",
+      "import": "./dist/integrations/function-tools/index.js"
+    },
+    "./integrations/mcp-server": {
+      "types": "./dist/integrations/mcp-server/server.d.ts",
+      "import": "./dist/integrations/mcp-server/server.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "NOTICE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsc -p .",
+    "typecheck": "tsc -p . --noEmit",
+    "test": "vitest run --maxWorkers=2"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.4",
+    "typescript": "5.9.3",
+    "vitest": "5.0.3"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/RightNow-AI/system-zero-sdk.git"
+  },
+  "bugs": {
+    "url": "https://github.com/RightNow-AI/system-zero-sdk/issues"
+  }
+}

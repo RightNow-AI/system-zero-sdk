@@ -1,0 +1,245 @@
+export default [
+  {
+    "name": "system_zero_decide",
+    "description": "Answer named boolean, choice or score questions from supplied state. Returns decisions, confidence, alternatives and a request ID. Each invocation counts toward the host-configured call limit.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "state": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "json": {
+                  "type": "string",
+                  "description": "JSON-encoded object or array. Scalars use the text form."
+                }
+              },
+              "required": [
+                "json"
+              ],
+              "additionalProperties": false
+            }
+          ]
+        },
+        "questions": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "instructions": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "json": {
+                            "type": "string",
+                            "description": "JSON-encoded object or array. Scalars use the text form."
+                          }
+                        },
+                        "required": [
+                          "json"
+                        ],
+                        "additionalProperties": false
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "boolean"
+                    ]
+                  },
+                  "criteria": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "true": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "false": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "true",
+                          "false"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "name",
+                  "instructions",
+                  "type",
+                  "criteria"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "instructions": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "json": {
+                            "type": "string",
+                            "description": "JSON-encoded object or array. Scalars use the text form."
+                          }
+                        },
+                        "required": [
+                          "json"
+                        ],
+                        "additionalProperties": false
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "choice"
+                    ]
+                  },
+                  "options": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "label": {
+                          "type": "string"
+                        },
+                        "description": {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "label",
+                        "description"
+                      ],
+                      "additionalProperties": false
+                    }
+                  }
+                },
+                "required": [
+                  "name",
+                  "instructions",
+                  "type",
+                  "options"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "instructions": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "json": {
+                            "type": "string",
+                            "description": "JSON-encoded object or array. Scalars use the text form."
+                          }
+                        },
+                        "required": [
+                          "json"
+                        ],
+                        "additionalProperties": false
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "score"
+                    ]
+                  },
+                  "options": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": [
+                  "name",
+                  "instructions",
+                  "type",
+                  "options"
+                ],
+                "additionalProperties": false
+              }
+            ]
+          }
+        },
+        "model": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Null uses system-zero."
+        },
+        "attachments": {
+          "type": "null"
+        }
+      },
+      "required": [
+        "state",
+        "questions",
+        "model",
+        "attachments"
+      ],
+      "additionalProperties": false
+    }
+  },
+  {
+    "name": "system_zero_list_models",
+    "description": "List available models and their limits.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    }
+  }
+];

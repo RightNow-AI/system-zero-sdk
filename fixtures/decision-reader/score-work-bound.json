@@ -1,0 +1,2723 @@
+[
+  {
+    "name": "ten-uniform-upper-upper-envelope-inside",
+    "answer": {
+      "type": "score",
+      "score": 4.500010000025178,
+      "legend": {
+        "0": "Level 0",
+        "1": "Level 1",
+        "2": "Level 2",
+        "3": "Level 3",
+        "4": "Level 4",
+        "5": "Level 5",
+        "6": "Level 6",
+        "7": "Level 7",
+        "8": "Level 8",
+        "9": "Level 9"
+      },
+      "probabilities": {
+        "0": 0.1,
+        "1": 0.1,
+        "2": 0.1,
+        "3": 0.1,
+        "4": 0.1,
+        "5": 0.1,
+        "6": 0.1,
+        "7": 0.1,
+        "8": 0.1,
+        "9": 0.100001
+      },
+      "confidence": 0.100001,
+      "calibration_version": "synthetic/reader-bound",
+      "decision": "9",
+      "alternatives": [
+        {
+          "decision": "0",
+          "confidence": 0.1
+        },
+        {
+          "decision": "1",
+          "confidence": 0.1
+        },
+        {
+          "decision": "2",
+          "confidence": 0.1
+        },
+        {
+          "decision": "3",
+          "confidence": 0.1
+        },
+        {
+          "decision": "4",
+          "confidence": 0.1
+        },
+        {
+          "decision": "5",
+          "confidence": 0.1
+        },
+        {
+          "decision": "6",
+          "confidence": 0.1
+        },
+        {
+          "decision": "7",
+          "confidence": 0.1
+        },
+        {
+          "decision": "8",
+          "confidence": 0.1
+        }
+      ],
+      "calibrated": false
+    },
+    "accepts": true,
+    "search": {
+      "popped": 682,
+      "boundary": 99319,
+      "exhausts": true,
+      "inEnvelope": true,
+      "baselineGuardLimit": 100000
+    }
+  },
+  {
+    "name": "ten-uniform-upper-upper-envelope-outside",
+    "answer": {
+      "type": "score",
+      "score": 4.500010000025179,
+      "legend": {
+        "0": "Level 0",
+        "1": "Level 1",
+        "2": "Level 2",
+        "3": "Level 3",
+        "4": "Level 4",
+        "5": "Level 5",
+        "6": "Level 6",
+        "7": "Level 7",
+        "8": "Level 8",
+        "9": "Level 9"
+      },
+      "probabilities": {
+        "0": 0.1,
+        "1": 0.1,
+        "2": 0.1,
+        "3": 0.1,
+        "4": 0.1,
+        "5": 0.1,
+        "6": 0.1,
+        "7": 0.1,
+        "8": 0.1,
+        "9": 0.100001
+      },
+      "confidence": 0.100001,
+      "calibration_version": "synthetic/reader-bound",
+      "decision": "9",
+      "alternatives": [
+        {
+          "decision": "0",
+          "confidence": 0.1
+        },
+        {
+          "decision": "1",
+          "confidence": 0.1
+        },
+        {
+          "decision": "2",
+          "confidence": 0.1
+        },
+        {
+          "decision": "3",
+          "confidence": 0.1
+        },
+        {
+          "decision": "4",
+          "confidence": 0.1
+        },
+        {
+          "decision": "5",
+          "confidence": 0.1
+        },
+        {
+          "decision": "6",
+          "confidence": 0.1
+        },
+        {
+          "decision": "7",
+          "confidence": 0.1
+        },
+        {
+          "decision": "8",
+          "confidence": 0.1
+        }
+      ],
+      "calibrated": false
+    },
+    "accepts": false,
+    "search": {
+      "popped": 0,
+      "boundary": 0,
+      "exhausts": false,
+      "inEnvelope": false
+    }
+  },
+  {
+    "name": "ten-uniform-lower-lower-envelope-inside",
+    "answer": {
+      "type": "score",
+      "score": 4.499989999974824,
+      "legend": {
+        "0": "Level 0",
+        "1": "Level 1",
+        "2": "Level 2",
+        "3": "Level 3",
+        "4": "Level 4",
+        "5": "Level 5",
+        "6": "Level 6",
+        "7": "Level 7",
+        "8": "Level 8",
+        "9": "Level 9"
+      },
+      "probabilities": {
+        "0": 0.1,
+        "1": 0.1,
+        "2": 0.1,
+        "3": 0.1,
+        "4": 0.1,
+        "5": 0.1,
+        "6": 0.1,
+        "7": 0.1,
+        "8": 0.1,
+        "9": 0.099999
+      },
+      "confidence": 0.1,
+      "calibration_version": "synthetic/reader-bound",
+      "decision": "0",
+      "alternatives": [
+        {
+          "decision": "1",
+          "confidence": 0.1
+        },
+        {
+          "decision": "2",
+          "confidence": 0.1
+        },
+        {
+          "decision": "3",
+          "confidence": 0.1
+        },
+        {
+          "decision": "4",
+          "confidence": 0.1
+        },
+        {
+          "decision": "5",
+          "confidence": 0.1
+        },
+        {
+          "decision": "6",
+          "confidence": 0.1
+        },
+        {
+          "decision": "7",
+          "confidence": 0.1
+        },
+        {
+          "decision": "8",
+          "confidence": 0.1
+        },
+        {
+          "decision": "9",
+          "confidence": 0.099999
+        }
+      ],
+      "calibrated": false
+    },
+    "accepts": true,
+    "search": {
+      "popped": 586,
+      "boundary": 99415,
+      "exhausts": true,
+      "inEnvelope": true,
+      "baselineGuardLimit": 100000
+    }
+  },
+  {
+    "name": "ten-uniform-lower-lower-envelope-outside",
+    "answer": {
+      "type": "score",
+      "score": 4.499989999974823,
+      "legend": {
+        "0": "Level 0",
+        "1": "Level 1",
+        "2": "Level 2",
+        "3": "Level 3",
+        "4": "Level 4",
+        "5": "Level 5",
+        "6": "Level 6",
+        "7": "Level 7",
+        "8": "Level 8",
+        "9": "Level 9"
+      },
+      "probabilities": {
+        "0": 0.1,
+        "1": 0.1,
+        "2": 0.1,
+        "3": 0.1,
+        "4": 0.1,
+        "5": 0.1,
+        "6": 0.1,
+        "7": 0.1,
+        "8": 0.1,
+        "9": 0.099999
+      },
+      "confidence": 0.1,
+      "calibration_version": "synthetic/reader-bound",
+      "decision": "0",
+      "alternatives": [
+        {
+          "decision": "1",
+          "confidence": 0.1
+        },
+        {
+          "decision": "2",
+          "confidence": 0.1
+        },
+        {
+          "decision": "3",
+          "confidence": 0.1
+        },
+        {
+          "decision": "4",
+          "confidence": 0.1
+        },
+        {
+          "decision": "5",
+          "confidence": 0.1
+        },
+        {
+          "decision": "6",
+          "confidence": 0.1
+        },
+        {
+          "decision": "7",
+          "confidence": 0.1
+        },
+        {
+          "decision": "8",
+          "confidence": 0.1
+        },
+        {
+          "decision": "9",
+          "confidence": 0.099999
+        }
+      ],
+      "calibrated": false
+    },
+    "accepts": false,
+    "search": {
+      "popped": 0,
+      "boundary": 0,
+      "exhausts": false,
+      "inEnvelope": false
+    }
+  },
+  {
+    "name": "ten-plateau-padded",
+    "answer": {
+      "type": "score",
+      "score": 0.9847110000019998,
+      "legend": {
+        "0": "Level 0",
+        "1": "Level 1",
+        "2": "Level 2",
+        "3": "Level 3",
+        "4": "Level 4",
+        "5": "Level 5",
+        "6": "Level 6",
+        "7": "Level 7",
+        "8": "Level 8",
+        "9": "Level 9"
+      },
+      "probabilities": {
+        "0": 0.311354,
+        "1": 0.392584,
+        "2": 0.296063,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 0,
+        "9": 0
+      },
+      "confidence": 0.392584,
+      "calibration_version": "synthetic/reader-bound",
+      "decision": "1",
+      "alternatives": [
+        {
+          "decision": "0",
+          "confidence": 0.311354
+        },
+        {
+          "decision": "2",
+          "confidence": 0.296063
+        },
+        {
+          "decision": "3",
+          "confidence": 0
+        },
+        {
+          "decision": "4",
+          "confidence": 0
+        },
+        {
+          "decision": "5",
+          "confidence": 0
+        },
+        {
+          "decision": "6",
+          "confidence": 0
+        },
+        {
+          "decision": "7",
+          "confidence": 0
+        },
+        {
+          "decision": "8",
+          "confidence": 0
+        },
+        {
+          "decision": "9",
+          "confidence": 0
+        }
+      ],
+      "calibrated": false
+    },
+    "accepts": true,
+    "search": {
+      "popped": 0,
+      "boundary": 0,
+      "exhausts": false,
+      "inEnvelope": true
+    },
+    "gateway": {
+      "answer": {
+        "type": "score",
+        "score": 0.9847110000019998,
+        "legend": {
+          "0": "Level 0",
+          "1": "Level 1",
+          "2": "Level 2",
+          "3": "Level 3",
+          "4": "Level 4",
+          "5": "Level 5",
+          "6": "Level 6",
+          "7": "Level 7",
+          "8": "Level 8",
+          "9": "Level 9"
+        },
+        "probabilities": {
+          "0": 0.31135399999900004,
+          "1": 0.39258399999900007,
+          "2": 0.29606299999900004,
+          "3": 0,
+          "4": 0,
+          "5": 0,
+          "6": 0,
+          "7": 9.997558336749533e-13,
+          "8": 1e-12,
+          "9": 1e-12
+        },
+        "confidence": 0.32509333333222235,
+        "calibration_version": "synthetic/reader-bound"
+      },
+      "accepts": true
+    }
+  },
+  {
+    "name": "ten-zero-lower-endpoint",
+    "answer": {
+      "type": "score",
+      "score": -1e-06,
+      "legend": {
+        "0": "Level 0",
+        "1": "Level 1",
+        "2": "Level 2",
+        "3": "Level 3",
+        "4": "Level 4",
+        "5": "Level 5",
+        "6": "Level 6",
+        "7": "Level 7",
+        "8": "Level 8",
+        "9": "Level 9"
+      },
+      "probabilities": {
+        "0": 1,
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 0,
+        "9": 0
+      },
+      "confidence": 1,
+      "calibration_version": "synthetic/reader-bound",
+      "decision": "0",
+      "alternatives": [
+        {
+          "decision": "1",
+          "confidence": 0
+        },
+        {
+          "decision": "2",
+          "confidence": 0
+        },
+        {
+          "decision": "3",
+          "confidence": 0
+        },
+        {
+          "decision": "4",
+          "confidence": 0
+        },
+        {
+          "decision": "5",
+          "confidence": 0
+        },
+        {
+          "decision": "6",
+          "confidence": 0
+        },
+        {
+          "decision": "7",
+          "confidence": 0
+        },
+        {
+          "decision": "8",
+          "confidence": 0
+        },
+        {
+          "decision": "9",
+          "confidence": 0
+        }
+      ],
+      "calibrated": false
+    },
+    "accepts": true,
+    "search": {
+      "popped": 0,
+      "boundary": 0,
+      "exhausts": false,
+      "inEnvelope": true
+    },
+    "gateway": {
+      "answer": {
+        "type": "score",
+        "score": -1e-06,
+        "legend": {
+          "0": "Level 0",
+          "1": "Level 1",
+          "2": "Level 2",
+          "3": "Level 3",
+          "4": "Level 4",
+          "5": "Level 5",
+          "6": "Level 6",
+          "7": "Level 7",
+          "8": "Level 8",
+          "9": "Level 9"
+        },
+        "probabilities": {
+          "0": 1,
+          "1": 0,
+          "2": 0,
+          "3": 0,
+          "4": 0,
+          "5": 0,
+          "6": 0,
+          "7": 0,
+          "8": 0,
+          "9": 0
+        },
+        "confidence": 1,
+        "calibration_version": "synthetic/reader-bound"
+      },
+      "accepts": true
+    }
+  },
+  {
+    "name": "ten-zero-lower-endpoint-next",
+    "answer": {
+      "type": "score",
+      "score": -1.0000000000000002e-06,
+      "legend": {
+        "0": "Level 0",
+        "1": "Level 1",
+        "2": "Level 2",
+        "3": "Level 3",
+        "4": "Level 4",
+        "5": "Level 5",
+        "6": "Level 6",
+        "7": "Level 7",
+        "8": "Level 8",
+        "9": "Level 9"
+      },
+      "probabilities": {
+        "0": 1,
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 0,
+        "9": 0
+      },
+      "confidence": 1,
+      "calibration_version": "synthetic/reader-bound",
+      "decision": "0",
+      "alternatives": [
+        {
+          "decision": "1",
+          "confidence": 0
+        },
+        {
+          "decision": "2",
+          "confidence": 0
+        },
+        {
+          "decision": "3",
+          "confidence": 0
+        },
+        {
+          "decision": "4",
+          "confidence": 0
+        },
+        {
+          "decision": "5",
+          "confidence": 0
+        },
+        {
+          "decision": "6",
+          "confidence": 0
+        },
+        {
+          "decision": "7",
+          "confidence": 0
+        },
+        {
+          "decision": "8",
+          "confidence": 0
+        },
+        {
+          "decision": "9",
+          "confidence": 0
+        }
+      ],
+      "calibrated": false
+    },
+    "accepts": false,
+    "search": {
+      "popped": 1,
+      "boundary": 0,
+      "exhausts": false,
+      "inEnvelope": true
+    }
+  },
+  {
+    "name": "ten-zero-lower-envelope-outside",
+    "answer": {
+      "type": "score",
+      "score": -1.0000001776356841e-06,
+      "legend": {
+        "0": "Level 0",
+        "1": "Level 1",
+        "2": "Level 2",
+        "3": "Level 3",
+        "4": "Level 4",
+        "5": "Level 5",
+        "6": "Level 6",
+        "7": "Level 7",
+        "8": "Level 8",
+        "9": "Level 9"
+      },
+      "probabilities": {
+        "0": 1,
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 0,
+        "9": 0
+      },
+      "confidence": 1,
+      "calibration_version": "synthetic/reader-bound",
+      "decision": "0",
+      "alternatives": [
+        {
+          "decision": "1",
+          "confidence": 0
+        },
+        {
+          "decision": "2",
+          "confidence": 0
+        },
+        {
+          "decision": "3",
+          "confidence": 0
+        },
+        {
+          "decision": "4",
+          "confidence": 0
+        },
+        {
+          "decision": "5",
+          "confidence": 0
+        },
+        {
+          "decision": "6",
+          "confidence": 0
+        },
+        {
+          "decision": "7",
+          "confidence": 0
+        },
+        {
+          "decision": "8",
+          "confidence": 0
+        },
+        {
+          "decision": "9",
+          "confidence": 0
+        }
+      ],
+      "calibrated": false
+    },
+    "accepts": false,
+    "search": {
+      "popped": 0,
+      "boundary": 0,
+      "exhausts": false,
+      "inEnvelope": false
+    }
+  },
+  {
+    "name": "ten-zero-upper-endpoint",
+    "answer": {
+      "type": "score",
+      "score": 1.000045e-06,
+      "legend": {
+        "0": "Level 0",
+        "1": "Level 1",
+        "2": "Level 2",
+        "3": "Level 3",
+        "4": "Level 4",
+        "5": "Level 5",
+        "6": "Level 6",
+        "7": "Level 7",
+        "8": "Level 8",
+        "9": "Level 9"
+      },
+      "probabilities": {
+        "0": 1,
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 0,
+        "9": 0
+      },
+      "confidence": 1,
+      "calibration_version": "synthetic/reader-bound",
+      "decision": "0",
+      "alternatives": [
+        {
+          "decision": "1",
+          "confidence": 0
+        },
+        {
+          "decision": "2",
+          "confidence": 0
+        },
+        {
+          "decision": "3",
+          "confidence": 0
+        },
+        {
+          "decision": "4",
+          "confidence": 0
+        },
+        {
+          "decision": "5",
+          "confidence": 0
+        },
+        {
+          "decision": "6",
+          "confidence": 0
+        },
+        {
+          "decision": "7",
+          "confidence": 0
+        },
+        {
+          "decision": "8",
+          "confidence": 0
+        },
+        {
+          "decision": "9",
+          "confidence": 0
+        }
+      ],
+      "calibrated": false
+    },
+    "accepts": true,
+    "search": {
+      "popped": 0,
+      "boundary": 0,
+      "exhausts": false,
+      "inEnvelope": true
+    },
+    "gateway": {
+      "answer": {
+        "type": "score",
+        "score": 1.000045e-06,
+        "legend": {
+          "0": "Level 0",
+          "1": "Level 1",
+          "2": "Level 2",
+          "3": "Level 3",
+          "4": "Level 4",
+          "5": "Level 5",
+          "6": "Level 6",
+          "7": "Level 7",
+          "8": "Level 8",
+          "9": "Level 9"
+        },
+        "probabilities": {
+          "0": 1,
+          "1": 1e-12,
+          "2": 1e-12,
+          "3": 1e-12,
+          "4": 1e-12,
+          "5": 1e-12,
+          "6": 1e-12,
+          "7": 1e-12,
+          "8": 1e-12,
+          "9": 1e-12
+        },
+        "confidence": 1,
+        "calibration_version": "synthetic/reader-bound"
+      },
+      "accepts": true
+    }
+  },
+  {
+    "name": "ten-zero-upper-endpoint-next",
+    "answer": {
+      "type": "score",
+      "score": 1.0000450000000001e-06,
+      "legend": {
+        "0": "Level 0",
+        "1": "Level 1",
+        "2": "Level 2",
+        "3": "Level 3",
+        "4": "Level 4",
+        "5": "Level 5",
+        "6": "Level 6",
+        "7": "Level 7",
+        "8": "Level 8",
+        "9": "Level 9"
+      },
+      "probabilities": {
+        "0": 1,
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 0,
+        "9": 0
+      },
+      "confidence": 1,
+      "calibration_version": "synthetic/reader-bound",
+      "decision": "0",
+      "alternatives": [
+        {
+          "decision": "1",
+          "confidence": 0
+        },
+        {
+          "decision": "2",
+          "confidence": 0
+        },
+        {
+          "decision": "3",
+          "confidence": 0
+        },
+        {
+          "decision": "4",
+          "confidence": 0
+        },
+        {
+          "decision": "5",
+          "confidence": 0
+        },
+        {
+          "decision": "6",
+          "confidence": 0
+        },
+        {
+          "decision": "7",
+          "confidence": 0
+        },
+        {
+          "decision": "8",
+          "confidence": 0
+        },
+        {
+          "decision": "9",
+          "confidence": 0
+        }
+      ],
+      "calibrated": false
+    },
+    "accepts": false,
+    "search": {
+      "popped": 1,
+      "boundary": 0,
+      "exhausts": false,
+      "inEnvelope": true
+    }
+  },
+  {
+    "name": "ten-zero-upper-envelope-outside",
+    "answer": {
+      "type": "score",
+      "score": 1.000045177635684e-06,
+      "legend": {
+        "0": "Level 0",
+        "1": "Level 1",
+        "2": "Level 2",
+        "3": "Level 3",
+        "4": "Level 4",
+        "5": "Level 5",
+        "6": "Level 6",
+        "7": "Level 7",
+        "8": "Level 8",
+        "9": "Level 9"
+      },
+      "probabilities": {
+        "0": 1,
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 0,
+        "9": 0
+      },
+      "confidence": 1,
+      "calibration_version": "synthetic/reader-bound",
+      "decision": "0",
+      "alternatives": [
+        {
+          "decision": "1",
+          "confidence": 0
+        },
+        {
+          "decision": "2",
+          "confidence": 0
+        },
+        {
+          "decision": "3",
+          "confidence": 0
+        },
+        {
+          "decision": "4",
+          "confidence": 0
+        },
+        {
+          "decision": "5",
+          "confidence": 0
+        },
+        {
+          "decision": "6",
+          "confidence": 0
+        },
+        {
+          "decision": "7",
+          "confidence": 0
+        },
+        {
+          "decision": "8",
+          "confidence": 0
+        },
+        {
+          "decision": "9",
+          "confidence": 0
+        }
+      ],
+      "calibrated": false
+    },
+    "accepts": false,
+    "search": {
+      "popped": 0,
+      "boundary": 0,
+      "exhausts": false,
+      "inEnvelope": false
+    }
+  },
+  {
+    "name": "ten-one-lower-endpoint",
+    "answer": {
+      "type": "score",
+      "score": 0.9999989999990002,
+      "legend": {
+        "0": "Level 0",
+        "1": "Level 1",
+        "2": "Level 2",
+        "3": "Level 3",
+        "4": "Level 4",
+        "5": "Level 5",
+        "6": "Level 6",
+        "7": "Level 7",
+        "8": "Level 8",
+        "9": "Level 9"
+      },
+      "probabilities": {
+        "0": 0,
+        "1": 1,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 0,
+        "9": 0
+      },
+      "confidence": 1,
+      "calibration_version": "synthetic/reader-bound",
+      "decision": "1",
+      "alternatives": [
+        {
+          "decision": "0",
+          "confidence": 0
+        },
+        {
+          "decision": "2",
+          "confidence": 0
+        },
+        {
+          "decision": "3",
+          "confidence": 0
+        },
+        {
+          "decision": "4",
+          "confidence": 0
+        },
+        {
+          "decision": "5",
+          "confidence": 0
+        },
+        {
+          "decision": "6",
+          "confidence": 0
+        },
+        {
+          "decision": "7",
+          "confidence": 0
+        },
+        {
+          "decision": "8",
+          "confidence": 0
+        },
+        {
+          "decision": "9",
+          "confidence": 0
+        }
+      ],
+      "calibrated": false
+    },
+    "accepts": true,
+    "search": {
+      "popped": 0,
+      "boundary": 0,
+      "exhausts": false,
+      "inEnvelope": true
+    },
+    "gateway": {
+      "answer": {
+        "type": "score",
+        "score": 0.9999989999990002,
+        "legend": {
+          "0": "Level 0",
+          "1": "Level 1",
+          "2": "Level 2",
+          "3": "Level 3",
+          "4": "Level 4",
+          "5": "Level 5",
+          "6": "Level 6",
+          "7": "Level 7",
+          "8": "Level 8",
+          "9": "Level 9"
+        },
+        "probabilities": {
+          "0": 0,
+          "1": 0.9999999999990001,
+          "2": 0,
+          "3": 0,
+          "4": 0,
+          "5": 0,
+          "6": 0,
+          "7": 0,
+          "8": 0,
+          "9": 0
+        },
+        "confidence": 0.999999999998889,
+        "calibration_version": "synthetic/reader-bound"
+      },
+      "accepts": true
+    }
+  },
+  {
+    "name": "ten-one-lower-endpoint-next",
+    "answer": {
+      "type": "score",
+      "score": 0.9999989999990001,
+      "legend": {
+        "0": "Level 0",
+        "1": "Level 1",
+        "2": "Level 2",
+        "3": "Level 3",
+        "4": "Level 4",
+        "5": "Level 5",
+        "6": "Level 6",
+        "7": "Level 7",
+        "8": "Level 8",
+        "9": "Level 9"
+      },
+      "probabilities": {
+        "0": 0,
+        "1": 1,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 0,
+        "9": 0
+      },
+      "confidence": 1,
+      "calibration_version": "synthetic/reader-bound",
+      "decision": "1",
+      "alternatives": [
+        {
+          "decision": "0",
+          "confidence": 0
+        },
+        {
+          "decision": "2",
+          "confidence": 0
+        },
+        {
+          "decision": "3",
+          "confidence": 0
+        },
+        {
+          "decision": "4",
+          "confidence": 0
+        },
+        {
+          "decision": "5",
+          "confidence": 0
+        },
+        {
+          "decision": "6",
+          "confidence": 0
+        },
+        {
+          "decision": "7",
+          "confidence": 0
+        },
+        {
+          "decision": "8",
+          "confidence": 0
+        },
+        {
+          "decision": "9",
+          "confidence": 0
+        }
+      ],
+      "calibrated": false
+    },
+    "accepts": false,
+    "search": {
+      "popped": 1,
+      "boundary": 0,
+      "exhausts": false,
+      "inEnvelope": true
+    }
+  },
+  {
+    "name": "ten-one-lower-envelope-outside",
+    "answer": {
+      "type": "score",
+      "score": 0.9999989999988225,
+      "legend": {
+        "0": "Level 0",
+        "1": "Level 1",
+        "2": "Level 2",
+        "3": "Level 3",
+        "4": "Level 4",
+        "5": "Level 5",
+        "6": "Level 6",
+        "7": "Level 7",
+        "8": "Level 8",
+        "9": "Level 9"
+      },
+      "probabilities": {
+        "0": 0,
+        "1": 1,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 0,
+        "9": 0
+      },
+      "confidence": 1,
+      "calibration_version": "synthetic/reader-bound",
+      "decision": "1",
+      "alternatives": [
+        {
+          "decision": "0",
+          "confidence": 0
+        },
+        {
+          "decision": "2",
+          "confidence": 0
+        },
+        {
+          "decision": "3",
+          "confidence": 0
+        },
+        {
+          "decision": "4",
+          "confidence": 0
+        },
+        {
+          "decision": "5",
+          "confidence": 0
+        },
+        {
+          "decision": "6",
+          "confidence": 0
+        },
+        {
+          "decision": "7",
+          "confidence": 0
+        },
+        {
+          "decision": "8",
+          "confidence": 0
+        },
+        {
+          "decision": "9",
+          "confidence": 0
+        }
+      ],
+      "calibrated": false
+    },
+    "accepts": false,
+    "search": {
+      "popped": 0,
+      "boundary": 0,
+      "exhausts": false,
+      "inEnvelope": false
+    }
+  },
+  {
+    "name": "ten-one-upper-endpoint",
+    "answer": {
+      "type": "score",
+      "score": 1.0000010000439998,
+      "legend": {
+        "0": "Level 0",
+        "1": "Level 1",
+        "2": "Level 2",
+        "3": "Level 3",
+        "4": "Level 4",
+        "5": "Level 5",
+        "6": "Level 6",
+        "7": "Level 7",
+        "8": "Level 8",
+        "9": "Level 9"
+      },
+      "probabilities": {
+        "0": 0,
+        "1": 1,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 0,
+        "9": 0
+      },
+      "confidence": 1,
+      "calibration_version": "synthetic/reader-bound",
+      "decision": "1",
+      "alternatives": [
+        {
+          "decision": "0",
+          "confidence": 0
+        },
+        {
+          "decision": "2",
+          "confidence": 0
+        },
+        {
+          "decision": "3",
+          "confidence": 0
+        },
+        {
+          "decision": "4",
+          "confidence": 0
+        },
+        {
+          "decision": "5",
+          "confidence": 0
+        },
+        {
+          "decision": "6",
+          "confidence": 0
+        },
+        {
+          "decision": "7",
+          "confidence": 0
+        },
+        {
+          "decision": "8",
+          "confidence": 0
+        },
+        {
+          "decision": "9",
+          "confidence": 0
+        }
+      ],
+      "calibrated": false
+    },
+    "accepts": true,
+    "search": {
+      "popped": 0,
+      "boundary": 0,
+      "exhausts": false,
+      "inEnvelope": true
+    },
+    "gateway": {
+      "answer": {
+        "type": "score",
+        "score": 1.0000010000439998,
+        "legend": {
+          "0": "Level 0",
+          "1": "Level 1",
+          "2": "Level 2",
+          "3": "Level 3",
+          "4": "Level 4",
+          "5": "Level 5",
+          "6": "Level 6",
+          "7": "Level 7",
+          "8": "Level 8",
+          "9": "Level 9"
+        },
+        "probabilities": {
+          "0": 1e-12,
+          "1": 1,
+          "2": 1e-12,
+          "3": 1e-12,
+          "4": 1e-12,
+          "5": 1e-12,
+          "6": 1e-12,
+          "7": 1e-12,
+          "8": 1e-12,
+          "9": 1e-12
+        },
+        "confidence": 1,
+        "calibration_version": "synthetic/reader-bound"
+      },
+      "accepts": true
+    }
+  },
+  {
+    "name": "ten-one-upper-endpoint-next",
+    "answer": {
+      "type": "score",
+      "score": 1.000001000044,
+      "legend": {
+        "0": "Level 0",
+        "1": "Level 1",
+        "2": "Level 2",
+        "3": "Level 3",
+        "4": "Level 4",
+        "5": "Level 5",
+        "6": "Level 6",
+        "7": "Level 7",
+        "8": "Level 8",
+        "9": "Level 9"
+      },
+      "probabilities": {
+        "0": 0,
+        "1": 1,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 0,
+        "9": 0
+      },
+      "confidence": 1,
+      "calibration_version": "synthetic/reader-bound",
+      "decision": "1",
+      "alternatives": [
+        {
+          "decision": "0",
+          "confidence": 0
+        },
+        {
+          "decision": "2",
+          "confidence": 0
+        },
+        {
+          "decision": "3",
+          "confidence": 0
+        },
+        {
+          "decision": "4",
+          "confidence": 0
+        },
+        {
+          "decision": "5",
+          "confidence": 0
+        },
+        {
+          "decision": "6",
+          "confidence": 0
+        },
+        {
+          "decision": "7",
+          "confidence": 0
+        },
+        {
+          "decision": "8",
+          "confidence": 0
+        },
+        {
+          "decision": "9",
+          "confidence": 0
+        }
+      ],
+      "calibrated": false
+    },
+    "accepts": false,
+    "search": {
+      "popped": 1,
+      "boundary": 0,
+      "exhausts": false,
+      "inEnvelope": true
+    }
+  },
+  {
+    "name": "ten-one-upper-envelope-outside",
+    "answer": {
+      "type": "score",
+      "score": 1.0000010000441777,
+      "legend": {
+        "0": "Level 0",
+        "1": "Level 1",
+        "2": "Level 2",
+        "3": "Level 3",
+        "4": "Level 4",
+        "5": "Level 5",
+        "6": "Level 6",
+        "7": "Level 7",
+        "8": "Level 8",
+        "9": "Level 9"
+      },
+      "probabilities": {
+        "0": 0,
+        "1": 1,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 0,
+        "9": 0
+      },
+      "confidence": 1,
+      "calibration_version": "synthetic/reader-bound",
+      "decision": "1",
+      "alternatives": [
+        {
+          "decision": "0",
+          "confidence": 0
+        },
+        {
+          "decision": "2",
+          "confidence": 0
+        },
+        {
+          "decision": "3",
+          "confidence": 0
+        },
+        {
+          "decision": "4",
+          "confidence": 0
+        },
+        {
+          "decision": "5",
+          "confidence": 0
+        },
+        {
+          "decision": "6",
+          "confidence": 0
+        },
+        {
+          "decision": "7",
+          "confidence": 0
+        },
+        {
+          "decision": "8",
+          "confidence": 0
+        },
+        {
+          "decision": "9",
+          "confidence": 0
+        }
+      ],
+      "calibrated": false
+    },
+    "accepts": false,
+    "search": {
+      "popped": 0,
+      "boundary": 0,
+      "exhausts": false,
+      "inEnvelope": false
+    }
+  },
+  {
+    "name": "ten-nine-lower-endpoint",
+    "answer": {
+      "type": "score",
+      "score": 8.999998999991002,
+      "legend": {
+        "0": "Level 0",
+        "1": "Level 1",
+        "2": "Level 2",
+        "3": "Level 3",
+        "4": "Level 4",
+        "5": "Level 5",
+        "6": "Level 6",
+        "7": "Level 7",
+        "8": "Level 8",
+        "9": "Level 9"
+      },
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 0,
+        "9": 1
+      },
+      "confidence": 1,
+      "calibration_version": "synthetic/reader-bound",
+      "decision": "9",
+      "alternatives": [
+        {
+          "decision": "0",
+          "confidence": 0
+        },
+        {
+          "decision": "1",
+          "confidence": 0
+        },
+        {
+          "decision": "2",
+          "confidence": 0
+        },
+        {
+          "decision": "3",
+          "confidence": 0
+        },
+        {
+          "decision": "4",
+          "confidence": 0
+        },
+        {
+          "decision": "5",
+          "confidence": 0
+        },
+        {
+          "decision": "6",
+          "confidence": 0
+        },
+        {
+          "decision": "7",
+          "confidence": 0
+        },
+        {
+          "decision": "8",
+          "confidence": 0
+        }
+      ],
+      "calibrated": false
+    },
+    "accepts": true,
+    "search": {
+      "popped": 0,
+      "boundary": 0,
+      "exhausts": false,
+      "inEnvelope": true
+    },
+    "gateway": {
+      "answer": {
+        "type": "score",
+        "score": 8.999998999991002,
+        "legend": {
+          "0": "Level 0",
+          "1": "Level 1",
+          "2": "Level 2",
+          "3": "Level 3",
+          "4": "Level 4",
+          "5": "Level 5",
+          "6": "Level 6",
+          "7": "Level 7",
+          "8": "Level 8",
+          "9": "Level 9"
+        },
+        "probabilities": {
+          "0": 0,
+          "1": 0,
+          "2": 0,
+          "3": 0,
+          "4": 0,
+          "5": 0,
+          "6": 0,
+          "7": 0,
+          "8": 0,
+          "9": 0.9999999999990001
+        },
+        "confidence": 0.999999999998889,
+        "calibration_version": "synthetic/reader-bound"
+      },
+      "accepts": true
+    }
+  },
+  {
+    "name": "ten-nine-lower-endpoint-next",
+    "answer": {
+      "type": "score",
+      "score": 8.999998999991,
+      "legend": {
+        "0": "Level 0",
+        "1": "Level 1",
+        "2": "Level 2",
+        "3": "Level 3",
+        "4": "Level 4",
+        "5": "Level 5",
+        "6": "Level 6",
+        "7": "Level 7",
+        "8": "Level 8",
+        "9": "Level 9"
+      },
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 0,
+        "9": 1
+      },
+      "confidence": 1,
+      "calibration_version": "synthetic/reader-bound",
+      "decision": "9",
+      "alternatives": [
+        {
+          "decision": "0",
+          "confidence": 0
+        },
+        {
+          "decision": "1",
+          "confidence": 0
+        },
+        {
+          "decision": "2",
+          "confidence": 0
+        },
+        {
+          "decision": "3",
+          "confidence": 0
+        },
+        {
+          "decision": "4",
+          "confidence": 0
+        },
+        {
+          "decision": "5",
+          "confidence": 0
+        },
+        {
+          "decision": "6",
+          "confidence": 0
+        },
+        {
+          "decision": "7",
+          "confidence": 0
+        },
+        {
+          "decision": "8",
+          "confidence": 0
+        }
+      ],
+      "calibrated": false
+    },
+    "accepts": false,
+    "search": {
+      "popped": 1,
+      "boundary": 0,
+      "exhausts": false,
+      "inEnvelope": true
+    }
+  },
+  {
+    "name": "ten-nine-lower-envelope-outside",
+    "answer": {
+      "type": "score",
+      "score": 8.999998999990822,
+      "legend": {
+        "0": "Level 0",
+        "1": "Level 1",
+        "2": "Level 2",
+        "3": "Level 3",
+        "4": "Level 4",
+        "5": "Level 5",
+        "6": "Level 6",
+        "7": "Level 7",
+        "8": "Level 8",
+        "9": "Level 9"
+      },
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 0,
+        "9": 1
+      },
+      "confidence": 1,
+      "calibration_version": "synthetic/reader-bound",
+      "decision": "9",
+      "alternatives": [
+        {
+          "decision": "0",
+          "confidence": 0
+        },
+        {
+          "decision": "1",
+          "confidence": 0
+        },
+        {
+          "decision": "2",
+          "confidence": 0
+        },
+        {
+          "decision": "3",
+          "confidence": 0
+        },
+        {
+          "decision": "4",
+          "confidence": 0
+        },
+        {
+          "decision": "5",
+          "confidence": 0
+        },
+        {
+          "decision": "6",
+          "confidence": 0
+        },
+        {
+          "decision": "7",
+          "confidence": 0
+        },
+        {
+          "decision": "8",
+          "confidence": 0
+        }
+      ],
+      "calibrated": false
+    },
+    "accepts": false,
+    "search": {
+      "popped": 0,
+      "boundary": 0,
+      "exhausts": false,
+      "inEnvelope": false
+    }
+  },
+  {
+    "name": "ten-nine-upper-endpoint",
+    "answer": {
+      "type": "score",
+      "score": 9.000001000035999,
+      "legend": {
+        "0": "Level 0",
+        "1": "Level 1",
+        "2": "Level 2",
+        "3": "Level 3",
+        "4": "Level 4",
+        "5": "Level 5",
+        "6": "Level 6",
+        "7": "Level 7",
+        "8": "Level 8",
+        "9": "Level 9"
+      },
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 0,
+        "9": 1
+      },
+      "confidence": 1,
+      "calibration_version": "synthetic/reader-bound",
+      "decision": "9",
+      "alternatives": [
+        {
+          "decision": "0",
+          "confidence": 0
+        },
+        {
+          "decision": "1",
+          "confidence": 0
+        },
+        {
+          "decision": "2",
+          "confidence": 0
+        },
+        {
+          "decision": "3",
+          "confidence": 0
+        },
+        {
+          "decision": "4",
+          "confidence": 0
+        },
+        {
+          "decision": "5",
+          "confidence": 0
+        },
+        {
+          "decision": "6",
+          "confidence": 0
+        },
+        {
+          "decision": "7",
+          "confidence": 0
+        },
+        {
+          "decision": "8",
+          "confidence": 0
+        }
+      ],
+      "calibrated": false
+    },
+    "accepts": true,
+    "search": {
+      "popped": 0,
+      "boundary": 0,
+      "exhausts": false,
+      "inEnvelope": true
+    },
+    "gateway": {
+      "answer": {
+        "type": "score",
+        "score": 9.000001000035999,
+        "legend": {
+          "0": "Level 0",
+          "1": "Level 1",
+          "2": "Level 2",
+          "3": "Level 3",
+          "4": "Level 4",
+          "5": "Level 5",
+          "6": "Level 6",
+          "7": "Level 7",
+          "8": "Level 8",
+          "9": "Level 9"
+        },
+        "probabilities": {
+          "0": 1e-12,
+          "1": 1e-12,
+          "2": 1e-12,
+          "3": 1e-12,
+          "4": 1e-12,
+          "5": 1e-12,
+          "6": 1e-12,
+          "7": 1e-12,
+          "8": 1e-12,
+          "9": 1
+        },
+        "confidence": 1,
+        "calibration_version": "synthetic/reader-bound"
+      },
+      "accepts": true
+    }
+  },
+  {
+    "name": "ten-nine-upper-endpoint-next",
+    "answer": {
+      "type": "score",
+      "score": 9.000001000036,
+      "legend": {
+        "0": "Level 0",
+        "1": "Level 1",
+        "2": "Level 2",
+        "3": "Level 3",
+        "4": "Level 4",
+        "5": "Level 5",
+        "6": "Level 6",
+        "7": "Level 7",
+        "8": "Level 8",
+        "9": "Level 9"
+      },
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 0,
+        "9": 1
+      },
+      "confidence": 1,
+      "calibration_version": "synthetic/reader-bound",
+      "decision": "9",
+      "alternatives": [
+        {
+          "decision": "0",
+          "confidence": 0
+        },
+        {
+          "decision": "1",
+          "confidence": 0
+        },
+        {
+          "decision": "2",
+          "confidence": 0
+        },
+        {
+          "decision": "3",
+          "confidence": 0
+        },
+        {
+          "decision": "4",
+          "confidence": 0
+        },
+        {
+          "decision": "5",
+          "confidence": 0
+        },
+        {
+          "decision": "6",
+          "confidence": 0
+        },
+        {
+          "decision": "7",
+          "confidence": 0
+        },
+        {
+          "decision": "8",
+          "confidence": 0
+        }
+      ],
+      "calibrated": false
+    },
+    "accepts": false,
+    "search": {
+      "popped": 1,
+      "boundary": 0,
+      "exhausts": false,
+      "inEnvelope": true
+    }
+  },
+  {
+    "name": "ten-nine-upper-envelope-outside",
+    "answer": {
+      "type": "score",
+      "score": 9.000001000036178,
+      "legend": {
+        "0": "Level 0",
+        "1": "Level 1",
+        "2": "Level 2",
+        "3": "Level 3",
+        "4": "Level 4",
+        "5": "Level 5",
+        "6": "Level 6",
+        "7": "Level 7",
+        "8": "Level 8",
+        "9": "Level 9"
+      },
+      "probabilities": {
+        "0": 0,
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 0,
+        "9": 1
+      },
+      "confidence": 1,
+      "calibration_version": "synthetic/reader-bound",
+      "decision": "9",
+      "alternatives": [
+        {
+          "decision": "0",
+          "confidence": 0
+        },
+        {
+          "decision": "1",
+          "confidence": 0
+        },
+        {
+          "decision": "2",
+          "confidence": 0
+        },
+        {
+          "decision": "3",
+          "confidence": 0
+        },
+        {
+          "decision": "4",
+          "confidence": 0
+        },
+        {
+          "decision": "5",
+          "confidence": 0
+        },
+        {
+          "decision": "6",
+          "confidence": 0
+        },
+        {
+          "decision": "7",
+          "confidence": 0
+        },
+        {
+          "decision": "8",
+          "confidence": 0
+        }
+      ],
+      "calibrated": false
+    },
+    "accepts": false,
+    "search": {
+      "popped": 0,
+      "boundary": 0,
+      "exhausts": false,
+      "inEnvelope": false
+    }
+  },
+  {
+    "name": "ten-sparse-upper-upper-endpoint-next",
+    "answer": {
+      "type": "score",
+      "score": 2.2500100000089986,
+      "legend": {
+        "0": "Level 0",
+        "1": "Level 1",
+        "2": "Level 2",
+        "3": "Level 3",
+        "4": "Level 4",
+        "5": "Level 5",
+        "6": "Level 6",
+        "7": "Level 7",
+        "8": "Level 8",
+        "9": "Level 9"
+      },
+      "probabilities": {
+        "0": 0.75,
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 0,
+        "9": 0.250001
+      },
+      "confidence": 0.75,
+      "calibration_version": "synthetic/reader-bound",
+      "decision": "0",
+      "alternatives": [
+        {
+          "decision": "9",
+          "confidence": 0.250001
+        },
+        {
+          "decision": "1",
+          "confidence": 0
+        },
+        {
+          "decision": "2",
+          "confidence": 0
+        },
+        {
+          "decision": "3",
+          "confidence": 0
+        },
+        {
+          "decision": "4",
+          "confidence": 0
+        },
+        {
+          "decision": "5",
+          "confidence": 0
+        },
+        {
+          "decision": "6",
+          "confidence": 0
+        },
+        {
+          "decision": "7",
+          "confidence": 0
+        },
+        {
+          "decision": "8",
+          "confidence": 0
+        }
+      ],
+      "calibrated": false
+    },
+    "accepts": true,
+    "search": {
+      "popped": 15,
+      "boundary": 6162,
+      "exhausts": false,
+      "inEnvelope": true
+    },
+    "gateway": {
+      "answer": {
+        "type": "score",
+        "score": 2.2500100000089986,
+        "legend": {
+          "0": "Level 0",
+          "1": "Level 1",
+          "2": "Level 2",
+          "3": "Level 3",
+          "4": "Level 4",
+          "5": "Level 5",
+          "6": "Level 6",
+          "7": "Level 7",
+          "8": "Level 8",
+          "9": "Level 9"
+        },
+        "probabilities": {
+          "0": 0.7499999999990001,
+          "1": 5.551115123125783e-17,
+          "2": 5.551115123125783e-17,
+          "3": 5.551115123125783e-17,
+          "4": 5.551115123125783e-17,
+          "5": 5.551115123125783e-17,
+          "6": 5.551115123125783e-17,
+          "7": 5.551115123125783e-17,
+          "8": 1.6653345369377346e-16,
+          "9": 0.25000100000099973
+        },
+        "confidence": 0.7222222222211112,
+        "calibration_version": "synthetic/reader-bound"
+      },
+      "accepts": true
+    }
+  },
+  {
+    "name": "ten-sparse-lower-lower-envelope-inside",
+    "answer": {
+      "type": "score",
+      "score": 2.999989999990823,
+      "legend": {
+        "0": "Level 0",
+        "1": "Level 1",
+        "2": "Level 2",
+        "3": "Level 3",
+        "4": "Level 4",
+        "5": "Level 5",
+        "6": "Level 6",
+        "7": "Level 7",
+        "8": "Level 8",
+        "9": "Level 9"
+      },
+      "probabilities": {
+        "0": 0,
+        "1": 0.75,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 0,
+        "9": 0.249999
+      },
+      "confidence": 0.75,
+      "calibration_version": "synthetic/reader-bound",
+      "decision": "1",
+      "alternatives": [
+        {
+          "decision": "9",
+          "confidence": 0.249999
+        },
+        {
+          "decision": "0",
+          "confidence": 0
+        },
+        {
+          "decision": "2",
+          "confidence": 0
+        },
+        {
+          "decision": "3",
+          "confidence": 0
+        },
+        {
+          "decision": "4",
+          "confidence": 0
+        },
+        {
+          "decision": "5",
+          "confidence": 0
+        },
+        {
+          "decision": "6",
+          "confidence": 0
+        },
+        {
+          "decision": "7",
+          "confidence": 0
+        },
+        {
+          "decision": "8",
+          "confidence": 0
+        }
+      ],
+      "calibrated": false
+    },
+    "accepts": false,
+    "search": {
+      "popped": 37,
+      "boundary": 16293,
+      "exhausts": false,
+      "inEnvelope": true
+    }
+  },
+  {
+    "name": "ten-sparse-lower-lower-envelope-outside",
+    "answer": {
+      "type": "score",
+      "score": 2.9999899999908224,
+      "legend": {
+        "0": "Level 0",
+        "1": "Level 1",
+        "2": "Level 2",
+        "3": "Level 3",
+        "4": "Level 4",
+        "5": "Level 5",
+        "6": "Level 6",
+        "7": "Level 7",
+        "8": "Level 8",
+        "9": "Level 9"
+      },
+      "probabilities": {
+        "0": 0,
+        "1": 0.75,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 0,
+        "9": 0.249999
+      },
+      "confidence": 0.75,
+      "calibration_version": "synthetic/reader-bound",
+      "decision": "1",
+      "alternatives": [
+        {
+          "decision": "9",
+          "confidence": 0.249999
+        },
+        {
+          "decision": "0",
+          "confidence": 0
+        },
+        {
+          "decision": "2",
+          "confidence": 0
+        },
+        {
+          "decision": "3",
+          "confidence": 0
+        },
+        {
+          "decision": "4",
+          "confidence": 0
+        },
+        {
+          "decision": "5",
+          "confidence": 0
+        },
+        {
+          "decision": "6",
+          "confidence": 0
+        },
+        {
+          "decision": "7",
+          "confidence": 0
+        },
+        {
+          "decision": "8",
+          "confidence": 0
+        }
+      ],
+      "calibrated": false
+    },
+    "accepts": false,
+    "search": {
+      "popped": 0,
+      "boundary": 0,
+      "exhausts": false,
+      "inEnvelope": false
+    }
+  },
+  {
+    "name": "ten-zero-exact",
+    "answer": {
+      "type": "score",
+      "score": 0,
+      "legend": {
+        "0": "Level 0",
+        "1": "Level 1",
+        "2": "Level 2",
+        "3": "Level 3",
+        "4": "Level 4",
+        "5": "Level 5",
+        "6": "Level 6",
+        "7": "Level 7",
+        "8": "Level 8",
+        "9": "Level 9"
+      },
+      "probabilities": {
+        "0": 1,
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 0,
+        "9": 0
+      },
+      "confidence": 1,
+      "calibration_version": "synthetic/reader-bound",
+      "decision": "0",
+      "alternatives": [
+        {
+          "decision": "1",
+          "confidence": 0
+        },
+        {
+          "decision": "2",
+          "confidence": 0
+        },
+        {
+          "decision": "3",
+          "confidence": 0
+        },
+        {
+          "decision": "4",
+          "confidence": 0
+        },
+        {
+          "decision": "5",
+          "confidence": 0
+        },
+        {
+          "decision": "6",
+          "confidence": 0
+        },
+        {
+          "decision": "7",
+          "confidence": 0
+        },
+        {
+          "decision": "8",
+          "confidence": 0
+        },
+        {
+          "decision": "9",
+          "confidence": 0
+        }
+      ],
+      "calibrated": false
+    },
+    "accepts": true,
+    "search": {
+      "popped": 0,
+      "boundary": 0,
+      "exhausts": false,
+      "inEnvelope": true
+    },
+    "ieeeNeighbors": [
+      {
+        "from": "0000000000000000",
+        "to": "0000000000000001",
+        "increasing": true
+      },
+      {
+        "from": "0000000000000001",
+        "to": "0000000000000000",
+        "increasing": false
+      },
+      {
+        "from": "0000000000000001",
+        "to": "0000000000000002",
+        "increasing": true
+      },
+      {
+        "from": "000fffffffffffff",
+        "to": "0010000000000000",
+        "increasing": true
+      },
+      {
+        "from": "0010000000000000",
+        "to": "000fffffffffffff",
+        "increasing": false
+      },
+      {
+        "from": "3fdfffffffffffff",
+        "to": "3fe0000000000000",
+        "increasing": true
+      },
+      {
+        "from": "3fe0000000000000",
+        "to": "3fdfffffffffffff",
+        "increasing": false
+      },
+      {
+        "from": "3fd12345ffffffff",
+        "to": "3fd1234600000000",
+        "increasing": true
+      },
+      {
+        "from": "3fd1234600000000",
+        "to": "3fd12345ffffffff",
+        "increasing": false
+      },
+      {
+        "from": "3fefffffffffffff",
+        "to": "3ff0000000000000",
+        "increasing": true
+      },
+      {
+        "from": "3ff0000000000000",
+        "to": "3fefffffffffffff",
+        "increasing": false
+      },
+      {
+        "from": "3fe0000000000000",
+        "to": "3fe0000000000001",
+        "increasing": true
+      },
+      {
+        "from": "3fd0000000000000",
+        "to": "3fcfffffffffffff",
+        "increasing": false
+      }
+    ],
+    "rawProbabilityBounds": [
+      {
+        "units": 0,
+        "increasing": false,
+        "bits": "0000000000000000"
+      },
+      {
+        "units": 0,
+        "increasing": true,
+        "bits": "3d719799812dea11"
+      },
+      {
+        "units": 1,
+        "increasing": false,
+        "bits": "3eb0c6f6873c557b"
+      },
+      {
+        "units": 1,
+        "increasing": true,
+        "bits": "3eb0c6f8ba2f85a0"
+      },
+      {
+        "units": 100000,
+        "increasing": false,
+        "bits": "3fb9999999988020"
+      },
+      {
+        "units": 100000,
+        "increasing": true,
+        "bits": "3fb99999999ab313"
+      },
+      {
+        "units": 250000,
+        "increasing": false,
+        "bits": "3fcfffffffff7344"
+      },
+      {
+        "units": 250000,
+        "increasing": true,
+        "bits": "3fd000000000465e"
+      },
+      {
+        "units": 500000,
+        "increasing": false,
+        "bits": "3fdfffffffffb9a2"
+      },
+      {
+        "units": 500000,
+        "increasing": true,
+        "bits": "3fe000000000232f"
+      },
+      {
+        "units": 750000,
+        "increasing": false,
+        "bits": "3fe7ffffffffdcd2"
+      },
+      {
+        "units": 750000,
+        "increasing": true,
+        "bits": "3fe800000000232e"
+      },
+      {
+        "units": 999999,
+        "increasing": false,
+        "bits": "3feffffde720e8bb"
+      },
+      {
+        "units": 999999,
+        "increasing": true,
+        "bits": "3feffffde7212f18"
+      },
+      {
+        "units": 1000000,
+        "increasing": false,
+        "bits": "3fefffffffffdcd2"
+      },
+      {
+        "units": 1000000,
+        "increasing": true,
+        "bits": "3ff0000000000000"
+      }
+    ],
+    "gateway": {
+      "answer": {
+        "type": "score",
+        "score": 0,
+        "legend": {
+          "0": "Level 0",
+          "1": "Level 1",
+          "2": "Level 2",
+          "3": "Level 3",
+          "4": "Level 4",
+          "5": "Level 5",
+          "6": "Level 6",
+          "7": "Level 7",
+          "8": "Level 8",
+          "9": "Level 9"
+        },
+        "probabilities": {
+          "0": 1,
+          "1": 0,
+          "2": 0,
+          "3": 0,
+          "4": 0,
+          "5": 0,
+          "6": 0,
+          "7": 0,
+          "8": 0,
+          "9": 0
+        },
+        "confidence": 1,
+        "calibration_version": "synthetic/reader-bound"
+      },
+      "accepts": true
+    }
+  },
+  {
+    "name": "ten-one-exact",
+    "answer": {
+      "type": "score",
+      "score": 1,
+      "legend": {
+        "0": "Level 0",
+        "1": "Level 1",
+        "2": "Level 2",
+        "3": "Level 3",
+        "4": "Level 4",
+        "5": "Level 5",
+        "6": "Level 6",
+        "7": "Level 7",
+        "8": "Level 8",
+        "9": "Level 9"
+      },
+      "probabilities": {
+        "0": 0,
+        "1": 1,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 0,
+        "9": 0
+      },
+      "confidence": 1,
+      "calibration_version": "synthetic/reader-bound",
+      "decision": "1",
+      "alternatives": [
+        {
+          "decision": "0",
+          "confidence": 0
+        },
+        {
+          "decision": "2",
+          "confidence": 0
+        },
+        {
+          "decision": "3",
+          "confidence": 0
+        },
+        {
+          "decision": "4",
+          "confidence": 0
+        },
+        {
+          "decision": "5",
+          "confidence": 0
+        },
+        {
+          "decision": "6",
+          "confidence": 0
+        },
+        {
+          "decision": "7",
+          "confidence": 0
+        },
+        {
+          "decision": "8",
+          "confidence": 0
+        },
+        {
+          "decision": "9",
+          "confidence": 0
+        }
+      ],
+      "calibrated": false
+    },
+    "accepts": true,
+    "search": {
+      "popped": 0,
+      "boundary": 0,
+      "exhausts": false,
+      "inEnvelope": true
+    },
+    "gateway": {
+      "answer": {
+        "type": "score",
+        "score": 1,
+        "legend": {
+          "0": "Level 0",
+          "1": "Level 1",
+          "2": "Level 2",
+          "3": "Level 3",
+          "4": "Level 4",
+          "5": "Level 5",
+          "6": "Level 6",
+          "7": "Level 7",
+          "8": "Level 8",
+          "9": "Level 9"
+        },
+        "probabilities": {
+          "0": 0,
+          "1": 1,
+          "2": 0,
+          "3": 0,
+          "4": 0,
+          "5": 0,
+          "6": 0,
+          "7": 0,
+          "8": 0,
+          "9": 0
+        },
+        "confidence": 1,
+        "calibration_version": "synthetic/reader-bound"
+      },
+      "accepts": true
+    }
+  }
+]

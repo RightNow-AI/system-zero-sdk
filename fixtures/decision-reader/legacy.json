@@ -1,0 +1,58 @@
+[
+  {
+    "name": "legacy-boolean",
+    "answer": {
+      "type": "boolean",
+      "probability": 0.06,
+      "confidence": 0.88,
+      "calibration_version": "synthetic/reader-parity"
+    },
+    "accepts": true,
+    "kind": "legacy"
+  },
+  {
+    "name": "legacy-choice",
+    "answer": {
+      "type": "choice",
+      "choice": "a",
+      "probabilities": {
+        "a": 0.75,
+        "b": 0.25
+      },
+      "confidence": 0.5,
+      "calibration_version": "synthetic/reader-parity"
+    },
+    "accepts": true,
+    "kind": "legacy"
+  },
+  {
+    "name": "legacy-score",
+    "answer": {
+      "type": "score",
+      "score": 0.25,
+      "legend": {
+        "0": "Level 0",
+        "1": "Level 1"
+      },
+      "probabilities": {
+        "0": 0.75,
+        "1": 0.25
+      },
+      "confidence": 0.5,
+      "calibration_version": "synthetic/reader-parity"
+    },
+    "accepts": true,
+    "kind": "legacy"
+  },
+  {
+    "name": "refusal",
+    "answer": {
+      "error": {
+        "code": "question_not_grounded",
+        "retryable": false
+      }
+    },
+    "accepts": true,
+    "kind": "refusal"
+  }
+]

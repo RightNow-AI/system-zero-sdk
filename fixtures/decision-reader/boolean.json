@@ -1,0 +1,281 @@
+[
+  {
+    "name": "boolean-0",
+    "answer": {
+      "type": "boolean",
+      "probability": 0,
+      "confidence": 1,
+      "calibration_version": "synthetic/reader-parity",
+      "calibrated": false,
+      "decision": false,
+      "alternatives": [
+        {
+          "decision": true,
+          "confidence": 0
+        }
+      ]
+    },
+    "accepts": true,
+    "gateway": {
+      "answer": {
+        "type": "boolean",
+        "probability": 0,
+        "confidence": 1,
+        "calibration_version": "synthetic/reader-parity"
+      },
+      "accepts": true
+    }
+  },
+  {
+    "name": "boolean-0.06",
+    "answer": {
+      "type": "boolean",
+      "probability": 0.06,
+      "confidence": 0.94,
+      "calibration_version": "synthetic/reader-parity",
+      "calibrated": false,
+      "decision": false,
+      "alternatives": [
+        {
+          "decision": true,
+          "confidence": 0.06
+        }
+      ]
+    },
+    "accepts": true,
+    "gateway": {
+      "answer": {
+        "type": "boolean",
+        "probability": 0.06,
+        "confidence": 0.88,
+        "calibration_version": "synthetic/reader-parity"
+      },
+      "accepts": true
+    }
+  },
+  {
+    "name": "boolean-0.499999",
+    "answer": {
+      "type": "boolean",
+      "probability": 0.499999,
+      "confidence": 0.500001,
+      "calibration_version": "synthetic/reader-parity",
+      "calibrated": false,
+      "decision": false,
+      "alternatives": [
+        {
+          "decision": true,
+          "confidence": 0.499999
+        }
+      ]
+    },
+    "accepts": true,
+    "gateway": {
+      "answer": {
+        "type": "boolean",
+        "probability": 0.499999,
+        "confidence": 1.999999999946489e-06,
+        "calibration_version": "synthetic/reader-parity"
+      },
+      "accepts": true
+    }
+  },
+  {
+    "name": "boolean-0.5",
+    "answer": {
+      "type": "boolean",
+      "probability": 0.5,
+      "confidence": 0.5,
+      "calibration_version": "synthetic/reader-parity",
+      "calibrated": false,
+      "decision": true,
+      "alternatives": [
+        {
+          "decision": false,
+          "confidence": 0.5
+        }
+      ]
+    },
+    "accepts": true,
+    "gateway": {
+      "answer": {
+        "type": "boolean",
+        "probability": 0.5,
+        "confidence": 0,
+        "calibration_version": "synthetic/reader-parity"
+      },
+      "accepts": true
+    }
+  },
+  {
+    "name": "boolean-0.500001",
+    "answer": {
+      "type": "boolean",
+      "probability": 0.500001,
+      "confidence": 0.500001,
+      "calibration_version": "synthetic/reader-parity",
+      "calibrated": false,
+      "decision": true,
+      "alternatives": [
+        {
+          "decision": false,
+          "confidence": 0.499999
+        }
+      ]
+    },
+    "accepts": true,
+    "gateway": {
+      "answer": {
+        "type": "boolean",
+        "probability": 0.500001,
+        "confidence": 2.0000000000575113e-06,
+        "calibration_version": "synthetic/reader-parity"
+      },
+      "accepts": true
+    }
+  },
+  {
+    "name": "boolean-1",
+    "answer": {
+      "type": "boolean",
+      "probability": 1,
+      "confidence": 1,
+      "calibration_version": "synthetic/reader-parity",
+      "calibrated": false,
+      "decision": true,
+      "alternatives": [
+        {
+          "decision": false,
+          "confidence": 0
+        }
+      ]
+    },
+    "accepts": true,
+    "gateway": {
+      "answer": {
+        "type": "boolean",
+        "probability": 1,
+        "confidence": 1,
+        "calibration_version": "synthetic/reader-parity"
+      },
+      "accepts": true
+    }
+  },
+  {
+    "name": "boolean-raw-grid-drift",
+    "answer": {
+      "type": "boolean",
+      "probability": 0.06,
+      "confidence": 0.94,
+      "calibration_version": "synthetic/reader-parity",
+      "calibrated": false,
+      "decision": false,
+      "alternatives": [
+        {
+          "decision": true,
+          "confidence": 0.06
+        }
+      ]
+    },
+    "accepts": true,
+    "gateway": {
+      "answer": {
+        "type": "boolean",
+        "probability": 0.0600000000005,
+        "confidence": 0.879999999999,
+        "calibration_version": "synthetic/reader-parity"
+      },
+      "accepts": true
+    }
+  },
+  {
+    "name": "boolean-off-grid",
+    "answer": {
+      "type": "boolean",
+      "probability": 0.0600000001,
+      "confidence": 0.94,
+      "calibration_version": "synthetic/reader-parity",
+      "calibrated": false,
+      "decision": false,
+      "alternatives": [
+        {
+          "decision": true,
+          "confidence": 0.06
+        }
+      ]
+    },
+    "accepts": false
+  },
+  {
+    "name": "boolean-confidence-drift",
+    "answer": {
+      "type": "boolean",
+      "probability": 0.06,
+      "confidence": 0.940000000001,
+      "calibration_version": "synthetic/reader-parity",
+      "calibrated": false,
+      "decision": false,
+      "alternatives": [
+        {
+          "decision": true,
+          "confidence": 0.06
+        }
+      ]
+    },
+    "accepts": false
+  },
+  {
+    "name": "boolean-alternative-drift",
+    "answer": {
+      "type": "boolean",
+      "probability": 0.06,
+      "confidence": 0.94,
+      "calibration_version": "synthetic/reader-parity",
+      "calibrated": false,
+      "decision": false,
+      "alternatives": [
+        {
+          "decision": true,
+          "confidence": 0.060000000001
+        }
+      ]
+    },
+    "accepts": false
+  },
+  {
+    "name": "boolean-below-zero",
+    "answer": {
+      "type": "boolean",
+      "probability": -1e-06,
+      "confidence": 0.94,
+      "calibration_version": "synthetic/reader-parity",
+      "calibrated": false,
+      "decision": false,
+      "alternatives": [
+        {
+          "decision": true,
+          "confidence": 0.06
+        }
+      ]
+    },
+    "accepts": false
+  },
+  {
+    "name": "boolean-above-one",
+    "answer": {
+      "type": "boolean",
+      "probability": 1.000001,
+      "confidence": 0.94,
+      "calibration_version": "synthetic/reader-parity",
+      "calibrated": false,
+      "decision": false,
+      "alternatives": [
+        {
+          "decision": true,
+          "confidence": 0.06
+        }
+      ]
+    },
+    "accepts": false
+  }
+]

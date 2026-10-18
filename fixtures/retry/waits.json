@@ -1,0 +1,200 @@
+[
+  {
+    "name": "first full jitter",
+    "headers": {},
+    "retryIndex": 0,
+    "random": 0.5,
+    "nowMs": 0,
+    "waitMs": 250
+  },
+  {
+    "name": "second full jitter",
+    "headers": {},
+    "retryIndex": 1,
+    "random": 0.5,
+    "nowMs": 0,
+    "waitMs": 500
+  },
+  {
+    "name": "backoff cap",
+    "headers": {},
+    "retryIndex": 20,
+    "random": 0.5,
+    "nowMs": 0,
+    "waitMs": 4000
+  },
+  {
+    "name": "zero jitter",
+    "headers": {},
+    "retryIndex": 0,
+    "random": 0,
+    "nowMs": 0,
+    "waitMs": 0
+  },
+  {
+    "name": "seconds minimum",
+    "headers": {
+      "retry-after": "2"
+    },
+    "retryIndex": 0,
+    "random": 0.5,
+    "nowMs": 0,
+    "waitMs": 2000
+  },
+  {
+    "name": "milliseconds minimum",
+    "headers": {
+      "retry-after-ms": "800"
+    },
+    "retryIndex": 0,
+    "random": 0.5,
+    "nowMs": 0,
+    "waitMs": 800
+  },
+  {
+    "name": "jitter above hint",
+    "headers": {
+      "retry-after-ms": "10"
+    },
+    "retryIndex": 0,
+    "random": 0.5,
+    "nowMs": 0,
+    "waitMs": 250
+  },
+  {
+    "name": "zero hint retains jitter",
+    "headers": {
+      "retry-after": "0"
+    },
+    "retryIndex": 1,
+    "random": 0.5,
+    "nowMs": 0,
+    "waitMs": 500
+  },
+  {
+    "name": "both hints minimum",
+    "headers": {
+      "retry-after-ms": "75",
+      "retry-after": "2"
+    },
+    "retryIndex": 0,
+    "random": 0.5,
+    "nowMs": 0,
+    "waitMs": 2000
+  },
+  {
+    "name": "HTTP date minimum",
+    "headers": {
+      "retry-after": "Thu, 01 Jan 1970 00:00:03 GMT"
+    },
+    "retryIndex": 0,
+    "random": 0.5,
+    "nowMs": 1000,
+    "waitMs": 2000
+  },
+  {
+    "name": "past HTTP date",
+    "headers": {
+      "retry-after": "Thu, 01 Jan 1970 00:00:00 GMT"
+    },
+    "retryIndex": 0,
+    "random": 0.5,
+    "nowMs": 1000,
+    "waitMs": 250
+  },
+  {
+    "name": "invalid hints",
+    "headers": {
+      "retry-after-ms": "bad",
+      "retry-after": "bad"
+    },
+    "retryIndex": 0,
+    "random": 0.5,
+    "nowMs": 0,
+    "waitMs": 250
+  },
+  {
+    "name": "negative hint",
+    "headers": {
+      "retry-after": "-1"
+    },
+    "retryIndex": 0,
+    "random": 0.5,
+    "nowMs": 0,
+    "waitMs": 250
+  },
+  {
+    "name": "invalid numeric 0x10",
+    "headers": {
+      "retry-after": "0x10",
+      "retry-after-ms": "0x10"
+    },
+    "retryIndex": 0,
+    "random": 0.5,
+    "nowMs": 0,
+    "waitMs": 250
+  },
+  {
+    "name": "invalid numeric 1_0",
+    "headers": {
+      "retry-after": "1_0",
+      "retry-after-ms": "1_0"
+    },
+    "retryIndex": 0,
+    "random": 0.5,
+    "nowMs": 0,
+    "waitMs": 250
+  },
+  {
+    "name": "invalid numeric +1",
+    "headers": {
+      "retry-after": "+1",
+      "retry-after-ms": "+1"
+    },
+    "retryIndex": 0,
+    "random": 0.5,
+    "nowMs": 0,
+    "waitMs": 250
+  },
+  {
+    "name": "invalid numeric 1e1",
+    "headers": {
+      "retry-after": "1e1",
+      "retry-after-ms": "1e1"
+    },
+    "retryIndex": 0,
+    "random": 0.5,
+    "nowMs": 0,
+    "waitMs": 250
+  },
+  {
+    "name": "RFC850 Tuesday",
+    "headers": {
+      "retry-after": "Tuesday, 06-Jan-70 00:00:03 GMT"
+    },
+    "retryIndex": 0,
+    "random": 0.5,
+    "nowMs": 432001000,
+    "waitMs": 2000
+  },
+  {
+    "name": "timezone absent means GMT",
+    "headers": {
+      "retry-after": "Thu, 01 Jan 1970 00:00:03"
+    },
+    "retryIndex": 0,
+    "random": 0.5,
+    "nowMs": 1000,
+    "waitMs": 2000
+  },
+  {
+    "name": "asctime means GMT",
+    "headers": {
+      "retry-after": "Thu Jan  1 00:00:03 1970"
+    },
+    "retryIndex": 0,
+    "random": 0.5,
+    "nowMs": 1000,
+    "waitMs": 2000
+  }
+]

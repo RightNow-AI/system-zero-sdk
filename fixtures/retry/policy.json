@@ -1,0 +1,280 @@
+[
+  {
+    "name": "capacity envelope true",
+    "status": 429,
+    "code": "capacity_exhausted",
+    "retryable": true,
+    "headers": {},
+    "retry": true
+  },
+  {
+    "name": "capacity header true",
+    "status": 429,
+    "code": "capacity_exhausted",
+    "retryable": null,
+    "headers": {
+      "x-should-retry": "true"
+    },
+    "retry": true
+  },
+  {
+    "name": "capacity missing marker",
+    "status": 429,
+    "code": "capacity_exhausted",
+    "retryable": null,
+    "headers": {},
+    "retry": false
+  },
+  {
+    "name": "capacity envelope false veto",
+    "status": 429,
+    "code": "capacity_exhausted",
+    "retryable": false,
+    "headers": {
+      "x-should-retry": "true"
+    },
+    "retry": false
+  },
+  {
+    "name": "capacity header false veto",
+    "status": 429,
+    "code": "capacity_exhausted",
+    "retryable": true,
+    "headers": {
+      "x-should-retry": "false"
+    },
+    "retry": false
+  },
+  {
+    "name": "rate limit",
+    "status": 429,
+    "code": "rate_limit",
+    "retryable": true,
+    "headers": {},
+    "retry": true
+  },
+  {
+    "name": "rate limit exceeded",
+    "status": 429,
+    "code": "rate_limit_exceeded",
+    "retryable": true,
+    "headers": {},
+    "retry": true
+  },
+  {
+    "name": "rate limit unknown hint true envelope",
+    "status": 429,
+    "code": "rate_limit_exceeded",
+    "retryable": true,
+    "headers": {
+      "x-should-retry": "maybe"
+    },
+    "retry": true
+  },
+  {
+    "name": "unknown 429",
+    "status": 429,
+    "code": "future_code",
+    "retryable": true,
+    "headers": {
+      "x-should-retry": "true"
+    },
+    "retry": false
+  },
+  {
+    "name": "monthly refusal",
+    "status": 429,
+    "code": "monthly_cap_reached",
+    "retryable": true,
+    "headers": {
+      "x-should-retry": "true"
+    },
+    "retry": false
+  },
+  {
+    "name": "service envelope true",
+    "status": 503,
+    "code": "service_unavailable",
+    "retryable": true,
+    "headers": {},
+    "retry": true
+  },
+  {
+    "name": "service header true",
+    "status": 503,
+    "code": "service_unavailable",
+    "retryable": null,
+    "headers": {
+      "x-should-retry": "true"
+    },
+    "retry": true
+  },
+  {
+    "name": "service missing marker",
+    "status": 503,
+    "code": "service_unavailable",
+    "retryable": null,
+    "headers": {},
+    "retry": false
+  },
+  {
+    "name": "service false veto",
+    "status": 503,
+    "code": "service_unavailable",
+    "retryable": false,
+    "headers": {
+      "x-should-retry": "true"
+    },
+    "retry": false
+  },
+  {
+    "name": "service header false veto",
+    "status": 503,
+    "code": "service_unavailable",
+    "retryable": true,
+    "headers": {
+      "x-should-retry": "false"
+    },
+    "retry": false
+  },
+  {
+    "name": "status 400 cannot force retry",
+    "status": 400,
+    "code": "invalid_request",
+    "retryable": true,
+    "headers": {
+      "x-should-retry": "true"
+    },
+    "retry": false
+  },
+  {
+    "name": "status 401 cannot force retry",
+    "status": 401,
+    "code": "authentication_error",
+    "retryable": true,
+    "headers": {
+      "x-should-retry": "true"
+    },
+    "retry": false
+  },
+  {
+    "name": "status 402 cannot force retry",
+    "status": 402,
+    "code": "payment_required",
+    "retryable": true,
+    "headers": {
+      "x-should-retry": "true"
+    },
+    "retry": false
+  },
+  {
+    "name": "status 403 cannot force retry",
+    "status": 403,
+    "code": "permission_denied",
+    "retryable": true,
+    "headers": {
+      "x-should-retry": "true"
+    },
+    "retry": false
+  },
+  {
+    "name": "status 404 cannot force retry",
+    "status": 404,
+    "code": "not_found",
+    "retryable": true,
+    "headers": {
+      "x-should-retry": "true"
+    },
+    "retry": false
+  },
+  {
+    "name": "status 408 cannot force retry",
+    "status": 408,
+    "code": "request_timeout",
+    "retryable": true,
+    "headers": {
+      "x-should-retry": "true"
+    },
+    "retry": false
+  },
+  {
+    "name": "status 409 cannot force retry",
+    "status": 409,
+    "code": "idempotency_conflict",
+    "retryable": true,
+    "headers": {
+      "x-should-retry": "true"
+    },
+    "retry": false
+  },
+  {
+    "name": "status 413 cannot force retry",
+    "status": 413,
+    "code": "request_too_large",
+    "retryable": true,
+    "headers": {
+      "x-should-retry": "true"
+    },
+    "retry": false
+  },
+  {
+    "name": "status 422 cannot force retry",
+    "status": 422,
+    "code": "invalid_request",
+    "retryable": true,
+    "headers": {
+      "x-should-retry": "true"
+    },
+    "retry": false
+  },
+  {
+    "name": "status 502 cannot force retry",
+    "status": 502,
+    "code": null,
+    "retryable": true,
+    "headers": {
+      "x-should-retry": "true"
+    },
+    "retry": false
+  },
+  {
+    "name": "status 504 cannot force retry",
+    "status": 504,
+    "code": "system_zero_timeout",
+    "retryable": true,
+    "headers": {
+      "x-should-retry": "true"
+    },
+    "retry": false
+  },
+  {
+    "name": "status 524 cannot force retry",
+    "status": 524,
+    "code": null,
+    "retryable": true,
+    "headers": {
+      "x-should-retry": "true"
+    },
+    "retry": false
+  },
+  {
+    "name": "whitespace false header veto",
+    "status": 429,
+    "code": "capacity_exhausted",
+    "retryable": true,
+    "headers": {
+      "x-should-retry": " false "
+    },
+    "retry": false
+  },
+  {
+    "name": "whitespace true header",
+    "status": 429,
+    "code": "capacity_exhausted",
+    "retryable": null,
+    "headers": {
+      "x-should-retry": " true "
+    },
+    "retry": true
+  }
+]

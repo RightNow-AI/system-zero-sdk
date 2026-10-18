@@ -1,0 +1,1596 @@
+[
+  {
+    "name": "score-exact",
+    "answer": {
+      "type": "score",
+      "score": 0.25,
+      "legend": {
+        "0": "Level 0",
+        "1": "Level 1"
+      },
+      "probabilities": {
+        "0": 0.75,
+        "1": 0.25
+      },
+      "confidence": 0.75,
+      "calibration_version": "synthetic/reader-parity",
+      "calibrated": false,
+      "decision": "0",
+      "alternatives": [
+        {
+          "decision": "1",
+          "confidence": 0.25
+        }
+      ]
+    },
+    "accepts": true,
+    "gateway": {
+      "answer": {
+        "type": "score",
+        "score": 0.25,
+        "legend": {
+          "0": "Level 0",
+          "1": "Level 1"
+        },
+        "probabilities": {
+          "0": 0.75,
+          "1": 0.25
+        },
+        "confidence": 0.5,
+        "calibration_version": "synthetic/reader-parity"
+      },
+      "accepts": true
+    }
+  },
+  {
+    "name": "score-total-lower-edge",
+    "answer": {
+      "type": "score",
+      "score": 0.2499990000005,
+      "legend": {
+        "0": "Level 0",
+        "1": "Level 1"
+      },
+      "probabilities": {
+        "0": 0.75,
+        "1": 0.249999
+      },
+      "confidence": 0.75,
+      "calibration_version": "synthetic/reader-parity",
+      "calibrated": false,
+      "decision": "0",
+      "alternatives": [
+        {
+          "decision": "1",
+          "confidence": 0.249999
+        }
+      ]
+    },
+    "accepts": true,
+    "gateway": {
+      "answer": {
+        "type": "score",
+        "score": 0.2499990000005,
+        "legend": {
+          "0": "Level 0",
+          "1": "Level 1"
+        },
+        "probabilities": {
+          "0": 0.75,
+          "1": 0.2499990000005
+        },
+        "confidence": 0.5,
+        "calibration_version": "synthetic/reader-parity"
+      },
+      "accepts": true
+    }
+  },
+  {
+    "name": "score-total-upper-edge",
+    "answer": {
+      "type": "score",
+      "score": 0.250001,
+      "legend": {
+        "0": "Level 0",
+        "1": "Level 1"
+      },
+      "probabilities": {
+        "0": 0.75,
+        "1": 0.250001
+      },
+      "confidence": 0.75,
+      "calibration_version": "synthetic/reader-parity",
+      "calibrated": false,
+      "decision": "0",
+      "alternatives": [
+        {
+          "decision": "1",
+          "confidence": 0.250001
+        }
+      ]
+    },
+    "accepts": true,
+    "gateway": {
+      "answer": {
+        "type": "score",
+        "score": 0.250001,
+        "legend": {
+          "0": "Level 0",
+          "1": "Level 1"
+        },
+        "probabilities": {
+          "0": 0.75,
+          "1": 0.250001
+        },
+        "confidence": 0.5,
+        "calibration_version": "synthetic/reader-parity"
+      },
+      "accepts": true
+    }
+  },
+  {
+    "name": "score-total-below-tolerance",
+    "answer": {
+      "type": "score",
+      "score": 0.249998,
+      "legend": {
+        "0": "Level 0",
+        "1": "Level 1"
+      },
+      "probabilities": {
+        "0": 0.75,
+        "1": 0.249998
+      },
+      "confidence": 0.75,
+      "calibration_version": "synthetic/reader-parity",
+      "calibrated": false,
+      "decision": "0",
+      "alternatives": [
+        {
+          "decision": "1",
+          "confidence": 0.249998
+        }
+      ]
+    },
+    "accepts": false,
+    "gateway": {
+      "answer": {
+        "type": "score",
+        "score": 0.249998,
+        "legend": {
+          "0": "Level 0",
+          "1": "Level 1"
+        },
+        "probabilities": {
+          "0": 0.75,
+          "1": 0.249998
+        },
+        "confidence": 0.5,
+        "calibration_version": "synthetic/reader-parity"
+      },
+      "accepts": false
+    }
+  },
+  {
+    "name": "score-total-above-tolerance",
+    "answer": {
+      "type": "score",
+      "score": 0.250002,
+      "legend": {
+        "0": "Level 0",
+        "1": "Level 1"
+      },
+      "probabilities": {
+        "0": 0.75,
+        "1": 0.250002
+      },
+      "confidence": 0.75,
+      "calibration_version": "synthetic/reader-parity",
+      "calibrated": false,
+      "decision": "0",
+      "alternatives": [
+        {
+          "decision": "1",
+          "confidence": 0.250002
+        }
+      ]
+    },
+    "accepts": false,
+    "gateway": {
+      "answer": {
+        "type": "score",
+        "score": 0.250002,
+        "legend": {
+          "0": "Level 0",
+          "1": "Level 1"
+        },
+        "probabilities": {
+          "0": 0.75,
+          "1": 0.250002
+        },
+        "confidence": 0.5,
+        "calibration_version": "synthetic/reader-parity"
+      },
+      "accepts": false
+    }
+  },
+  {
+    "name": "score-lower-inside",
+    "answer": {
+      "type": "score",
+      "score": 0.2499990000001,
+      "legend": {
+        "0": "Level 0",
+        "1": "Level 1"
+      },
+      "probabilities": {
+        "0": 0.75,
+        "1": 0.25
+      },
+      "confidence": 0.75,
+      "calibration_version": "synthetic/reader-parity",
+      "calibrated": false,
+      "decision": "0",
+      "alternatives": [
+        {
+          "decision": "1",
+          "confidence": 0.25
+        }
+      ]
+    },
+    "accepts": true,
+    "gateway": {
+      "answer": {
+        "type": "score",
+        "score": 0.2499990000001,
+        "legend": {
+          "0": "Level 0",
+          "1": "Level 1"
+        },
+        "probabilities": {
+          "0": 0.75,
+          "1": 0.25
+        },
+        "confidence": 0.5,
+        "calibration_version": "synthetic/reader-parity"
+      },
+      "accepts": true
+    }
+  },
+  {
+    "name": "score-upper-inside",
+    "answer": {
+      "type": "score",
+      "score": 0.2500009999999,
+      "legend": {
+        "0": "Level 0",
+        "1": "Level 1"
+      },
+      "probabilities": {
+        "0": 0.75,
+        "1": 0.25
+      },
+      "confidence": 0.75,
+      "calibration_version": "synthetic/reader-parity",
+      "calibrated": false,
+      "decision": "0",
+      "alternatives": [
+        {
+          "decision": "1",
+          "confidence": 0.25
+        }
+      ]
+    },
+    "accepts": true,
+    "gateway": {
+      "answer": {
+        "type": "score",
+        "score": 0.2500009999999,
+        "legend": {
+          "0": "Level 0",
+          "1": "Level 1"
+        },
+        "probabilities": {
+          "0": 0.75,
+          "1": 0.25
+        },
+        "confidence": 0.5,
+        "calibration_version": "synthetic/reader-parity"
+      },
+      "accepts": true
+    }
+  },
+  {
+    "name": "score-lower-outside",
+    "answer": {
+      "type": "score",
+      "score": 0.24999899999,
+      "legend": {
+        "0": "Level 0",
+        "1": "Level 1"
+      },
+      "probabilities": {
+        "0": 0.75,
+        "1": 0.25
+      },
+      "confidence": 0.75,
+      "calibration_version": "synthetic/reader-parity",
+      "calibrated": false,
+      "decision": "0",
+      "alternatives": [
+        {
+          "decision": "1",
+          "confidence": 0.25
+        }
+      ]
+    },
+    "accepts": false,
+    "gateway": {
+      "answer": {
+        "type": "score",
+        "score": 0.24999899999,
+        "legend": {
+          "0": "Level 0",
+          "1": "Level 1"
+        },
+        "probabilities": {
+          "0": 0.75,
+          "1": 0.25
+        },
+        "confidence": 0.5,
+        "calibration_version": "synthetic/reader-parity"
+      },
+      "accepts": false
+    }
+  },
+  {
+    "name": "score-upper-outside",
+    "answer": {
+      "type": "score",
+      "score": 0.25000100001,
+      "legend": {
+        "0": "Level 0",
+        "1": "Level 1"
+      },
+      "probabilities": {
+        "0": 0.75,
+        "1": 0.25
+      },
+      "confidence": 0.75,
+      "calibration_version": "synthetic/reader-parity",
+      "calibrated": false,
+      "decision": "0",
+      "alternatives": [
+        {
+          "decision": "1",
+          "confidence": 0.25
+        }
+      ]
+    },
+    "accepts": false,
+    "gateway": {
+      "answer": {
+        "type": "score",
+        "score": 0.25000100001,
+        "legend": {
+          "0": "Level 0",
+          "1": "Level 1"
+        },
+        "probabilities": {
+          "0": 0.75,
+          "1": 0.25
+        },
+        "confidence": 0.5,
+        "calibration_version": "synthetic/reader-parity"
+      },
+      "accepts": false
+    }
+  },
+  {
+    "name": "score-upper-projected-rounding",
+    "answer": {
+      "type": "score",
+      "score": 0.2500010000004,
+      "legend": {
+        "0": "Level 0",
+        "1": "Level 1"
+      },
+      "probabilities": {
+        "0": 0.75,
+        "1": 0.25
+      },
+      "confidence": 0.75,
+      "calibration_version": "synthetic/reader-parity",
+      "calibrated": false,
+      "decision": "0",
+      "alternatives": [
+        {
+          "decision": "1",
+          "confidence": 0.25
+        }
+      ]
+    },
+    "accepts": true,
+    "gateway": {
+      "answer": {
+        "type": "score",
+        "score": 0.2500010000004,
+        "legend": {
+          "0": "Level 0",
+          "1": "Level 1"
+        },
+        "probabilities": {
+          "0": 0.7499999999995,
+          "1": 0.2500000000005
+        },
+        "confidence": 0.4999999999989999,
+        "calibration_version": "synthetic/reader-parity"
+      },
+      "accepts": true
+    }
+  },
+  {
+    "name": "score-lower-projected-rounding",
+    "answer": {
+      "type": "score",
+      "score": 0.2499989999996,
+      "legend": {
+        "0": "Level 0",
+        "1": "Level 1"
+      },
+      "probabilities": {
+        "0": 0.75,
+        "1": 0.25
+      },
+      "confidence": 0.75,
+      "calibration_version": "synthetic/reader-parity",
+      "calibrated": false,
+      "decision": "0",
+      "alternatives": [
+        {
+          "decision": "1",
+          "confidence": 0.25
+        }
+      ]
+    },
+    "accepts": true,
+    "gateway": {
+      "answer": {
+        "type": "score",
+        "score": 0.2499989999996,
+        "legend": {
+          "0": "Level 0",
+          "1": "Level 1"
+        },
+        "probabilities": {
+          "0": 0.7500000000005,
+          "1": 0.2499999999995
+        },
+        "confidence": 0.5000000000010001,
+        "calibration_version": "synthetic/reader-parity"
+      },
+      "accepts": true
+    }
+  },
+  {
+    "name": "score-zero-lower-bound",
+    "answer": {
+      "type": "score",
+      "score": -1e-06,
+      "legend": {
+        "0": "Level 0",
+        "1": "Level 1"
+      },
+      "probabilities": {
+        "0": 1,
+        "1": 0
+      },
+      "confidence": 1,
+      "calibration_version": "synthetic/reader-parity",
+      "calibrated": false,
+      "decision": "0",
+      "alternatives": [
+        {
+          "decision": "1",
+          "confidence": 0
+        }
+      ]
+    },
+    "accepts": true,
+    "gateway": {
+      "answer": {
+        "type": "score",
+        "score": -1e-06,
+        "legend": {
+          "0": "Level 0",
+          "1": "Level 1"
+        },
+        "probabilities": {
+          "0": 1,
+          "1": 0
+        },
+        "confidence": 1,
+        "calibration_version": "synthetic/reader-parity"
+      },
+      "accepts": true
+    }
+  },
+  {
+    "name": "score-zero-lower-outside",
+    "answer": {
+      "type": "score",
+      "score": -1.0000004e-06,
+      "legend": {
+        "0": "Level 0",
+        "1": "Level 1"
+      },
+      "probabilities": {
+        "0": 1,
+        "1": 0
+      },
+      "confidence": 1,
+      "calibration_version": "synthetic/reader-parity",
+      "calibrated": false,
+      "decision": "0",
+      "alternatives": [
+        {
+          "decision": "1",
+          "confidence": 0
+        }
+      ]
+    },
+    "accepts": false,
+    "gateway": {
+      "answer": {
+        "type": "score",
+        "score": -1.0000004e-06,
+        "legend": {
+          "0": "Level 0",
+          "1": "Level 1"
+        },
+        "probabilities": {
+          "0": 1,
+          "1": 0
+        },
+        "confidence": 1,
+        "calibration_version": "synthetic/reader-parity"
+      },
+      "accepts": false
+    }
+  },
+  {
+    "name": "score-one-upper-bound",
+    "answer": {
+      "type": "score",
+      "score": 1.000001,
+      "legend": {
+        "0": "Level 0",
+        "1": "Level 1"
+      },
+      "probabilities": {
+        "0": 0,
+        "1": 1
+      },
+      "confidence": 1,
+      "calibration_version": "synthetic/reader-parity",
+      "calibrated": false,
+      "decision": "1",
+      "alternatives": [
+        {
+          "decision": "0",
+          "confidence": 0
+        }
+      ]
+    },
+    "accepts": true,
+    "gateway": {
+      "answer": {
+        "type": "score",
+        "score": 1.000001,
+        "legend": {
+          "0": "Level 0",
+          "1": "Level 1"
+        },
+        "probabilities": {
+          "0": 0,
+          "1": 1
+        },
+        "confidence": 1,
+        "calibration_version": "synthetic/reader-parity"
+      },
+      "accepts": true
+    }
+  },
+  {
+    "name": "score-one-upper-outside",
+    "answer": {
+      "type": "score",
+      "score": 1.0000010000004,
+      "legend": {
+        "0": "Level 0",
+        "1": "Level 1"
+      },
+      "probabilities": {
+        "0": 0,
+        "1": 1
+      },
+      "confidence": 1,
+      "calibration_version": "synthetic/reader-parity",
+      "calibrated": false,
+      "decision": "1",
+      "alternatives": [
+        {
+          "decision": "0",
+          "confidence": 0
+        }
+      ]
+    },
+    "accepts": false,
+    "gateway": {
+      "answer": {
+        "type": "score",
+        "score": 1.0000010000004,
+        "legend": {
+          "0": "Level 0",
+          "1": "Level 1"
+        },
+        "probabilities": {
+          "0": 0,
+          "1": 1
+        },
+        "confidence": 1,
+        "calibration_version": "synthetic/reader-parity"
+      },
+      "accepts": false
+    }
+  },
+  {
+    "name": "score-numeric-tie",
+    "answer": {
+      "type": "score",
+      "score": 0.8,
+      "legend": {
+        "0": "Level 0",
+        "1": "Level 1",
+        "2": "Level 2"
+      },
+      "probabilities": {
+        "0": 0.4,
+        "1": 0.4,
+        "2": 0.2
+      },
+      "confidence": 0.4,
+      "calibration_version": "synthetic/reader-parity",
+      "calibrated": false,
+      "decision": "0",
+      "alternatives": [
+        {
+          "decision": "1",
+          "confidence": 0.4
+        },
+        {
+          "decision": "2",
+          "confidence": 0.2
+        }
+      ]
+    },
+    "accepts": true,
+    "gateway": {
+      "answer": {
+        "type": "score",
+        "score": 0.8,
+        "legend": {
+          "0": "Level 0",
+          "1": "Level 1",
+          "2": "Level 2"
+        },
+        "probabilities": {
+          "0": 0.4,
+          "1": 0.4,
+          "2": 0.2
+        },
+        "confidence": 0.10000000000000009,
+        "calibration_version": "synthetic/reader-parity"
+      },
+      "accepts": true
+    }
+  },
+  {
+    "name": "score-weighted-projection-upper",
+    "answer": {
+      "type": "score",
+      "score": 2.2500010000044,
+      "legend": {
+        "0": "Level 0",
+        "1": "Level 1",
+        "2": "Level 2",
+        "3": "Level 3",
+        "4": "Level 4",
+        "5": "Level 5",
+        "6": "Level 6",
+        "7": "Level 7",
+        "8": "Level 8",
+        "9": "Level 9"
+      },
+      "probabilities": {
+        "0": 0.75,
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 0,
+        "9": 0.25
+      },
+      "confidence": 0.75,
+      "calibration_version": "synthetic/reader-parity",
+      "calibrated": false,
+      "decision": "0",
+      "alternatives": [
+        {
+          "decision": "9",
+          "confidence": 0.25
+        },
+        {
+          "decision": "1",
+          "confidence": 0
+        },
+        {
+          "decision": "2",
+          "confidence": 0
+        },
+        {
+          "decision": "3",
+          "confidence": 0
+        },
+        {
+          "decision": "4",
+          "confidence": 0
+        },
+        {
+          "decision": "5",
+          "confidence": 0
+        },
+        {
+          "decision": "6",
+          "confidence": 0
+        },
+        {
+          "decision": "7",
+          "confidence": 0
+        },
+        {
+          "decision": "8",
+          "confidence": 0
+        }
+      ]
+    },
+    "accepts": true,
+    "gateway": {
+      "answer": {
+        "type": "score",
+        "score": 2.2500010000044,
+        "legend": {
+          "0": "Level 0",
+          "1": "Level 1",
+          "2": "Level 2",
+          "3": "Level 3",
+          "4": "Level 4",
+          "5": "Level 5",
+          "6": "Level 6",
+          "7": "Level 7",
+          "8": "Level 8",
+          "9": "Level 9"
+        },
+        "probabilities": {
+          "0": 0.7499999999995,
+          "1": 0,
+          "2": 0,
+          "3": 0,
+          "4": 0,
+          "5": 0,
+          "6": 0,
+          "7": 0,
+          "8": 0,
+          "9": 0.2500000000005
+        },
+        "confidence": 0.7222222222216667,
+        "calibration_version": "synthetic/reader-parity"
+      },
+      "accepts": true
+    }
+  },
+  {
+    "name": "score-weighted-projection-outside",
+    "answer": {
+      "type": "score",
+      "score": 2.2500010001,
+      "legend": {
+        "0": "Level 0",
+        "1": "Level 1",
+        "2": "Level 2",
+        "3": "Level 3",
+        "4": "Level 4",
+        "5": "Level 5",
+        "6": "Level 6",
+        "7": "Level 7",
+        "8": "Level 8",
+        "9": "Level 9"
+      },
+      "probabilities": {
+        "0": 0.75,
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0,
+        "6": 0,
+        "7": 0,
+        "8": 0,
+        "9": 0.25
+      },
+      "confidence": 0.75,
+      "calibration_version": "synthetic/reader-parity",
+      "calibrated": false,
+      "decision": "0",
+      "alternatives": [
+        {
+          "decision": "9",
+          "confidence": 0.25
+        },
+        {
+          "decision": "1",
+          "confidence": 0
+        },
+        {
+          "decision": "2",
+          "confidence": 0
+        },
+        {
+          "decision": "3",
+          "confidence": 0
+        },
+        {
+          "decision": "4",
+          "confidence": 0
+        },
+        {
+          "decision": "5",
+          "confidence": 0
+        },
+        {
+          "decision": "6",
+          "confidence": 0
+        },
+        {
+          "decision": "7",
+          "confidence": 0
+        },
+        {
+          "decision": "8",
+          "confidence": 0
+        }
+      ]
+    },
+    "accepts": false,
+    "gateway": {
+      "answer": {
+        "type": "score",
+        "score": 2.2500010001,
+        "legend": {
+          "0": "Level 0",
+          "1": "Level 1",
+          "2": "Level 2",
+          "3": "Level 3",
+          "4": "Level 4",
+          "5": "Level 5",
+          "6": "Level 6",
+          "7": "Level 7",
+          "8": "Level 8",
+          "9": "Level 9"
+        },
+        "probabilities": {
+          "0": 0.75,
+          "1": 0,
+          "2": 0,
+          "3": 0,
+          "4": 0,
+          "5": 0,
+          "6": 0,
+          "7": 0,
+          "8": 0,
+          "9": 0.25
+        },
+        "confidence": 0.7222222222222222,
+        "calibration_version": "synthetic/reader-parity"
+      },
+      "accepts": false
+    }
+  },
+  {
+    "name": "score-upper-mass-coupled-outside",
+    "answer": {
+      "type": "score",
+      "score": 0.5000030000025,
+      "legend": {
+        "0": "Level 0",
+        "1": "Level 1",
+        "2": "Level 2"
+      },
+      "probabilities": {
+        "0": 0.75,
+        "1": 0,
+        "2": 0.250001
+      },
+      "confidence": 0.75,
+      "calibration_version": "synthetic/reader-parity",
+      "calibrated": false,
+      "decision": "0",
+      "alternatives": [
+        {
+          "decision": "2",
+          "confidence": 0.250001
+        },
+        {
+          "decision": "1",
+          "confidence": 0
+        }
+      ]
+    },
+    "accepts": false,
+    "gateway": {
+      "answer": {
+        "type": "score",
+        "score": 0.5000030000025,
+        "legend": {
+          "0": "Level 0",
+          "1": "Level 1",
+          "2": "Level 2"
+        },
+        "probabilities": {
+          "0": 0.75,
+          "1": 0,
+          "2": 0.250001
+        },
+        "confidence": 0.625,
+        "calibration_version": "synthetic/reader-parity"
+      },
+      "accepts": false
+    }
+  },
+  {
+    "name": "score-upper-mass-coupled-inside",
+    "answer": {
+      "type": "score",
+      "score": 0.5000030000013,
+      "legend": {
+        "0": "Level 0",
+        "1": "Level 1",
+        "2": "Level 2"
+      },
+      "probabilities": {
+        "0": 0.75,
+        "1": 0,
+        "2": 0.250001
+      },
+      "confidence": 0.75,
+      "calibration_version": "synthetic/reader-parity",
+      "calibrated": false,
+      "decision": "0",
+      "alternatives": [
+        {
+          "decision": "2",
+          "confidence": 0.250001
+        },
+        {
+          "decision": "1",
+          "confidence": 0
+        }
+      ]
+    },
+    "accepts": true,
+    "gateway": {
+      "answer": {
+        "type": "score",
+        "score": 0.5000030000013,
+        "legend": {
+          "0": "Level 0",
+          "1": "Level 1",
+          "2": "Level 2"
+        },
+        "probabilities": {
+          "0": 0.7499999999992,
+          "1": 0,
+          "2": 0.25000100000075
+        },
+        "confidence": 0.62499999999865,
+        "calibration_version": "synthetic/reader-parity"
+      },
+      "accepts": true
+    }
+  },
+  {
+    "name": "score-lower-mass-coupled-outside",
+    "answer": {
+      "type": "score",
+      "score": 1.2499969999975,
+      "legend": {
+        "0": "Level 0",
+        "1": "Level 1",
+        "2": "Level 2"
+      },
+      "probabilities": {
+        "0": 0,
+        "1": 0.75,
+        "2": 0.249999
+      },
+      "confidence": 0.75,
+      "calibration_version": "synthetic/reader-parity",
+      "calibrated": false,
+      "decision": "1",
+      "alternatives": [
+        {
+          "decision": "2",
+          "confidence": 0.249999
+        },
+        {
+          "decision": "0",
+          "confidence": 0
+        }
+      ]
+    },
+    "accepts": false,
+    "gateway": {
+      "answer": {
+        "type": "score",
+        "score": 1.2499969999975,
+        "legend": {
+          "0": "Level 0",
+          "1": "Level 1",
+          "2": "Level 2"
+        },
+        "probabilities": {
+          "0": 0,
+          "1": 0.75,
+          "2": 0.249999
+        },
+        "confidence": 0.625,
+        "calibration_version": "synthetic/reader-parity"
+      },
+      "accepts": false
+    }
+  },
+  {
+    "name": "score-lower-mass-coupled-inside",
+    "answer": {
+      "type": "score",
+      "score": 1.2499969999985,
+      "legend": {
+        "0": "Level 0",
+        "1": "Level 1",
+        "2": "Level 2"
+      },
+      "probabilities": {
+        "0": 0,
+        "1": 0.75,
+        "2": 0.249999
+      },
+      "confidence": 0.75,
+      "calibration_version": "synthetic/reader-parity",
+      "calibrated": false,
+      "decision": "1",
+      "alternatives": [
+        {
+          "decision": "2",
+          "confidence": 0.249999
+        },
+        {
+          "decision": "0",
+          "confidence": 0
+        }
+      ]
+    },
+    "accepts": true,
+    "gateway": {
+      "answer": {
+        "type": "score",
+        "score": 1.2499969999985,
+        "legend": {
+          "0": "Level 0",
+          "1": "Level 1",
+          "2": "Level 2"
+        },
+        "probabilities": {
+          "0": 9.5e-13,
+          "1": 0.75,
+          "2": 0.2499989999991
+        },
+        "confidence": 0.625,
+        "calibration_version": "synthetic/reader-parity"
+      },
+      "accepts": true
+    }
+  },
+  {
+    "name": "score-zero-lower-next-float",
+    "answer": {
+      "type": "score",
+      "score": -1.0000000000000004e-06,
+      "legend": {
+        "0": "Level 0",
+        "1": "Level 1"
+      },
+      "probabilities": {
+        "0": 1,
+        "1": 0
+      },
+      "confidence": 1,
+      "calibration_version": "synthetic/reader-parity",
+      "decision": "0",
+      "calibrated": false,
+      "alternatives": [
+        {
+          "decision": "1",
+          "confidence": 0
+        }
+      ]
+    },
+    "accepts": false,
+    "gateway": {
+      "answer": {
+        "type": "score",
+        "score": -1.0000000000000004e-06,
+        "legend": {
+          "0": "Level 0",
+          "1": "Level 1"
+        },
+        "probabilities": {
+          "0": 1,
+          "1": 0
+        },
+        "confidence": 1,
+        "calibration_version": "synthetic/reader-parity"
+      },
+      "accepts": false
+    }
+  },
+  {
+    "name": "score-one-upper-next-float",
+    "answer": {
+      "type": "score",
+      "score": 1.0000010000000001,
+      "legend": {
+        "0": "Level 0",
+        "1": "Level 1"
+      },
+      "probabilities": {
+        "0": 0,
+        "1": 1
+      },
+      "confidence": 1,
+      "calibration_version": "synthetic/reader-parity",
+      "decision": "1",
+      "calibrated": false,
+      "alternatives": [
+        {
+          "decision": "0",
+          "confidence": 0
+        }
+      ]
+    },
+    "accepts": false,
+    "gateway": {
+      "answer": {
+        "type": "score",
+        "score": 1.0000010000000001,
+        "legend": {
+          "0": "Level 0",
+          "1": "Level 1"
+        },
+        "probabilities": {
+          "0": 0,
+          "1": 1
+        },
+        "confidence": 1,
+        "calibration_version": "synthetic/reader-parity"
+      },
+      "accepts": false
+    }
+  },
+  {
+    "name": "score-upper-grid-ulp-outside",
+    "answer": {
+      "type": "score",
+      "score": 0.2500010000010005,
+      "legend": {
+        "0": "Level 0",
+        "1": "Level 1"
+      },
+      "probabilities": {
+        "0": 0.75,
+        "1": 0.25
+      },
+      "confidence": 0.75,
+      "calibration_version": "synthetic/reader-parity",
+      "decision": "0",
+      "alternatives": [
+        {
+          "decision": "1",
+          "confidence": 0.25
+        }
+      ],
+      "calibrated": false
+    },
+    "accepts": false,
+    "gateway": {
+      "answer": {
+        "type": "score",
+        "score": 0.2500010000010005,
+        "legend": {
+          "0": "Level 0",
+          "1": "Level 1"
+        },
+        "probabilities": {
+          "0": 0.75,
+          "1": 0.25
+        },
+        "confidence": 0.5,
+        "calibration_version": "synthetic/reader-parity"
+      },
+      "accepts": false
+    }
+  },
+  {
+    "name": "score-lower-grid-ulp-outside",
+    "answer": {
+      "type": "score",
+      "score": 0.2499989999989995,
+      "legend": {
+        "0": "Level 0",
+        "1": "Level 1"
+      },
+      "probabilities": {
+        "0": 0.75,
+        "1": 0.25
+      },
+      "confidence": 0.75,
+      "calibration_version": "synthetic/reader-parity",
+      "decision": "0",
+      "alternatives": [
+        {
+          "decision": "1",
+          "confidence": 0.25
+        }
+      ],
+      "calibrated": false
+    },
+    "accepts": false,
+    "gateway": {
+      "answer": {
+        "type": "score",
+        "score": 0.2499989999989995,
+        "legend": {
+          "0": "Level 0",
+          "1": "Level 1"
+        },
+        "probabilities": {
+          "0": 0.75,
+          "1": 0.25
+        },
+        "confidence": 0.5,
+        "calibration_version": "synthetic/reader-parity"
+      },
+      "accepts": false
+    }
+  },
+  {
+    "name": "score-upper-grid-endpoint-inside",
+    "answer": {
+      "type": "score",
+      "score": 0.25000100000099995,
+      "legend": {
+        "0": "Level 0",
+        "1": "Level 1"
+      },
+      "probabilities": {
+        "0": 0.75,
+        "1": 0.25
+      },
+      "confidence": 0.75,
+      "calibration_version": "synthetic/reader-parity",
+      "decision": "0",
+      "alternatives": [
+        {
+          "decision": "1",
+          "confidence": 0.25
+        }
+      ],
+      "calibrated": false
+    },
+    "accepts": true,
+    "gateway": {
+      "answer": {
+        "type": "score",
+        "score": 0.25000100000099995,
+        "legend": {
+          "0": "Level 0",
+          "1": "Level 1"
+        },
+        "probabilities": {
+          "0": 0.7499999999995,
+          "1": 0.250000000001
+        },
+        "confidence": 0.4999999999989999,
+        "calibration_version": "synthetic/reader-parity"
+      },
+      "accepts": true
+    }
+  },
+  {
+    "name": "score-mass-sum-rounding-plateau",
+    "answer": {
+      "type": "score",
+      "score": 0.9847110000019998,
+      "legend": {
+        "0": "Level 0",
+        "1": "Level 1",
+        "2": "Level 2"
+      },
+      "probabilities": {
+        "0": 0.311354,
+        "1": 0.392584,
+        "2": 0.296063
+      },
+      "confidence": 0.392584,
+      "calibration_version": "synthetic/reader-parity",
+      "decision": "1",
+      "alternatives": [
+        {
+          "decision": "0",
+          "confidence": 0.311354
+        },
+        {
+          "decision": "2",
+          "confidence": 0.296063
+        }
+      ],
+      "calibrated": false
+    },
+    "accepts": true,
+    "gateway": {
+      "answer": {
+        "type": "score",
+        "score": 0.9847110000019998,
+        "legend": {
+          "0": "Level 0",
+          "1": "Level 1",
+          "2": "Level 2"
+        },
+        "probabilities": {
+          "0": 0.31135399999900004,
+          "1": 0.3925840000000001,
+          "2": 0.2960630000009999
+        },
+        "confidence": 0.08887600000000018,
+        "calibration_version": "synthetic/reader-parity"
+      },
+      "accepts": true
+    }
+  },
+  {
+    "name": "score-ten-level-upper-mass-inside",
+    "answer": {
+      "type": "score",
+      "score": 4.5000100000189,
+      "legend": {
+        "0": "Level 0",
+        "1": "Level 1",
+        "2": "Level 2",
+        "3": "Level 3",
+        "4": "Level 4",
+        "5": "Level 5",
+        "6": "Level 6",
+        "7": "Level 7",
+        "8": "Level 8",
+        "9": "Level 9"
+      },
+      "probabilities": {
+        "0": 0.1,
+        "1": 0.1,
+        "2": 0.1,
+        "3": 0.1,
+        "4": 0.1,
+        "5": 0.1,
+        "6": 0.1,
+        "7": 0.1,
+        "8": 0.1,
+        "9": 0.100001
+      },
+      "confidence": 0.100001,
+      "calibration_version": "synthetic/reader-parity",
+      "decision": "9",
+      "alternatives": [
+        {
+          "decision": "0",
+          "confidence": 0.1
+        },
+        {
+          "decision": "1",
+          "confidence": 0.1
+        },
+        {
+          "decision": "2",
+          "confidence": 0.1
+        },
+        {
+          "decision": "3",
+          "confidence": 0.1
+        },
+        {
+          "decision": "4",
+          "confidence": 0.1
+        },
+        {
+          "decision": "5",
+          "confidence": 0.1
+        },
+        {
+          "decision": "6",
+          "confidence": 0.1
+        },
+        {
+          "decision": "7",
+          "confidence": 0.1
+        },
+        {
+          "decision": "8",
+          "confidence": 0.1
+        }
+      ],
+      "calibrated": false
+    },
+    "accepts": true,
+    "gateway": {
+      "answer": {
+        "type": "score",
+        "score": 4.5000100000189,
+        "legend": {
+          "0": "Level 0",
+          "1": "Level 1",
+          "2": "Level 2",
+          "3": "Level 3",
+          "4": "Level 4",
+          "5": "Level 5",
+          "6": "Level 6",
+          "7": "Level 7",
+          "8": "Level 8",
+          "9": "Level 9"
+        },
+        "probabilities": {
+          "0": 0.0999999999991,
+          "1": 0.0999999999991,
+          "2": 0.0999999999991,
+          "3": 0.0999999999991,
+          "4": 0.0999999999991,
+          "5": 0.1000000000008,
+          "6": 0.1000000000008,
+          "7": 0.1000000000008,
+          "8": 0.1000000000008,
+          "9": 0.1000010000008
+        },
+        "confidence": 1.111112000012287e-06,
+        "calibration_version": "synthetic/reader-parity"
+      },
+      "accepts": true
+    }
+  },
+  {
+    "name": "score-ten-level-upper-mass-outside",
+    "answer": {
+      "type": "score",
+      "score": 4.5000100000255,
+      "legend": {
+        "0": "Level 0",
+        "1": "Level 1",
+        "2": "Level 2",
+        "3": "Level 3",
+        "4": "Level 4",
+        "5": "Level 5",
+        "6": "Level 6",
+        "7": "Level 7",
+        "8": "Level 8",
+        "9": "Level 9"
+      },
+      "probabilities": {
+        "0": 0.1,
+        "1": 0.1,
+        "2": 0.1,
+        "3": 0.1,
+        "4": 0.1,
+        "5": 0.1,
+        "6": 0.1,
+        "7": 0.1,
+        "8": 0.1,
+        "9": 0.100001
+      },
+      "confidence": 0.100001,
+      "calibration_version": "synthetic/reader-parity",
+      "decision": "9",
+      "alternatives": [
+        {
+          "decision": "0",
+          "confidence": 0.1
+        },
+        {
+          "decision": "1",
+          "confidence": 0.1
+        },
+        {
+          "decision": "2",
+          "confidence": 0.1
+        },
+        {
+          "decision": "3",
+          "confidence": 0.1
+        },
+        {
+          "decision": "4",
+          "confidence": 0.1
+        },
+        {
+          "decision": "5",
+          "confidence": 0.1
+        },
+        {
+          "decision": "6",
+          "confidence": 0.1
+        },
+        {
+          "decision": "7",
+          "confidence": 0.1
+        },
+        {
+          "decision": "8",
+          "confidence": 0.1
+        }
+      ],
+      "calibrated": false
+    },
+    "accepts": false,
+    "gateway": {
+      "answer": {
+        "type": "score",
+        "score": 4.5000100000255,
+        "legend": {
+          "0": "Level 0",
+          "1": "Level 1",
+          "2": "Level 2",
+          "3": "Level 3",
+          "4": "Level 4",
+          "5": "Level 5",
+          "6": "Level 6",
+          "7": "Level 7",
+          "8": "Level 8",
+          "9": "Level 9"
+        },
+        "probabilities": {
+          "0": 0.1,
+          "1": 0.1,
+          "2": 0.1,
+          "3": 0.1,
+          "4": 0.1,
+          "5": 0.1,
+          "6": 0.1,
+          "7": 0.1,
+          "8": 0.1,
+          "9": 0.100001
+        },
+        "confidence": 1.1111111111183902e-06,
+        "calibration_version": "synthetic/reader-parity"
+      },
+      "accepts": false
+    }
+  }
+]

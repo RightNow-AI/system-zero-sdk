@@ -1,0 +1,296 @@
+[
+  {
+    "name": "choice-exact",
+    "answer": {
+      "type": "choice",
+      "choice": "a",
+      "probabilities": {
+        "a": 0.75,
+        "b": 0.25
+      },
+      "confidence": 0.75,
+      "calibration_version": "synthetic/reader-parity",
+      "calibrated": false,
+      "decision": "a",
+      "alternatives": [
+        {
+          "decision": "b",
+          "confidence": 0.25
+        }
+      ]
+    },
+    "accepts": true,
+    "gateway": {
+      "answer": {
+        "type": "choice",
+        "choice": "a",
+        "probabilities": {
+          "a": 0.75,
+          "b": 0.25
+        },
+        "confidence": 0.5,
+        "calibration_version": "synthetic/reader-parity"
+      },
+      "accepts": true
+    }
+  },
+  {
+    "name": "choice-total-lower-edge",
+    "answer": {
+      "type": "choice",
+      "choice": "a",
+      "probabilities": {
+        "a": 0.75,
+        "b": 0.249999
+      },
+      "confidence": 0.75,
+      "calibration_version": "synthetic/reader-parity",
+      "calibrated": false,
+      "decision": "a",
+      "alternatives": [
+        {
+          "decision": "b",
+          "confidence": 0.249999
+        }
+      ]
+    },
+    "accepts": true,
+    "gateway": {
+      "answer": {
+        "type": "choice",
+        "choice": "a",
+        "probabilities": {
+          "a": 0.75,
+          "b": 0.2499990000005
+        },
+        "confidence": 0.5,
+        "calibration_version": "synthetic/reader-parity"
+      },
+      "accepts": true
+    }
+  },
+  {
+    "name": "choice-total-upper-edge",
+    "answer": {
+      "type": "choice",
+      "choice": "a",
+      "probabilities": {
+        "a": 0.75,
+        "b": 0.250001
+      },
+      "confidence": 0.75,
+      "calibration_version": "synthetic/reader-parity",
+      "calibrated": false,
+      "decision": "a",
+      "alternatives": [
+        {
+          "decision": "b",
+          "confidence": 0.250001
+        }
+      ]
+    },
+    "accepts": true,
+    "gateway": {
+      "answer": {
+        "type": "choice",
+        "choice": "a",
+        "probabilities": {
+          "a": 0.75,
+          "b": 0.250001
+        },
+        "confidence": 0.5,
+        "calibration_version": "synthetic/reader-parity"
+      },
+      "accepts": true
+    }
+  },
+  {
+    "name": "choice-total-below-tolerance",
+    "answer": {
+      "type": "choice",
+      "choice": "a",
+      "probabilities": {
+        "a": 0.75,
+        "b": 0.249998
+      },
+      "confidence": 0.75,
+      "calibration_version": "synthetic/reader-parity",
+      "calibrated": false,
+      "decision": "a",
+      "alternatives": [
+        {
+          "decision": "b",
+          "confidence": 0.249998
+        }
+      ]
+    },
+    "accepts": false,
+    "gateway": {
+      "answer": {
+        "type": "choice",
+        "choice": "a",
+        "probabilities": {
+          "a": 0.75,
+          "b": 0.249998
+        },
+        "confidence": 0.5,
+        "calibration_version": "synthetic/reader-parity"
+      },
+      "accepts": false
+    }
+  },
+  {
+    "name": "choice-total-above-tolerance",
+    "answer": {
+      "type": "choice",
+      "choice": "a",
+      "probabilities": {
+        "a": 0.75,
+        "b": 0.250002
+      },
+      "confidence": 0.75,
+      "calibration_version": "synthetic/reader-parity",
+      "calibrated": false,
+      "decision": "a",
+      "alternatives": [
+        {
+          "decision": "b",
+          "confidence": 0.250002
+        }
+      ]
+    },
+    "accepts": false,
+    "gateway": {
+      "answer": {
+        "type": "choice",
+        "choice": "a",
+        "probabilities": {
+          "a": 0.75,
+          "b": 0.250002
+        },
+        "confidence": 0.5,
+        "calibration_version": "synthetic/reader-parity"
+      },
+      "accepts": false
+    }
+  },
+  {
+    "name": "choice-singleton",
+    "answer": {
+      "type": "choice",
+      "choice": "only",
+      "probabilities": {
+        "only": 1
+      },
+      "confidence": 1,
+      "calibration_version": "synthetic/reader-parity",
+      "calibrated": false,
+      "decision": "only",
+      "alternatives": []
+    },
+    "accepts": true,
+    "gateway": {
+      "answer": {
+        "type": "choice",
+        "choice": "only",
+        "probabilities": {
+          "only": 1
+        },
+        "confidence": 1,
+        "calibration_version": "synthetic/reader-parity"
+      },
+      "accepts": true
+    }
+  },
+  {
+    "name": "choice-singleton-missing-millionth",
+    "answer": {
+      "type": "choice",
+      "choice": "only",
+      "probabilities": {
+        "only": 0.999999
+      },
+      "confidence": 0.999999,
+      "calibration_version": "synthetic/reader-parity",
+      "calibrated": false,
+      "decision": "only",
+      "alternatives": []
+    },
+    "accepts": false,
+    "gateway": {
+      "answer": {
+        "type": "choice",
+        "choice": "only",
+        "probabilities": {
+          "only": 0.999999
+        },
+        "confidence": 1,
+        "calibration_version": "synthetic/reader-parity"
+      },
+      "accepts": false
+    }
+  },
+  {
+    "name": "choice-tied-selected-with-zero",
+    "answer": {
+      "type": "choice",
+      "choice": "b",
+      "probabilities": {
+        "a": 0.5,
+        "b": 0.5,
+        "zero": 0
+      },
+      "confidence": 0.5,
+      "calibration_version": "synthetic/reader-parity",
+      "calibrated": false,
+      "decision": "b",
+      "alternatives": [
+        {
+          "decision": "a",
+          "confidence": 0.5
+        },
+        {
+          "decision": "zero",
+          "confidence": 0
+        }
+      ]
+    },
+    "accepts": true,
+    "gateway": {
+      "answer": {
+        "type": "choice",
+        "choice": "b",
+        "probabilities": {
+          "a": 0.5,
+          "b": 0.5,
+          "zero": 0
+        },
+        "confidence": 0.25,
+        "calibration_version": "synthetic/reader-parity"
+      },
+      "accepts": true
+    }
+  },
+  {
+    "name": "choice-off-grid",
+    "answer": {
+      "type": "choice",
+      "choice": "a",
+      "probabilities": {
+        "a": 0.7500000000005,
+        "b": 0.2499999999995
+      },
+      "confidence": 0.75,
+      "calibration_version": "synthetic/reader-parity",
+      "calibrated": false,
+      "decision": "a",
+      "alternatives": [
+        {
+          "decision": "b",
+          "confidence": 0.25
+        }
+      ]
+    },
+    "accepts": false
+  }
+]

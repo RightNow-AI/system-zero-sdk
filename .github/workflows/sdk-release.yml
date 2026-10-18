@@ -1,0 +1,298 @@
+# Public SDK builds and publication run only on GitHub-hosted runners.
+name: SDK release
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sdk-release
+  cancel-in-progress: false
+
+env:
+  npm_config_ignore_scripts: true
+  PYTHONIOENCODING: utf-8
+  PYTHONUTF8: '1'
+  PYTHONDONTWRITEBYTECODE: '1'
+  PYTEST_DISABLE_PLUGIN_AUTOLOAD: '1'
+
+jobs:
+  build:
+    if: ${{ github.ref_type == 'tag' }}
+    name: Build SDK artifacts
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    outputs:
+      source_public: ${{ steps.source_policy.outputs.public }}
+      manifest_sha256: ${{ steps.artifact_manifest.outputs.manifest_sha256 }}
+    env:
+      SDK_EXPECTED_PYTHON: '3.13'
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Check out the exact tagged commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Set up Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Set up Python
+        uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # v6.0.0
+        with:
+          python-version: '3.13'
+      - name: Read the shared SDK source policy
+        id: source_policy
+        run: python -I -B -X utf8 tools/sdk/release_policy.py --github-output "$GITHUB_OUTPUT"
+      - name: Refuse mismatched versions or invalid release policy
+        run: |
+          python -I -B -X utf8 tools/sdk/check_release.py --root . --tag "$GITHUB_REF_NAME" --ref "$GITHUB_REF"
+          python -I -B -X utf8 tests/workflow_policy.py
+      - name: Check compression and final package names offline
+        run: python -I -B -X utf8 tests/release_artifacts.py
+      - name: Check tracked public content
+        run: python -I -B -X utf8 tools/sdk/scan_tree.py --root .
+      - name: Check content scanner controls offline
+        run: python -I -B -X utf8 tests/content_rules.py
+      - name: Create the isolated build directory
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE/tmp"
+          SDK_RELEASE_TEMP="$(mktemp -d "$GITHUB_WORKSPACE/tmp/sdk-release.XXXXXX")"
+          echo "SDK_RELEASE_TEMP=$SDK_RELEASE_TEMP" >> "$GITHUB_ENV"
+      - name: Install Node dependencies and isolated Python build tools
+        run: |
+          npm ci --prefix typescript --ignore-scripts --no-audit --no-fund
+          python -I -B -X utf8 -m venv "$SDK_RELEASE_TEMP/venv"
+          "$SDK_RELEASE_TEMP/venv/bin/python" -I -B -X utf8 -m pip install --disable-pip-version-check --no-cache-dir --require-hashes --only-binary :all: -r tools/sdk/build-requirements.txt
+          python -I -B -X utf8 -m venv "$SDK_RELEASE_TEMP/runtime"
+          "$SDK_RELEASE_TEMP/runtime/bin/python" -I -B -X utf8 -m pip install --disable-pip-version-check --no-cache-dir --require-hashes --only-binary :all: -r tools/sdk/runtime-requirements.txt
+      - name: Stage and build both public SDK packages
+        run: |
+          python -I -B -X utf8 tools/sdk/prepare_packages.py --root . --output "$SDK_RELEASE_TEMP/stage"
+          node typescript/node_modules/typescript/bin/tsc -p "$SDK_RELEASE_TEMP/stage/npm/tsconfig.json"
+          mkdir -p "$SDK_RELEASE_TEMP/dist/npm" "$SDK_RELEASE_TEMP/dist/python"
+          npm pack "$SDK_RELEASE_TEMP/stage/npm" --ignore-scripts --pack-destination "$SDK_RELEASE_TEMP/dist/npm"
+          "$SDK_RELEASE_TEMP/venv/bin/python" -I -B -X utf8 -m build --no-isolation "$SDK_RELEASE_TEMP/stage/python" --outdir "$SDK_RELEASE_TEMP/dist/python"
+          python -I -B -X utf8 tools/sdk/canonicalize_sdist.py --sdist "$SDK_RELEASE_TEMP/dist/python/rightnow_system_zero-${GITHUB_REF_NAME#sdk-v}.tar.gz"
+      - name: Smoke the staged public entrypoints offline
+        run: |
+          node tools/sdk/smoke.mjs "$SDK_RELEASE_TEMP/stage/npm"
+          "$SDK_RELEASE_TEMP/runtime/bin/python" -I -B -X utf8 tools/sdk/smoke.py "$SDK_RELEASE_TEMP/stage/python"
+      - name: Verify package contents and record artifact checksums
+        run: python -I -B -X utf8 tools/sdk/check_release.py --root . --tag "$GITHUB_REF_NAME" --ref "$GITHUB_REF" --artifacts "$SDK_RELEASE_TEMP/dist" --check-contents --write-manifest
+      - name: Verify resources and imports from the built archives offline
+        run: '"$SDK_RELEASE_TEMP/venv/bin/python" -I -B -X utf8 tools/sdk/check_package_payloads.py --stage "$SDK_RELEASE_TEMP/stage" --artifacts "$SDK_RELEASE_TEMP/dist" --node "$(command -v node)" --python-runtime "$SDK_RELEASE_TEMP/runtime/bin/python"'
+      - name: Record the manifest digest in the job output and GITHUB_STEP_SUMMARY
+        id: artifact_manifest
+        run: python -I -B -X utf8 tools/sdk/verify_manifest.py --manifest "$SDK_RELEASE_TEMP/dist/manifest.json" --record
+      - name: Upload the verified build
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: sdk-release-${{ github.sha }}
+          path: ${{ env.SDK_RELEASE_TEMP }}/dist/
+          if-no-files-found: error
+          retention-days: 7
+
+  typescript:
+    name: TypeScript SDK (Node ${{ matrix.node }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        node: [22, 24]
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Check out the tested commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Set up Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ matrix.node }}
+          package-manager-cache: false
+      - name: Install the SDK development dependencies
+        run: npm ci --prefix typescript --ignore-scripts --no-audit --no-fund
+      - name: Type check and test the TypeScript SDK and integrations
+        run: |
+          node typescript/node_modules/typescript/bin/tsc -p typescript --noEmit
+          node typescript/node_modules/vitest/vitest.mjs run --config vitest.config.mjs --maxWorkers=2
+      - name: Build and smoke the public entrypoints offline
+        run: |
+          node typescript/node_modules/typescript/bin/tsc -p typescript
+          node tools/sdk/smoke.mjs
+
+  python:
+    name: Python SDK (${{ matrix.python }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        python: ['3.10', '3.11', '3.12', '3.13', '3.14']
+    env:
+      SDK_EXPECTED_PYTHON: ${{ matrix.python }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Check out the tested commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # v6.0.0
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install the SDK and test dependencies
+        run: |
+          python -I -B -X utf8 -m pip install --disable-pip-version-check --no-cache-dir --require-hashes --only-binary :all: -r tools/sdk/runtime-requirements.txt -r tools/sdk/build-requirements.txt -r tools/sdk/test-requirements.txt
+          python -I -B -X utf8 -m pip install --disable-pip-version-check --no-cache-dir --no-deps --no-build-isolation ./python
+      - name: Test the Python SDK and function tools
+        run: python -I -B -X utf8 -m pytest python/tests integrations/function-tools -c python/pyproject.toml -q -p no:cacheprovider
+      - name: Smoke the public entrypoints offline
+        run: python -I -B -X utf8 tools/sdk/smoke.py
+
+  publication_gate:
+    if: ${{ github.ref_type == 'tag' }}
+    name: Require the configured public SDK repository
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Check out the reviewed source policy
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Set up Python for the standard-library policy
+        uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # v6.0.0
+        with:
+          python-version: '3.13'
+      - name: Require public visibility
+        if: ${{ github.event.repository.visibility != 'public' }}
+        run: |
+          echo 'Publishing requires a public SDK repository.' >&2
+          exit 1
+      - name: Require the approved repository for both publishers
+        run: python -I -B -X utf8 tools/sdk/release_policy.py --require-public --repository "$GITHUB_REPOSITORY"
+      - name: Require the release commit on the approved main branch
+        run: |
+          git fetch --no-tags https://github.com/RightNow-AI/system-zero-sdk.git main
+          git merge-base --is-ancestor "$GITHUB_SHA" FETCH_HEAD
+
+  publish_npm:
+    name: Publish verified npm artifact
+    needs: [build, typescript, python, publication_gate]
+    if: ${{ github.ref_type == 'tag' && needs.build.outputs.source_public == 'true' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment: sdk-release-npm
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      SDK_MANIFEST_SHA256: ${{ needs.build.outputs.manifest_sha256 }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Check out the exact tagged manifests and verifier
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Set up Node with npm OIDC support
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+          package-manager-cache: false
+      - name: Set up Python for the standard-library verifier
+        uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # v6.0.0
+        with:
+          python-version: '3.13'
+      - name: Check the npm trusted-publishing minimum version
+        run: |
+          node --version
+          npm --version
+          SDK_RELEASE_NPM_VERSION="$(npm --version)" node --input-type=module -e '
+            const [major, minor, patch] = process.env.SDK_RELEASE_NPM_VERSION.split(".").map(Number);
+            if (!(major > 11 || major === 11 && (minor > 5 || minor === 5 && patch >= 1))) {
+              throw new Error("npm trusted publishing requires npm >=11.5.1");
+            }
+            const [nodeMajor, nodeMinor] = process.versions.node.split(".").map(Number);
+            if (!(nodeMajor > 22 || nodeMajor === 22 && nodeMinor >= 14)) {
+              throw new Error("npm trusted publishing requires Node >=22.14.0");
+            }
+          '
+      - name: Download the single verified build
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: sdk-release-${{ github.sha }}
+          path: sdk-release-dist
+      - name: Bind the downloaded manifest to the build output
+        run: python -I -B -X utf8 tools/sdk/verify_manifest.py --manifest sdk-release-dist/manifest.json
+      - name: Recheck source versions and package contents
+        run: python -I -B -X utf8 tools/sdk/check_release.py --root . --tag "$GITHUB_REF_NAME" --ref "$GITHUB_REF" --artifacts sdk-release-dist --check-contents
+      - name: Publish npm with trusted publishing and provenance
+        env:
+          npm_config_provenance: ${{ needs.build.outputs.source_public }}
+        run: npm publish ./sdk-release-dist/npm/*.tgz --access public --ignore-scripts
+
+  publish_pypi:
+    name: Publish verified Python artifacts
+    needs: [build, typescript, python, publication_gate]
+    if: ${{ github.ref_type == 'tag' && needs.build.outputs.source_public == 'true' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment: sdk-release-pypi
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      SDK_MANIFEST_SHA256: ${{ needs.build.outputs.manifest_sha256 }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Check out the exact tagged manifests and verifier
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Set up Python for the standard-library verifier
+        uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # v6.0.0
+        with:
+          python-version: '3.13'
+      - name: Download the single verified build
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: sdk-release-${{ github.sha }}
+          path: sdk-release-dist
+      - name: Bind the downloaded manifest to the build output
+        run: python -I -B -X utf8 tools/sdk/verify_manifest.py --manifest sdk-release-dist/manifest.json
+      - name: Recheck source versions and package contents
+        run: python -I -B -X utf8 tools/sdk/check_release.py --root . --tag "$GITHUB_REF_NAME" --ref "$GITHUB_REF" --artifacts sdk-release-dist --check-contents
+      - name: Publish PyPI with trusted publishing and attestations
+        uses: pypa/gh-action-pypi-publish@ed0c53931b1dc9bd32cbe73a98c7f6766f8a527e # v1.13.0
+        with:
+          packages-dir: sdk-release-dist/python/
+          attestations: ${{ needs.build.outputs.source_public }}

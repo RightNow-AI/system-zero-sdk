@@ -1,0 +1,182 @@
+{
+  "account_suspended": {
+    "status": 403,
+    "message": "This account does not currently have API access."
+  },
+  "audio_not_available": {
+    "message": "Audio is not available. Send the request without the audio attachment.",
+    "status": 404
+  },
+  "auth_error": {
+    "status": 403,
+    "message": "API key is revoked"
+  },
+  "capacity_exhausted": {
+    "message": "RightNow System Zero is at capacity. Retry after the Retry-After delay.",
+    "status": 429
+  },
+  "committee_not_available": {
+    "message": "This route is not available.",
+    "status": 404
+  },
+  "concurrency_limit_exceeded": {
+    "status": 429,
+    "message": "This account has reached its concurrent call limit. Retry after the Retry-After delay."
+  },
+  "daily_dispatch_limit": {
+    "message": "This account reached today's request limit. It resets at 00:00 UTC.",
+    "status": 429
+  },
+  "deliberate_not_available": {
+    "message": "This mode is not available.",
+    "status": 404
+  },
+  "document_not_available": {
+    "message": "Documents are not available. Send the request without the document attachment.",
+    "status": 404
+  },
+  "https_required": {
+    "message": "This API answers only over HTTPS. Send the request to the https address.",
+    "status": 403
+  },
+  "idempotency_conflict": {
+    "status": 409,
+    "message": "A request with this Idempotency-Key is still running. Retry with the same key shortly."
+  },
+  "idempotency_key_reuse": {
+    "message": "This idempotency key already settled another request.",
+    "status": 400
+  },
+  "idempotency_replay_unavailable": {
+    "status": 409,
+    "message": "The answer to this request is no longer stored. Send it again with a new Idempotency-Key."
+  },
+  "idempotency_unavailable": {
+    "status": 503,
+    "message": "Replay protection is temporarily unavailable. Retry this request with the same Idempotency-Key."
+  },
+  "image_not_available": {
+    "message": "Images are not available. Send the request without the image attachment.",
+    "status": 404
+  },
+  "injection_suspected": {
+    "message": "The request was refused because its content reads as instructions to the model. Remove the embedded instructions and send it again.",
+    "status": 422
+  },
+  "input_quarantined": {
+    "message": "This exact input caused repeated serving failures, so it is refused for up to 24 hours. Change the input before retrying.",
+    "status": 422
+  },
+  "internal_error": {
+    "status": 500,
+    "message": "The request failed unexpectedly. Retry the request. Keep the request id if the failure persists."
+  },
+  "invalid_api_key": {
+    "status": 401,
+    "message": "Invalid API key."
+  },
+  "invalid_criteria": {
+    "message": "The question criteria are invalid.",
+    "status": 422
+  },
+  "invalid_idempotency_key": {
+    "status": 400,
+    "message": "Idempotency-Key must be nonblank ASCII and 255 characters or less."
+  },
+  "invalid_request": {
+    "message": "The RightNow System Zero request is invalid.",
+    "status": 400
+  },
+  "invalid_trace_header": {
+    "status": 400,
+    "message": "X-Client-Request-Id must be nonblank ASCII and 512 characters or less."
+  },
+  "limiter_unavailable": {
+    "status": 503,
+    "message": "API rate limiting is temporarily unavailable. Please retry shortly."
+  },
+  "long_context_not_available": {
+    "message": "This route is not available.",
+    "status": 404
+  },
+  "long_recording_not_available": {
+    "message": "This input type is not supported.",
+    "status": 404
+  },
+  "maintenance": {
+    "status": 503,
+    "message": "The API is down for maintenance. Retry after the Retry-After delay."
+  },
+  "method_not_allowed": {
+    "status": 405,
+    "message": "The HTTP method is not supported by this endpoint."
+  },
+  "model_not_found": {
+    "status": 404,
+    "message": "The requested model is not available."
+  },
+  "monthly_cap_reached": {
+    "status": 429,
+    "message": "This workspace reached its monthly decision cap."
+  },
+  "payload_too_large": {
+    "message": "The request exceeds the body limit. Send fewer or smaller attachments.",
+    "status": 413
+  },
+  "question_not_grounded": {
+    "message": "The question cannot be answered from this state.",
+    "status": 422
+  },
+  "question_too_large": {
+    "message": "The question exceeds the size limit.",
+    "status": 422
+  },
+  "questions_too_large": {
+    "message": "The questions exceed the reply or token limit. Send fewer or shorter questions.",
+    "status": 413
+  },
+  "rate_limit_exceeded": {
+    "message": "Too many requests from this key or address. Retry after the Retry-After delay.",
+    "status": 429
+  },
+  "request_refused": {
+    "message": "System Zero refused this request. Change it before sending it again.",
+    "status": 422
+  },
+  "service_unavailable": {
+    "message": "RightNow System Zero cannot serve this request right now. Retry after the Retry-After delay.",
+    "status": 503
+  },
+  "state_too_large": {
+    "message": "The state exceeds the size or nesting limit.",
+    "status": 413
+  },
+  "state_too_large_unguarded": {
+    "message": "This release does not answer states of this length. Shorten or split the state.",
+    "status": 413
+  },
+  "system_zero_timeout": {
+    "message": "RightNow System Zero exceeded the response deadline.",
+    "status": 504
+  },
+  "system_zero_unavailable": {
+    "message": "RightNow System Zero is temporarily unavailable.",
+    "status": 503
+  },
+  "unknown_endpoint": {
+    "status": 404,
+    "message": "The requested API endpoint was not found."
+  },
+  "video_not_available": {
+    "message": "This input type is not supported.",
+    "status": 404
+  },
+  "workspace_limit_exceeded": {
+    "message": "This workspace is over one of its own allowances, such as calls in flight or bytes being read. Retry after the Retry-After delay.",
+    "status": 429
+  },
+  "workspace_quarantined": {
+    "message": "This account's requests are paused for up to an hour after repeated serving failures.",
+    "status": 422
+  }
+}

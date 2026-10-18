@@ -1,0 +1,533 @@
+{
+  "description": "Synthetic hand-computed evaluator fixture. Requests contain text only. Selected-outcome Brier = (0.04+0.36+0.09+0.81+0+0.25)/6. No model-quality claim.",
+  "boundary_case": {
+    "bins": 100,
+    "expected_bin": 29,
+    "request": {
+      "model": "system-zero",
+      "state": "synthetic",
+      "questions": {
+        "q": {
+          "type": "score",
+          "instructions": "synthetic",
+          "criteria": [
+            "zero",
+            "one",
+            "two",
+            "three"
+          ]
+        }
+      }
+    },
+    "expected": {
+      "q": "3"
+    },
+    "reply": {
+      "id": "boundary-reply",
+      "model": "system-zero",
+      "served_by": "synthetic",
+      "created": 0,
+      "context": {
+        "route": "direct",
+        "tokens": 0
+      },
+      "answers": {
+        "q": {
+          "type": "score",
+          "score": 1.64,
+          "legend": {
+            "0": "zero",
+            "1": "one",
+            "2": "two",
+            "3": "three"
+          },
+          "probabilities": {
+            "0": 0.21,
+            "1": 0.23,
+            "2": 0.27,
+            "3": 0.29
+          },
+          "confidence": 0.29,
+          "calibration_version": "synthetic",
+          "decision": "3",
+          "alternatives": [
+            {
+              "decision": "2",
+              "confidence": 0.27
+            },
+            {
+              "decision": "1",
+              "confidence": 0.23
+            },
+            {
+              "decision": "0",
+              "confidence": 0.21
+            }
+          ],
+          "calibrated": false
+        }
+      },
+      "usage": {
+        "input_tokens": 0,
+        "cached_input_tokens": 0,
+        "media_tokens": 0,
+        "long_input_tokens": 0,
+        "media_items": 0,
+        "thought_tokens": 0
+      }
+    }
+  },
+  "bins": 5,
+  "cases": [
+    {
+      "id": "one",
+      "outcome": "completed",
+      "request": {
+        "model": "system-zero",
+        "state": "PRIVATE_STATE",
+        "questions": {
+          "b": {
+            "type": "boolean",
+            "instructions": "PRIVATE_INSTRUCTIONS"
+          },
+          "c": {
+            "type": "choice",
+            "instructions": "PRIVATE_INSTRUCTIONS",
+            "criteria": {
+              "PRIVATE_B": "PRIVATE_LABEL_B",
+              "PRIVATE_A": "PRIVATE_LABEL_A"
+            }
+          },
+          "s": {
+            "type": "score",
+            "instructions": "PRIVATE_INSTRUCTIONS",
+            "criteria": [
+              "PRIVATE_SCORE_ZERO",
+              "PRIVATE_SCORE_ONE"
+            ]
+          },
+          "r": {
+            "type": "boolean",
+            "instructions": "PRIVATE_INSTRUCTIONS"
+          }
+        }
+      },
+      "expected": {
+        "b": true,
+        "c": "PRIVATE_A",
+        "s": "1",
+        "r": true
+      },
+      "reply": {
+        "id": "reply-1",
+        "model": "system-zero",
+        "served_by": "private-test",
+        "created": 0,
+        "context": {
+          "route": "direct",
+          "tokens": 10
+        },
+        "answers": {
+          "b": {
+            "type": "boolean",
+            "probability": 0.8,
+            "confidence": 0.8,
+            "calibration_version": "synthetic",
+            "decision": true,
+            "alternatives": [
+              {
+                "decision": false,
+                "confidence": 0.2
+              }
+            ],
+            "calibrated": false
+          },
+          "c": {
+            "type": "choice",
+            "choice": "PRIVATE_B",
+            "probabilities": {
+              "PRIVATE_A": 0.4,
+              "PRIVATE_B": 0.6
+            },
+            "confidence": 0.6,
+            "calibration_version": "synthetic",
+            "decision": "PRIVATE_B",
+            "alternatives": [
+              {
+                "decision": "PRIVATE_A",
+                "confidence": 0.4
+              }
+            ],
+            "calibrated": false
+          },
+          "s": {
+            "type": "score",
+            "score": 0.7,
+            "legend": {
+              "0": "PRIVATE_SCORE_ZERO",
+              "1": "PRIVATE_SCORE_ONE"
+            },
+            "probabilities": {
+              "0": 0.3,
+              "1": 0.7
+            },
+            "confidence": 0.7,
+            "calibration_version": "synthetic",
+            "decision": "1",
+            "alternatives": [
+              {
+                "decision": "0",
+                "confidence": 0.3
+              }
+            ],
+            "calibrated": false
+          },
+          "r": {
+            "error": {
+              "code": "question_not_grounded",
+              "retryable": false
+            }
+          }
+        },
+        "usage": {
+          "input_tokens": 10,
+          "cached_input_tokens": 2,
+          "media_tokens": 3,
+          "long_input_tokens": 4,
+          "media_items": 1,
+          "thought_tokens": 5
+        }
+      },
+      "latency_ms": 100,
+      "code": null
+    },
+    {
+      "id": "two",
+      "outcome": "completed",
+      "request": {
+        "model": "system-zero",
+        "state": "PRIVATE_STATE",
+        "questions": {
+          "b": {
+            "type": "boolean",
+            "instructions": "PRIVATE_INSTRUCTIONS"
+          },
+          "c": {
+            "type": "choice",
+            "instructions": "PRIVATE_INSTRUCTIONS",
+            "criteria": {
+              "PRIVATE_B": "PRIVATE_LABEL_B",
+              "PRIVATE_A": "PRIVATE_LABEL_A"
+            }
+          },
+          "s": {
+            "type": "score",
+            "instructions": "PRIVATE_INSTRUCTIONS",
+            "criteria": [
+              "PRIVATE_SCORE_ZERO",
+              "PRIVATE_SCORE_ONE"
+            ]
+          },
+          "r": {
+            "type": "boolean",
+            "instructions": "PRIVATE_INSTRUCTIONS"
+          }
+        }
+      },
+      "expected": {
+        "b": true,
+        "c": "PRIVATE_A",
+        "s": "1",
+        "r": null
+      },
+      "reply": {
+        "id": "reply-2",
+        "model": "system-zero",
+        "served_by": "private-test",
+        "created": 0,
+        "context": {
+          "route": "direct",
+          "tokens": 20
+        },
+        "answers": {
+          "b": {
+            "type": "boolean",
+            "probability": 0.1,
+            "confidence": 0.9,
+            "calibration_version": "synthetic",
+            "decision": false,
+            "alternatives": [
+              {
+                "decision": true,
+                "confidence": 0.1
+              }
+            ],
+            "calibrated": false
+          },
+          "c": {
+            "type": "choice",
+            "choice": "PRIVATE_A",
+            "probabilities": {
+              "PRIVATE_A": 1,
+              "PRIVATE_B": 0
+            },
+            "confidence": 1,
+            "calibration_version": "synthetic",
+            "decision": "PRIVATE_A",
+            "alternatives": [
+              {
+                "decision": "PRIVATE_B",
+                "confidence": 0
+              }
+            ],
+            "calibrated": false
+          },
+          "s": {
+            "type": "score",
+            "score": 0.5,
+            "legend": {
+              "0": "PRIVATE_SCORE_ZERO",
+              "1": "PRIVATE_SCORE_ONE"
+            },
+            "probabilities": {
+              "0": 0.5,
+              "1": 0.5
+            },
+            "confidence": 0.5,
+            "calibration_version": "synthetic",
+            "decision": "0",
+            "alternatives": [
+              {
+                "decision": "1",
+                "confidence": 0.5
+              }
+            ],
+            "calibrated": false
+          },
+          "r": {
+            "error": {
+              "code": "question_not_grounded",
+              "retryable": false
+            }
+          }
+        },
+        "usage": {
+          "input_tokens": 20,
+          "cached_input_tokens": 4,
+          "media_tokens": 6,
+          "long_input_tokens": 8,
+          "media_items": 2,
+          "thought_tokens": 10
+        }
+      },
+      "latency_ms": 200,
+      "code": null
+    },
+    {
+      "id": "three",
+      "outcome": "completed",
+      "request": {
+        "model": "system-zero",
+        "state": "PRIVATE_STATE",
+        "questions": {
+          "b": {
+            "type": "boolean",
+            "instructions": "PRIVATE_INSTRUCTIONS"
+          }
+        }
+      },
+      "expected": {
+        "b": true
+      },
+      "reply": {
+        "id": "reply-3",
+        "model": "system-zero",
+        "served_by": "private-test",
+        "created": 0,
+        "context": {
+          "route": "direct",
+          "tokens": 30
+        },
+        "answers": {
+          "b": {
+            "type": "boolean",
+            "probability": 0.9,
+            "confidence": 0.01,
+            "calibration_version": "legacy-margin"
+          }
+        },
+        "usage": {
+          "input_tokens": 30,
+          "cached_input_tokens": 6,
+          "media_tokens": 9,
+          "long_input_tokens": 12,
+          "media_items": 3,
+          "thought_tokens": 15
+        }
+      },
+      "latency_ms": 300,
+      "code": null
+    },
+    {
+      "id": "four",
+      "outcome": "refused",
+      "request": {
+        "model": "system-zero",
+        "state": "PRIVATE_STATE",
+        "questions": {
+          "b": {
+            "type": "boolean",
+            "instructions": "PRIVATE_INSTRUCTIONS"
+          }
+        }
+      },
+      "expected": {
+        "b": true
+      },
+      "reply": {
+        "id": "reply-0",
+        "model": "system-zero",
+        "served_by": "private-test",
+        "created": 0,
+        "context": {
+          "route": "direct",
+          "tokens": 0
+        },
+        "answers": {
+          "b": {
+            "error": {
+              "code": "injection_suspected",
+              "retryable": false
+            }
+          }
+        },
+        "usage": null
+      },
+      "latency_ms": 400,
+      "code": "injection_suspected"
+    },
+    {
+      "id": "held-input",
+      "outcome": "held",
+      "latency_ms": 9000,
+      "code": "video_not_available"
+    },
+    {
+      "id": "error",
+      "outcome": "error",
+      "latency_ms": 8000,
+      "code": "service_unavailable"
+    }
+  ],
+  "expected": {
+    "choice_schema": "6a6362aebdf22a4083c9a0eca9ba373c492e7faa0dfa9c2e26dc3225e9713fe5",
+    "items": {
+      "total": 6,
+      "completed": 3,
+      "refused": 1,
+      "held": 1,
+      "error": 1
+    },
+    "metrics": {
+      "questions": 10,
+      "correct": 5,
+      "wrong": 3,
+      "refused": 3,
+      "expected_answers": 9,
+      "false_refusals": 2,
+      "accuracy": 0.5,
+      "false_refusal_rate": 0.2222222222222222
+    },
+    "by_type": {
+      "boolean": {
+        "questions": 6,
+        "correct": 3,
+        "wrong": 1,
+        "refused": 3,
+        "expected_answers": 5,
+        "false_refusals": 2,
+        "accuracy": 0.5,
+        "false_refusal_rate": 0.4
+      },
+      "choice": {
+        "questions": 2,
+        "correct": 1,
+        "wrong": 1,
+        "refused": 0,
+        "expected_answers": 2,
+        "false_refusals": 0,
+        "accuracy": 0.5,
+        "false_refusal_rate": 0
+      },
+      "score": {
+        "questions": 2,
+        "correct": 1,
+        "wrong": 1,
+        "refused": 0,
+        "expected_answers": 2,
+        "false_refusals": 0,
+        "accuracy": 0.5,
+        "false_refusal_rate": 0
+      }
+    },
+    "latency_ms": {
+      "count": 4,
+      "p50": 250,
+      "p95": 385
+    },
+    "usage": {
+      "totals": {
+        "input_tokens": 60,
+        "cached_input_tokens": 12,
+        "media_tokens": 18,
+        "long_input_tokens": 24,
+        "media_items": 6,
+        "thought_tokens": 30
+      },
+      "records_with_usage": 3,
+      "records_without_usage": 3
+    },
+    "calibration": {
+      "count": 6,
+      "ece": 0.25,
+      "brier_score": 0.25833333333333336,
+      "bins": [
+        {
+          "lower": 0,
+          "upper": 0.2,
+          "count": 0,
+          "accuracy": null,
+          "mean_confidence": null
+        },
+        {
+          "lower": 0.2,
+          "upper": 0.4,
+          "count": 0,
+          "accuracy": null,
+          "mean_confidence": null
+        },
+        {
+          "lower": 0.4,
+          "upper": 0.6,
+          "count": 1,
+          "accuracy": 0,
+          "mean_confidence": 0.5
+        },
+        {
+          "lower": 0.6,
+          "upper": 0.8,
+          "count": 2,
+          "accuracy": 0.5,
+          "mean_confidence": 0.65
+        },
+        {
+          "lower": 0.8,
+          "upper": 1,
+          "count": 3,
+          "accuracy": 0.6666666666666666,
+          "mean_confidence": 0.9
+        }
+      ]
+    }
+  }
+}

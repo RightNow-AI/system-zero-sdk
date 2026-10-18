@@ -1,0 +1,106 @@
+name: SDK CI
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sdk-ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  npm_config_ignore_scripts: true
+  PYTHONIOENCODING: utf-8
+  PYTHONUTF8: '1'
+  PYTHONDONTWRITEBYTECODE: '1'
+  PYTEST_DISABLE_PLUGIN_AUTOLOAD: '1'
+
+jobs:
+  typescript:
+    name: TypeScript SDK (Node ${{ matrix.node }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        node: [22, 24]
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Check out the tested commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ matrix.node }}
+          package-manager-cache: false
+      - name: Install the SDK development dependencies
+        run: npm ci --prefix typescript --ignore-scripts --no-audit --no-fund
+      - name: Type check and test the TypeScript SDK and integrations
+        run: |
+          node typescript/node_modules/typescript/bin/tsc -p typescript --noEmit
+          node typescript/node_modules/vitest/vitest.mjs run --config vitest.config.mjs --maxWorkers=2
+      - name: Build and smoke the public entrypoints offline
+        run: |
+          node typescript/node_modules/typescript/bin/tsc -p typescript
+          node tools/sdk/smoke.mjs
+
+  python:
+    name: Python SDK (${{ matrix.python }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        python: ['3.10', '3.11', '3.12', '3.13', '3.14']
+    env:
+      SDK_EXPECTED_PYTHON: ${{ matrix.python }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Check out the tested commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # v6.0.0
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install the SDK and test dependencies
+        run: |
+          python -I -B -X utf8 -m pip install --disable-pip-version-check --no-cache-dir --require-hashes --only-binary :all: -r tools/sdk/runtime-requirements.txt -r tools/sdk/build-requirements.txt -r tools/sdk/test-requirements.txt
+          python -I -B -X utf8 -m pip install --disable-pip-version-check --no-cache-dir --no-deps --no-build-isolation ./python
+      - name: Test the Python SDK and function tools
+        run: python -I -B -X utf8 -m pytest python/tests integrations/function-tools -c python/pyproject.toml -q -p no:cacheprovider
+      - name: Smoke the public entrypoints offline
+        run: python -I -B -X utf8 tools/sdk/smoke.py
+
+  policy:
+    name: Public workflow and source policy
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Check out the tested commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # v6.0.0
+        with:
+          python-version: '3.13'
+      - name: Check hosted runners and release protections
+        run: python -I -B -X utf8 tests/workflow_policy.py
+      - name: Check compression and final package names offline
+        run: python -I -B -X utf8 tests/release_artifacts.py
+      - name: Check tracked public content
+        run: python -I -B -X utf8 tools/sdk/scan_tree.py --root .
+      - name: Check content scanner controls offline
+        run: python -I -B -X utf8 tests/content_rules.py

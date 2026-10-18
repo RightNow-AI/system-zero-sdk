@@ -1,0 +1,35 @@
+[
+  {
+    "name": "metadata-text-without-preview",
+    "accepts": true,
+    "metadata": {
+      "calibration_version": "Text/Release@3"
+    },
+    "answer": {
+      "type": "boolean",
+      "probability": 1,
+      "decision": true,
+      "confidence": 1,
+      "alternatives": [
+        {
+          "decision": false,
+          "confidence": 0
+        }
+      ],
+      "calibrated": true,
+      "calibration_version": "Text/Release@3"
+    }
+  },
+  {
+    "name": "metadata-refusal",
+    "accepts": true,
+    "kind": "refusal",
+    "metadata": {},
+    "answer": {
+      "error": {
+        "code": "question_not_grounded",
+        "retryable": false
+      }
+    }
+  }
+]

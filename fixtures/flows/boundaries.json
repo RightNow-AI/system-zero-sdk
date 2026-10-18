@@ -1,0 +1,103 @@
+{
+  "body_bytes": 3665920,
+  "max_steps": 32,
+  "hash_vectors": [
+    {
+      "value": null,
+      "sha256": "1b16b1df538ba12dc3f97edbb85caa7050d46c148134290feba80f8236c83db9",
+      "idempotency_key": "sz-flow-v1-95fa1a40851dea973b1b4cafe7b3e3cc9ce173e3b541deb481c95796d626a490"
+    },
+    {
+      "value": true,
+      "sha256": "e3b98a4da31a127d4bde6e43033f66ba274cab0eb7eb1c70ec41402bf6273dd8",
+      "idempotency_key": "sz-flow-v1-f888a678a4b427af234a88bd1ed742606c0d94b5d3f9db3bd94dffaedccdbfb5"
+    },
+    {
+      "value": false,
+      "sha256": "252f10c83610ebca1a059c0bae8255eba2f95be4d1d7bcfa89d7248a82d9f111",
+      "idempotency_key": "sz-flow-v1-9d3b448df429b5ca35acbbb145970a7e6c9b01e8ca696c50060e2e5afc9b6fc2"
+    },
+    {
+      "value": 0,
+      "sha256": "5b87553ae592ab403ab5f5ebfb177424b7c26ca3de95a76b160ac1aef027f1de",
+      "idempotency_key": "sz-flow-v1-ee6cd10b4f3fca2168a9e5c7144431c65a56c3cf18d6a0fa2ef52e940bf97b35"
+    },
+    {
+      "value": -0.0,
+      "sha256": "5b87553ae592ab403ab5f5ebfb177424b7c26ca3de95a76b160ac1aef027f1de",
+      "idempotency_key": "sz-flow-v1-ee6cd10b4f3fca2168a9e5c7144431c65a56c3cf18d6a0fa2ef52e940bf97b35"
+    },
+    {
+      "value": 1.0,
+      "sha256": "e81ecfbbe55ef54b2385ad454859b4004d599c3d904d6e906636f3031fbe45b9",
+      "idempotency_key": "sz-flow-v1-c3842c5f133325ab31ed4b3e1ee239d8cbad1234e6e84721788a547603a0afeb"
+    },
+    {
+      "value": 1e-07,
+      "sha256": "69b47e10cce2f956c2d24354284f67ee84f3a0d9d072563498718fd1bb1a3cc3",
+      "idempotency_key": "sz-flow-v1-b75b9556ed8e0e05346aef4eb2ca58a10fbc693c2dceb03da9a831eccf4b6d31"
+    },
+    {
+      "value": 10000000000.0,
+      "sha256": "ff319cdbb4fd93a85d3ea99719e88971a37983d7e72efecb1d562f295d14a6a9",
+      "idempotency_key": "sz-flow-v1-d2d7ae9d491cde05584e1d862314d240dc4b36de4b6e83ff77b3ebc4c0333dd5"
+    },
+    {
+      "value": 0.12345678901234566,
+      "sha256": "3b2849461cd5717ce81d5e89a7ee21d87814165d7e66c082fb1bee355e50cd53",
+      "idempotency_key": "sz-flow-v1-c9962bacdc5ab5ad08cadea1a2a546249dad2c52590d9eae4e209db261607658"
+    },
+    {
+      "value": "literal\u00e9\ud83d\ude00",
+      "sha256": "85a5090e447d48fce2b56e97afec41815193f43bc3e7d0c7c511e7b2624b0099",
+      "idempotency_key": "sz-flow-v1-80d6524017397638cd1c40b0e18a60bc8378819cc5a4dd08aa5b78805ba0bd13"
+    },
+    {
+      "value": {
+        "10": 1,
+        "2": 2,
+        "a": [
+          true,
+          null,
+          "\u00e9"
+        ]
+      },
+      "sha256": "c5bb7d3f96f908753316d29b3363abefb6ef00993932597a2cd99a34cdcd8a5e",
+      "idempotency_key": "sz-flow-v1-6bf05a8f561d7eb1812f38f9bc56f5057a27faeaed38c41ac99bb0792af81f28"
+    },
+    {
+      "value": {
+        "\ud83d\ude00": "astral",
+        "\ue000": "bmp"
+      },
+      "sha256": "7a7d3f2c88640bae4d47de9a96808727dd23e6f66f78bad831fe820a1a943ea4",
+      "idempotency_key": "sz-flow-v1-cc1cfa495d160f0bef138f1bb61e7fbd95b1473b0124fccca8ae0d14c1503035"
+    },
+    {
+      "value": {
+        "__proto__": {
+          "constructor": "value"
+        }
+      },
+      "sha256": "d62dce0f56dd1cdd8f18d75be3d09d8f5370bb15deee06925f38a260e580ceec",
+      "idempotency_key": "sz-flow-v1-ab83319eb458b7ae215d2d1aed7756eade3b6026ff9f15a469c053a9511f9265"
+    },
+    {
+      "value": {
+        "model": "system-zero",
+        "state": {
+          "balance": 1.0,
+          "message": "\u00e9"
+        },
+        "questions": {
+          "q": {
+            "type": "boolean",
+            "instructions": "Ready?"
+          }
+        }
+      },
+      "sha256": "6a72e14a37df0e71a82b46c8939c4bc3408937168feb460d23718ee13189f5e0",
+      "idempotency_key": "sz-flow-v1-acefb8c067de599ec1e42071ad0a7e650ebed1e076d2a1cb9b6d853fefc9882a"
+    }
+  ]
+}

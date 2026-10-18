@@ -1,0 +1,3372 @@
+{
+  "cases": [
+    {
+      "name": "sequential",
+      "definition": {
+        "version": 1,
+        "request": {
+          "model": "system-zero",
+          "state": {
+            "case": "synthetic"
+          }
+        },
+        "steps": [
+          {
+            "id": "first",
+            "questions": {
+              "ok": {
+                "type": "boolean",
+                "instructions": "Is this eligible?"
+              }
+            },
+            "next": {
+              "rules": [],
+              "default": "second"
+            }
+          },
+          {
+            "id": "second",
+            "questions": {
+              "ok": {
+                "type": "boolean",
+                "instructions": "Is this eligible?"
+              }
+            },
+            "next": {
+              "rules": [],
+              "default": null
+            }
+          }
+        ]
+      },
+      "responses": [
+        {
+          "status": 200,
+          "headers": {
+            "x-request-id": "request-fixture"
+          },
+          "body": {
+            "id": "szd_00000000000000000000000000000000",
+            "model": "system-zero",
+            "served_by": "test",
+            "created": 0,
+            "context": {
+              "route": "direct",
+              "tokens": 12
+            },
+            "answers": {
+              "ok": {
+                "type": "boolean",
+                "probability": 0.8,
+                "confidence": 0.8,
+                "calibration_version": "v1",
+                "decision": true,
+                "alternatives": [
+                  {
+                    "decision": false,
+                    "confidence": 0.2
+                  }
+                ],
+                "calibrated": true
+              }
+            },
+            "usage": {
+              "input_tokens": 12,
+              "cached_input_tokens": 0,
+              "media_tokens": 0,
+              "long_input_tokens": 0,
+              "media_items": 0,
+              "thought_tokens": 0
+            }
+          }
+        },
+        {
+          "status": 200,
+          "headers": {
+            "x-request-id": "request-fixture"
+          },
+          "body": {
+            "id": "szd_00000000000000000000000000000000",
+            "model": "system-zero",
+            "served_by": "test",
+            "created": 0,
+            "context": {
+              "route": "direct",
+              "tokens": 12
+            },
+            "answers": {
+              "ok": {
+                "type": "boolean",
+                "probability": 0.2,
+                "confidence": 0.8,
+                "calibration_version": "v1",
+                "decision": false,
+                "alternatives": [
+                  {
+                    "decision": true,
+                    "confidence": 0.2
+                  }
+                ],
+                "calibrated": true
+              }
+            },
+            "usage": {
+              "input_tokens": 12,
+              "cached_input_tokens": 0,
+              "media_tokens": 0,
+              "long_input_tokens": 0,
+              "media_items": 0,
+              "thought_tokens": 0
+            }
+          }
+        }
+      ],
+      "expect": {
+        "step_indexes": [
+          0,
+          1
+        ],
+        "status": "completed",
+        "decide_calls": 2
+      }
+    },
+    {
+      "name": "branch_first_matching_rule",
+      "definition": {
+        "version": 1,
+        "request": {
+          "model": "system-zero",
+          "state": {
+            "case": "synthetic"
+          }
+        },
+        "steps": [
+          {
+            "id": "first",
+            "questions": {
+              "ok": {
+                "type": "boolean",
+                "instructions": "Is this eligible?"
+              }
+            },
+            "next": {
+              "rules": [
+                {
+                  "when": {
+                    "step": "first",
+                    "question": "ok",
+                    "op": "eq",
+                    "value": true
+                  },
+                  "next": "third"
+                },
+                {
+                  "when": {
+                    "step": "first",
+                    "question": "ok",
+                    "op": "in",
+                    "values": [
+                      true,
+                      false
+                    ]
+                  },
+                  "next": "second"
+                }
+              ],
+              "default": "second"
+            }
+          },
+          {
+            "id": "second",
+            "questions": {
+              "ok": {
+                "type": "boolean",
+                "instructions": "Is this eligible?"
+              }
+            },
+            "next": {
+              "rules": [],
+              "default": null
+            }
+          },
+          {
+            "id": "third",
+            "questions": {
+              "ok": {
+                "type": "boolean",
+                "instructions": "Is this eligible?"
+              }
+            },
+            "next": {
+              "rules": [],
+              "default": null
+            }
+          }
+        ]
+      },
+      "responses": [
+        {
+          "status": 200,
+          "headers": {
+            "x-request-id": "request-fixture"
+          },
+          "body": {
+            "id": "szd_00000000000000000000000000000000",
+            "model": "system-zero",
+            "served_by": "test",
+            "created": 0,
+            "context": {
+              "route": "direct",
+              "tokens": 12
+            },
+            "answers": {
+              "ok": {
+                "type": "boolean",
+                "probability": 0.8,
+                "confidence": 0.8,
+                "calibration_version": "v1",
+                "decision": true,
+                "alternatives": [
+                  {
+                    "decision": false,
+                    "confidence": 0.2
+                  }
+                ],
+                "calibrated": true
+              }
+            },
+            "usage": {
+              "input_tokens": 12,
+              "cached_input_tokens": 0,
+              "media_tokens": 0,
+              "long_input_tokens": 0,
+              "media_items": 0,
+              "thought_tokens": 0
+            }
+          }
+        },
+        {
+          "status": 200,
+          "headers": {
+            "x-request-id": "request-fixture"
+          },
+          "body": {
+            "id": "szd_00000000000000000000000000000000",
+            "model": "system-zero",
+            "served_by": "test",
+            "created": 0,
+            "context": {
+              "route": "direct",
+              "tokens": 12
+            },
+            "answers": {
+              "ok": {
+                "type": "boolean",
+                "probability": 0.2,
+                "confidence": 0.8,
+                "calibration_version": "v1",
+                "decision": false,
+                "alternatives": [
+                  {
+                    "decision": true,
+                    "confidence": 0.2
+                  }
+                ],
+                "calibrated": true
+              }
+            },
+            "usage": {
+              "input_tokens": 12,
+              "cached_input_tokens": 0,
+              "media_tokens": 0,
+              "long_input_tokens": 0,
+              "media_items": 0,
+              "thought_tokens": 0
+            }
+          }
+        }
+      ],
+      "expect": {
+        "step_indexes": [
+          0,
+          2
+        ],
+        "status": "completed",
+        "branch_rule_indexes": [
+          0,
+          null
+        ]
+      }
+    },
+    {
+      "name": "branch_second_matching_rule",
+      "definition": {
+        "version": 1,
+        "request": {
+          "model": "system-zero",
+          "state": {
+            "case": "synthetic"
+          }
+        },
+        "steps": [
+          {
+            "id": "first",
+            "questions": {
+              "ok": {
+                "type": "boolean",
+                "instructions": "Is this eligible?"
+              }
+            },
+            "next": {
+              "rules": [
+                {
+                  "when": {
+                    "step": "first",
+                    "question": "ok",
+                    "op": "eq",
+                    "value": true
+                  },
+                  "next": "third"
+                },
+                {
+                  "when": {
+                    "step": "first",
+                    "question": "ok",
+                    "op": "in",
+                    "values": [
+                      true,
+                      false
+                    ]
+                  },
+                  "next": "second"
+                }
+              ],
+              "default": "second"
+            }
+          },
+          {
+            "id": "second",
+            "questions": {
+              "ok": {
+                "type": "boolean",
+                "instructions": "Is this eligible?"
+              }
+            },
+            "next": {
+              "rules": [],
+              "default": null
+            }
+          },
+          {
+            "id": "third",
+            "questions": {
+              "ok": {
+                "type": "boolean",
+                "instructions": "Is this eligible?"
+              }
+            },
+            "next": {
+              "rules": [],
+              "default": null
+            }
+          }
+        ]
+      },
+      "responses": [
+        {
+          "status": 200,
+          "headers": {
+            "x-request-id": "request-fixture"
+          },
+          "body": {
+            "id": "szd_00000000000000000000000000000000",
+            "model": "system-zero",
+            "served_by": "test",
+            "created": 0,
+            "context": {
+              "route": "direct",
+              "tokens": 12
+            },
+            "answers": {
+              "ok": {
+                "type": "boolean",
+                "probability": 0.2,
+                "confidence": 0.8,
+                "calibration_version": "v1",
+                "decision": false,
+                "alternatives": [
+                  {
+                    "decision": true,
+                    "confidence": 0.2
+                  }
+                ],
+                "calibrated": true
+              }
+            },
+            "usage": {
+              "input_tokens": 12,
+              "cached_input_tokens": 0,
+              "media_tokens": 0,
+              "long_input_tokens": 0,
+              "media_items": 0,
+              "thought_tokens": 0
+            }
+          }
+        },
+        {
+          "status": 200,
+          "headers": {
+            "x-request-id": "request-fixture"
+          },
+          "body": {
+            "id": "szd_00000000000000000000000000000000",
+            "model": "system-zero",
+            "served_by": "test",
+            "created": 0,
+            "context": {
+              "route": "direct",
+              "tokens": 12
+            },
+            "answers": {
+              "ok": {
+                "type": "boolean",
+                "probability": 0.8,
+                "confidence": 0.8,
+                "calibration_version": "v1",
+                "decision": true,
+                "alternatives": [
+                  {
+                    "decision": false,
+                    "confidence": 0.2
+                  }
+                ],
+                "calibrated": true
+              }
+            },
+            "usage": {
+              "input_tokens": 12,
+              "cached_input_tokens": 0,
+              "media_tokens": 0,
+              "long_input_tokens": 0,
+              "media_items": 0,
+              "thought_tokens": 0
+            }
+          }
+        }
+      ],
+      "expect": {
+        "step_indexes": [
+          0,
+          1
+        ],
+        "status": "completed",
+        "branch_rule_indexes": [
+          1,
+          null
+        ]
+      }
+    },
+    {
+      "name": "branch_no_match_default",
+      "definition": {
+        "version": 1,
+        "request": {
+          "model": "system-zero",
+          "state": {
+            "case": "synthetic"
+          }
+        },
+        "steps": [
+          {
+            "id": "first",
+            "questions": {
+              "ok": {
+                "type": "boolean",
+                "instructions": "Is this eligible?"
+              }
+            },
+            "next": {
+              "rules": [
+                {
+                  "when": {
+                    "step": "first",
+                    "question": "ok",
+                    "op": "eq",
+                    "value": true
+                  },
+                  "next": "third"
+                }
+              ],
+              "default": "second"
+            }
+          },
+          {
+            "id": "second",
+            "questions": {
+              "ok": {
+                "type": "boolean",
+                "instructions": "Is this eligible?"
+              }
+            },
+            "next": {
+              "rules": [],
+              "default": null
+            }
+          },
+          {
+            "id": "third",
+            "questions": {
+              "ok": {
+                "type": "boolean",
+                "instructions": "Is this eligible?"
+              }
+            },
+            "next": {
+              "rules": [],
+              "default": null
+            }
+          }
+        ]
+      },
+      "responses": [
+        {
+          "status": 200,
+          "headers": {
+            "x-request-id": "request-fixture"
+          },
+          "body": {
+            "id": "szd_00000000000000000000000000000000",
+            "model": "system-zero",
+            "served_by": "test",
+            "created": 0,
+            "context": {
+              "route": "direct",
+              "tokens": 12
+            },
+            "answers": {
+              "ok": {
+                "type": "boolean",
+                "probability": 0.2,
+                "confidence": 0.8,
+                "calibration_version": "v1",
+                "decision": false,
+                "alternatives": [
+                  {
+                    "decision": true,
+                    "confidence": 0.2
+                  }
+                ],
+                "calibrated": true
+              }
+            },
+            "usage": {
+              "input_tokens": 12,
+              "cached_input_tokens": 0,
+              "media_tokens": 0,
+              "long_input_tokens": 0,
+              "media_items": 0,
+              "thought_tokens": 0
+            }
+          }
+        },
+        {
+          "status": 200,
+          "headers": {
+            "x-request-id": "request-fixture"
+          },
+          "body": {
+            "id": "szd_00000000000000000000000000000000",
+            "model": "system-zero",
+            "served_by": "test",
+            "created": 0,
+            "context": {
+              "route": "direct",
+              "tokens": 12
+            },
+            "answers": {
+              "ok": {
+                "type": "boolean",
+                "probability": 0.8,
+                "confidence": 0.8,
+                "calibration_version": "v1",
+                "decision": true,
+                "alternatives": [
+                  {
+                    "decision": false,
+                    "confidence": 0.2
+                  }
+                ],
+                "calibrated": true
+              }
+            },
+            "usage": {
+              "input_tokens": 12,
+              "cached_input_tokens": 0,
+              "media_tokens": 0,
+              "long_input_tokens": 0,
+              "media_items": 0,
+              "thought_tokens": 0
+            }
+          }
+        }
+      ],
+      "expect": {
+        "step_indexes": [
+          0,
+          1
+        ],
+        "status": "completed",
+        "branch_rule_indexes": [
+          null,
+          null
+        ]
+      }
+    },
+    {
+      "name": "dependency_satisfied",
+      "definition": {
+        "version": 1,
+        "request": {
+          "model": "system-zero",
+          "state": {
+            "case": "synthetic"
+          }
+        },
+        "steps": [
+          {
+            "id": "first",
+            "questions": {
+              "ok": {
+                "type": "boolean",
+                "instructions": "Is this eligible?"
+              }
+            },
+            "next": {
+              "rules": [],
+              "default": "second"
+            }
+          },
+          {
+            "id": "second",
+            "questions": {
+              "ok": {
+                "type": "boolean",
+                "instructions": "Is this eligible?"
+              }
+            },
+            "depends_on": [
+              {
+                "step": "first",
+                "question": "ok",
+                "op": "in",
+                "values": [
+                  true
+                ]
+              },
+              {
+                "step": "first",
+                "question": "ok",
+                "op": "confidence_gte",
+                "value": 0.8
+              }
+            ],
+            "next": {
+              "rules": [],
+              "default": null
+            }
+          }
+        ]
+      },
+      "responses": [
+        {
+          "status": 200,
+          "headers": {
+            "x-request-id": "request-fixture"
+          },
+          "body": {
+            "id": "szd_00000000000000000000000000000000",
+            "model": "system-zero",
+            "served_by": "test",
+            "created": 0,
+            "context": {
+              "route": "direct",
+              "tokens": 12
+            },
+            "answers": {
+              "ok": {
+                "type": "boolean",
+                "probability": 0.8,
+                "confidence": 0.8,
+                "calibration_version": "v1",
+                "decision": true,
+                "alternatives": [
+                  {
+                    "decision": false,
+                    "confidence": 0.2
+                  }
+                ],
+                "calibrated": true
+              }
+            },
+            "usage": {
+              "input_tokens": 12,
+              "cached_input_tokens": 0,
+              "media_tokens": 0,
+              "long_input_tokens": 0,
+              "media_items": 0,
+              "thought_tokens": 0
+            }
+          }
+        },
+        {
+          "status": 200,
+          "headers": {
+            "x-request-id": "request-fixture"
+          },
+          "body": {
+            "id": "szd_00000000000000000000000000000000",
+            "model": "system-zero",
+            "served_by": "test",
+            "created": 0,
+            "context": {
+              "route": "direct",
+              "tokens": 12
+            },
+            "answers": {
+              "ok": {
+                "type": "boolean",
+                "probability": 0.8,
+                "confidence": 0.8,
+                "calibration_version": "v1",
+                "decision": true,
+                "alternatives": [
+                  {
+                    "decision": false,
+                    "confidence": 0.2
+                  }
+                ],
+                "calibrated": true
+              }
+            },
+            "usage": {
+              "input_tokens": 12,
+              "cached_input_tokens": 0,
+              "media_tokens": 0,
+              "long_input_tokens": 0,
+              "media_items": 0,
+              "thought_tokens": 0
+            }
+          }
+        }
+      ],
+      "expect": {
+        "step_indexes": [
+          0,
+          1
+        ],
+        "status": "completed"
+      }
+    },
+    {
+      "name": "dependency_false_skips",
+      "definition": {
+        "version": 1,
+        "request": {
+          "model": "system-zero",
+          "state": {
+            "case": "synthetic"
+          }
+        },
+        "steps": [
+          {
+            "id": "first",
+            "questions": {
+              "ok": {
+                "type": "boolean",
+                "instructions": "Is this eligible?"
+              }
+            },
+            "next": {
+              "rules": [],
+              "default": "second"
+            }
+          },
+          {
+            "id": "second",
+            "questions": {
+              "ok": {
+                "type": "boolean",
+                "instructions": "Is this eligible?"
+              }
+            },
+            "depends_on": [
+              {
+                "step": "first",
+                "question": "ok",
+                "op": "eq",
+                "value": true
+              }
+            ],
+            "next": {
+              "rules": [],
+              "default": "third"
+            }
+          },
+          {
+            "id": "third",
+            "questions": {
+              "ok": {
+                "type": "boolean",
+                "instructions": "Is this eligible?"
+              }
+            },
+            "next": {
+              "rules": [],
+              "default": null
+            }
+          }
+        ]
+      },
+      "responses": [
+        {
+          "status": 200,
+          "headers": {
+            "x-request-id": "request-fixture"
+          },
+          "body": {
+            "id": "szd_00000000000000000000000000000000",
+            "model": "system-zero",
+            "served_by": "test",
+            "created": 0,
+            "context": {
+              "route": "direct",
+              "tokens": 12
+            },
+            "answers": {
+              "ok": {
+                "type": "boolean",
+                "probability": 0.2,
+                "confidence": 0.8,
+                "calibration_version": "v1",
+                "decision": false,
+                "alternatives": [
+                  {
+                    "decision": true,
+                    "confidence": 0.2
+                  }
+                ],
+                "calibrated": true
+              }
+            },
+            "usage": {
+              "input_tokens": 12,
+              "cached_input_tokens": 0,
+              "media_tokens": 0,
+              "long_input_tokens": 0,
+              "media_items": 0,
+              "thought_tokens": 0
+            }
+          }
+        },
+        {
+          "status": 200,
+          "headers": {
+            "x-request-id": "request-fixture"
+          },
+          "body": {
+            "id": "szd_00000000000000000000000000000000",
+            "model": "system-zero",
+            "served_by": "test",
+            "created": 0,
+            "context": {
+              "route": "direct",
+              "tokens": 12
+            },
+            "answers": {
+              "ok": {
+                "type": "boolean",
+                "probability": 0.8,
+                "confidence": 0.8,
+                "calibration_version": "v1",
+                "decision": true,
+                "alternatives": [
+                  {
+                    "decision": false,
+                    "confidence": 0.2
+                  }
+                ],
+                "calibrated": true
+              }
+            },
+            "usage": {
+              "input_tokens": 12,
+              "cached_input_tokens": 0,
+              "media_tokens": 0,
+              "long_input_tokens": 0,
+              "media_items": 0,
+              "thought_tokens": 0
+            }
+          }
+        }
+      ],
+      "expect": {
+        "step_indexes": [
+          0,
+          1,
+          2
+        ],
+        "status": "completed",
+        "step_statuses": [
+          "completed",
+          "skipped",
+          "completed"
+        ],
+        "decide_calls": 2
+      }
+    },
+    {
+      "name": "missing_answer_dependency_false",
+      "definition": {
+        "version": 1,
+        "request": {
+          "model": "system-zero",
+          "state": {
+            "case": "synthetic"
+          }
+        },
+        "steps": [
+          {
+            "id": "first",
+            "questions": {
+              "ok": {
+                "type": "boolean",
+                "instructions": "Is this eligible?"
+              }
+            },
+            "next": {
+              "rules": [],
+              "default": "third"
+            }
+          },
+          {
+            "id": "second",
+            "questions": {
+              "ok": {
+                "type": "boolean",
+                "instructions": "Is this eligible?"
+              }
+            },
+            "next": {
+              "rules": [],
+              "default": null
+            }
+          },
+          {
+            "id": "third",
+            "questions": {
+              "ok": {
+                "type": "boolean",
+                "instructions": "Is this eligible?"
+              }
+            },
+            "depends_on": [
+              {
+                "step": "second",
+                "question": "ok",
+                "op": "eq",
+                "value": true
+              }
+            ],
+            "next": {
+              "rules": [],
+              "default": "last"
+            }
+          },
+          {
+            "id": "last",
+            "questions": {
+              "ok": {
+                "type": "boolean",
+                "instructions": "Is this eligible?"
+              }
+            },
+            "next": {
+              "rules": [],
+              "default": null
+            }
+          }
+        ]
+      },
+      "responses": [
+        {
+          "status": 200,
+          "headers": {
+            "x-request-id": "request-fixture"
+          },
+          "body": {
+            "id": "szd_00000000000000000000000000000000",
+            "model": "system-zero",
+            "served_by": "test",
+            "created": 0,
+            "context": {
+              "route": "direct",
+              "tokens": 12
+            },
+            "answers": {
+              "ok": {
+                "type": "boolean",
+                "probability": 0.8,
+                "confidence": 0.8,
+                "calibration_version": "v1",
+                "decision": true,
+                "alternatives": [
+                  {
+                    "decision": false,
+                    "confidence": 0.2
+                  }
+                ],
+                "calibrated": true
+              }
+            },
+            "usage": {
+              "input_tokens": 12,
+              "cached_input_tokens": 0,
+              "media_tokens": 0,
+              "long_input_tokens": 0,
+              "media_items": 0,
+              "thought_tokens": 0
+            }
+          }
+        },
+        {
+          "status": 200,
+          "headers": {
+            "x-request-id": "request-fixture"
+          },
+          "body": {
+            "id": "szd_00000000000000000000000000000000",
+            "model": "system-zero",
+            "served_by": "test",
+            "created": 0,
+            "context": {
+              "route": "direct",
+              "tokens": 12
+            },
+            "answers": {
+              "ok": {
+                "type": "boolean",
+                "probability": 0.8,
+                "confidence": 0.8,
+                "calibration_version": "v1",
+                "decision": true,
+                "alternatives": [
+                  {
+                    "decision": false,
+                    "confidence": 0.2
+                  }
+                ],
+                "calibrated": true
+              }
+            },
+            "usage": {
+              "input_tokens": 12,
+              "cached_input_tokens": 0,
+              "media_tokens": 0,
+              "long_input_tokens": 0,
+              "media_items": 0,
+              "thought_tokens": 0
+            }
+          }
+        }
+      ],
+      "expect": {
+        "step_indexes": [
+          0,
+          2,
+          3
+        ],
+        "status": "completed",
+        "step_statuses": [
+          "completed",
+          "skipped",
+          "completed"
+        ]
+      }
+    },
+    {
+      "name": "confidence_less_than",
+      "definition": {
+        "version": 1,
+        "request": {
+          "model": "system-zero",
+          "state": {
+            "case": "synthetic"
+          }
+        },
+        "steps": [
+          {
+            "id": "first",
+            "questions": {
+              "ok": {
+                "type": "boolean",
+                "instructions": "Is this eligible?"
+              }
+            },
+            "next": {
+              "rules": [],
+              "default": "second"
+            }
+          },
+          {
+            "id": "second",
+            "questions": {
+              "ok": {
+                "type": "boolean",
+                "instructions": "Is this eligible?"
+              }
+            },
+            "depends_on": [
+              {
+                "step": "first",
+                "question": "ok",
+                "op": "confidence_lt",
+                "value": 0.9
+              }
+            ],
+            "next": {
+              "rules": [],
+              "default": null
+            }
+          }
+        ]
+      },
+      "responses": [
+        {
+          "status": 200,
+          "headers": {
+            "x-request-id": "request-fixture"
+          },
+          "body": {
+            "id": "szd_00000000000000000000000000000000",
+            "model": "system-zero",
+            "served_by": "test",
+            "created": 0,
+            "context": {
+              "route": "direct",
+              "tokens": 12
+            },
+            "answers": {
+              "ok": {
+                "type": "boolean",
+                "probability": 0.8,
+                "confidence": 0.8,
+                "calibration_version": "v1",
+                "decision": true,
+                "alternatives": [
+                  {
+                    "decision": false,
+                    "confidence": 0.2
+                  }
+                ],
+                "calibrated": true
+              }
+            },
+            "usage": {
+              "input_tokens": 12,
+              "cached_input_tokens": 0,
+              "media_tokens": 0,
+              "long_input_tokens": 0,
+              "media_items": 0,
+              "thought_tokens": 0
+            }
+          }
+        },
+        {
+          "status": 200,
+          "headers": {
+            "x-request-id": "request-fixture"
+          },
+          "body": {
+            "id": "szd_00000000000000000000000000000000",
+            "model": "system-zero",
+            "served_by": "test",
+            "created": 0,
+            "context": {
+              "route": "direct",
+              "tokens": 12
+            },
+            "answers": {
+              "ok": {
+                "type": "boolean",
+                "probability": 0.8,
+                "confidence": 0.8,
+                "calibration_version": "v1",
+                "decision": true,
+                "alternatives": [
+                  {
+                    "decision": false,
+                    "confidence": 0.2
+                  }
+                ],
+                "calibrated": true
+              }
+            },
+            "usage": {
+              "input_tokens": 12,
+              "cached_input_tokens": 0,
+              "media_tokens": 0,
+              "long_input_tokens": 0,
+              "media_items": 0,
+              "thought_tokens": 0
+            }
+          }
+        }
+      ],
+      "expect": {
+        "step_indexes": [
+          0,
+          1
+        ],
+        "status": "completed"
+      }
+    },
+    {
+      "name": "template_explicit_typed_values",
+      "definition": {
+        "version": 1,
+        "request": {
+          "model": "system-zero",
+          "state": {
+            "case": "synthetic"
+          }
+        },
+        "steps": [
+          {
+            "id": "first",
+            "questions": {
+              "ok": {
+                "type": "boolean",
+                "instructions": "Is this eligible?"
+              }
+            },
+            "next": {
+              "rules": [],
+              "default": "second"
+            }
+          },
+          {
+            "id": "second",
+            "questions": {
+              "ok": {
+                "type": "boolean",
+                "instructions": "Is this eligible?"
+              }
+            },
+            "state_template": {
+              "object": {
+                "previous": {
+                  "state": true
+                },
+                "picked": {
+                  "answer": {
+                    "step": "first",
+                    "question": "ok",
+                    "field": "decision"
+                  }
+                },
+                "confidence": {
+                  "answer": {
+                    "step": "first",
+                    "question": "ok",
+                    "field": "confidence"
+                  }
+                },
+                "alternatives": {
+                  "answer": {
+                    "step": "first",
+                    "question": "ok",
+                    "field": "alternatives"
+                  }
+                },
+                "literal": {
+                  "literal": "${answers.first.ok.decision}"
+                },
+                "list": {
+                  "array": [
+                    {
+                      "literal": 0
+                    },
+                    {
+                      "literal": false
+                    }
+                  ]
+                }
+              }
+            },
+            "next": {
+              "rules": [],
+              "default": null
+            }
+          }
+        ]
+      },
+      "responses": [
+        {
+          "status": 200,
+          "headers": {
+            "x-request-id": "request-fixture"
+          },
+          "body": {
+            "id": "szd_00000000000000000000000000000000",
+            "model": "system-zero",
+            "served_by": "test",
+            "created": 0,
+            "context": {
+              "route": "direct",
+              "tokens": 12
+            },
+            "answers": {
+              "ok": {
+                "type": "boolean",
+                "probability": 0.8,
+                "confidence": 0.8,
+                "calibration_version": "v1",
+                "decision": true,
+                "alternatives": [
+                  {
+                    "decision": false,
+                    "confidence": 0.2
+                  }
+                ],
+                "calibrated": true
+              }
+            },
+            "usage": {
+              "input_tokens": 12,
+              "cached_input_tokens": 0,
+              "media_tokens": 0,
+              "long_input_tokens": 0,
+              "media_items": 0,
+              "thought_tokens": 0
+            }
+          }
+        },
+        {
+          "status": 200,
+          "headers": {
+            "x-request-id": "request-fixture"
+          },
+          "body": {
+            "id": "szd_00000000000000000000000000000000",
+            "model": "system-zero",
+            "served_by": "test",
+            "created": 0,
+            "context": {
+              "route": "direct",
+              "tokens": 12
+            },
+            "answers": {
+              "ok": {
+                "type": "boolean",
+                "probability": 0.8,
+                "confidence": 0.8,
+                "calibration_version": "v1",
+                "decision": true,
+                "alternatives": [
+                  {
+                    "decision": false,
+                    "confidence": 0.2
+                  }
+                ],
+                "calibrated": true
+              }
+            },
+            "usage": {
+              "input_tokens": 12,
+              "cached_input_tokens": 0,
+              "media_tokens": 0,
+              "long_input_tokens": 0,
+              "media_items": 0,
+              "thought_tokens": 0
+            }
+          }
+        }
+      ],
+      "expect": {
+        "step_indexes": [
+          0,
+          1
+        ],
+        "status": "completed",
+        "requests": [
+          {
+            "model": "system-zero",
+            "state": {
+              "case": "synthetic"
+            },
+            "questions": {
+              "ok": {
+                "type": "boolean",
+                "instructions": "Is this eligible?"
+              }
+            }
+          },
+          {
+            "model": "system-zero",
+            "state": {
+              "previous": {
+                "case": "synthetic"
+              },
+              "picked": true,
+              "confidence": 0.8,
+              "alternatives": [
+                {
+                  "decision": false,
+                  "confidence": 0.2
+                }
+              ],
+              "literal": "${answers.first.ok.decision}",
+              "list": [
+                0,
+                false
+              ]
+            },
+            "questions": {
+              "ok": {
+                "type": "boolean",
+                "instructions": "Is this eligible?"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "template_missing_answer",
+      "definition": {
+        "version": 1,
+        "request": {
+          "model": "system-zero",
+          "state": {
+            "case": "synthetic"
+          }
+        },
+        "steps": [
+          {
+            "id": "first",
+            "questions": {
+              "ok": {
+                "type": "boolean",
+                "instructions": "Is this eligible?"
+              }
+            },
+            "next": {
+              "rules": [],
+              "default": "third"
+            }
+          },
+          {
+            "id": "second",
+            "questions": {
+              "ok": {
+                "type": "boolean",
+                "instructions": "Is this eligible?"
+              }
+            },
+            "next": {
+              "rules": [],
+              "default": null
+            }
+          },
+          {
+            "id": "third",
+            "questions": {
+              "ok": {
+                "type": "boolean",
+                "instructions": "Is this eligible?"
+              }
+            },
+            "state_template": {
+              "answer": {
+                "step": "second",
+                "question": "ok",
+                "field": "decision"
+              }
+            },
+            "next": {
+              "rules": [],
+              "default": null
+            }
+          }
+        ]
+      },
+      "responses": [
+        {
+          "status": 200,
+          "headers": {
+            "x-request-id": "request-fixture"
+          },
+          "body": {
+            "id": "szd_00000000000000000000000000000000",
+            "model": "system-zero",
+            "served_by": "test",
+            "created": 0,
+            "context": {
+              "route": "direct",
+              "tokens": 12
+            },
+            "answers": {
+              "ok": {
+                "type": "boolean",
+                "probability": 0.8,
+                "confidence": 0.8,
+                "calibration_version": "v1",
+                "decision": true,
+                "alternatives": [
+                  {
+                    "decision": false,
+                    "confidence": 0.2
+                  }
+                ],
+                "calibrated": true
+              }
+            },
+            "usage": {
+              "input_tokens": 12,
+              "cached_input_tokens": 0,
+              "media_tokens": 0,
+              "long_input_tokens": 0,
+              "media_items": 0,
+              "thought_tokens": 0
+            }
+          }
+        }
+      ],
+      "expect": {
+        "step_indexes": [
+          0,
+          2
+        ],
+        "status": "failed",
+        "error_code": "invalid_request"
+      }
+    },
+    {
+      "name": "call_limit_before_second_call",
+      "definition": {
+        "version": 1,
+        "request": {
+          "model": "system-zero",
+          "state": {
+            "case": "synthetic"
+          }
+        },
+        "steps": [
+          {
+            "id": "first",
+            "questions": {
+              "ok": {
+                "type": "boolean",
+                "instructions": "Is this eligible?"
+              }
+            },
+            "next": {
+              "rules": [],
+              "default": "second"
+            }
+          },
+          {
+            "id": "second",
+            "questions": {
+              "ok": {
+                "type": "boolean",
+                "instructions": "Is this eligible?"
+              }
+            },
+            "next": {
+              "rules": [],
+              "default": null
+            }
+          }
+        ]
+      },
+      "responses": [
+        {
+          "status": 200,
+          "headers": {
+            "x-request-id": "request-fixture"
+          },
+          "body": {
+            "id": "szd_00000000000000000000000000000000",
+            "model": "system-zero",
+            "served_by": "test",
+            "created": 0,
+            "context": {
+              "route": "direct",
+              "tokens": 12
+            },
+            "answers": {
+              "ok": {
+                "type": "boolean",
+                "probability": 0.8,
+                "confidence": 0.8,
+                "calibration_version": "v1",
+                "decision": true,
+                "alternatives": [
+                  {
+                    "decision": false,
+                    "confidence": 0.2
+                  }
+                ],
+                "calibrated": true
+              }
+            },
+            "usage": {
+              "input_tokens": 12,
+              "cached_input_tokens": 0,
+              "media_tokens": 0,
+              "long_input_tokens": 0,
+              "media_items": 0,
+              "thought_tokens": 0
+            }
+          }
+        }
+      ],
+      "expect": {
+        "step_indexes": [
+          0,
+          1
+        ],
+        "status": "failed",
+        "error_code": "call_limit_reached",
+        "decide_calls": 1
+      },
+      "options": {
+        "max_decide_calls": 1
+      }
+    },
+    {
+      "name": "deadline_before_first_call",
+      "definition": {
+        "version": 1,
+        "request": {
+          "model": "system-zero",
+          "state": {
+            "case": "synthetic"
+          }
+        },
+        "steps": [
+          {
+            "id": "start",
+            "questions": {
+              "ok": {
+                "type": "boolean",
+                "instructions": "Is this eligible?"
+              }
+            },
+            "next": {
+              "rules": [],
+              "default": null
+            }
+          }
+        ]
+      },
+      "responses": [],
+      "expect": {
+        "step_indexes": [
+          0
+        ],
+        "status": "failed",
+        "error_code": "system_zero_timeout",
+        "decide_calls": 0
+      },
+      "options": {
+        "deadline_ms": 1
+      },
+      "client_timeout_ms": 2
+    },
+    {
+      "name": "request_refusal_mid_run",
+      "definition": {
+        "version": 1,
+        "request": {
+          "model": "system-zero",
+          "state": {
+            "case": "synthetic"
+          }
+        },
+        "steps": [
+          {
+            "id": "first",
+            "questions": {
+              "ok": {
+                "type": "boolean",
+                "instructions": "Is this eligible?"
+              }
+            },
+            "next": {
+              "rules": [],
+              "default": "second"
+            }
+          },
+          {
+            "id": "second",
+            "questions": {
+              "ok": {
+                "type": "boolean",
+                "instructions": "Is this eligible?"
+              }
+            },
+            "next": {
+              "rules": [],
+              "default": "third"
+            }
+          },
+          {
+            "id": "third",
+            "questions": {
+              "ok": {
+                "type": "boolean",
+                "instructions": "Is this eligible?"
+              }
+            },
+            "next": {
+              "rules": [],
+              "default": null
+            }
+          }
+        ]
+      },
+      "responses": [
+        {
+          "status": 200,
+          "headers": {
+            "x-request-id": "request-fixture"
+          },
+          "body": {
+            "id": "szd_00000000000000000000000000000000",
+            "model": "system-zero",
+            "served_by": "test",
+            "created": 0,
+            "context": {
+              "route": "direct",
+              "tokens": 12
+            },
+            "answers": {
+              "ok": {
+                "type": "boolean",
+                "probability": 0.8,
+                "confidence": 0.8,
+                "calibration_version": "v1",
+                "decision": true,
+                "alternatives": [
+                  {
+                    "decision": false,
+                    "confidence": 0.2
+                  }
+                ],
+                "calibrated": true
+              }
+            },
+            "usage": {
+              "input_tokens": 12,
+              "cached_input_tokens": 0,
+              "media_tokens": 0,
+              "long_input_tokens": 0,
+              "media_items": 0,
+              "thought_tokens": 0
+            }
+          }
+        },
+        {
+          "status": 422,
+          "headers": {
+            "x-request-id": "request-refused"
+          },
+          "body": {
+            "request_id": "request-refused",
+            "error": {
+              "code": "input_quarantined",
+              "type": "invalid_request_error",
+              "message": "Synthetic refusal.",
+              "param": null,
+              "retryable": false
+            }
+          }
+        }
+      ],
+      "expect": {
+        "step_indexes": [
+          0,
+          1
+        ],
+        "status": "refused",
+        "error_code": "input_quarantined",
+        "decide_calls": 2
+      }
+    },
+    {
+      "name": "question_refusal_mid_run",
+      "definition": {
+        "version": 1,
+        "request": {
+          "model": "system-zero",
+          "state": {
+            "case": "synthetic"
+          }
+        },
+        "steps": [
+          {
+            "id": "first",
+            "questions": {
+              "ok": {
+                "type": "boolean",
+                "instructions": "Is this eligible?"
+              }
+            },
+            "next": {
+              "rules": [],
+              "default": "second"
+            }
+          },
+          {
+            "id": "second",
+            "questions": {
+              "ok": {
+                "type": "boolean",
+                "instructions": "Is this eligible?"
+              }
+            },
+            "next": {
+              "rules": [],
+              "default": "third"
+            }
+          },
+          {
+            "id": "third",
+            "questions": {
+              "ok": {
+                "type": "boolean",
+                "instructions": "Is this eligible?"
+              }
+            },
+            "next": {
+              "rules": [],
+              "default": null
+            }
+          }
+        ]
+      },
+      "responses": [
+        {
+          "status": 200,
+          "headers": {
+            "x-request-id": "request-fixture"
+          },
+          "body": {
+            "id": "szd_00000000000000000000000000000000",
+            "model": "system-zero",
+            "served_by": "test",
+            "created": 0,
+            "context": {
+              "route": "direct",
+              "tokens": 12
+            },
+            "answers": {
+              "ok": {
+                "type": "boolean",
+                "probability": 0.8,
+                "confidence": 0.8,
+                "calibration_version": "v1",
+                "decision": true,
+                "alternatives": [
+                  {
+                    "decision": false,
+                    "confidence": 0.2
+                  }
+                ],
+                "calibrated": true
+              }
+            },
+            "usage": {
+              "input_tokens": 12,
+              "cached_input_tokens": 0,
+              "media_tokens": 0,
+              "long_input_tokens": 0,
+              "media_items": 0,
+              "thought_tokens": 0
+            }
+          }
+        },
+        {
+          "status": 200,
+          "headers": {
+            "x-request-id": "request-fixture"
+          },
+          "body": {
+            "id": "szd_00000000000000000000000000000000",
+            "model": "system-zero",
+            "served_by": "test",
+            "created": 0,
+            "context": {
+              "route": "direct",
+              "tokens": 12
+            },
+            "answers": {
+              "ok": {
+                "error": {
+                  "code": "question_not_grounded",
+                  "retryable": false
+                }
+              }
+            },
+            "usage": {
+              "input_tokens": 12,
+              "cached_input_tokens": 0,
+              "media_tokens": 0,
+              "long_input_tokens": 0,
+              "media_items": 0,
+              "thought_tokens": 0
+            }
+          }
+        }
+      ],
+      "expect": {
+        "step_indexes": [
+          0,
+          1
+        ],
+        "status": "refused",
+        "error_code": "question_not_grounded"
+      }
+    },
+    {
+      "name": "legacy_confidence_not_probability",
+      "definition": {
+        "version": 1,
+        "request": {
+          "model": "system-zero",
+          "state": {
+            "case": "synthetic"
+          }
+        },
+        "steps": [
+          {
+            "id": "first",
+            "questions": {
+              "ok": {
+                "type": "boolean",
+                "instructions": "Is this eligible?"
+              }
+            },
+            "next": {
+              "rules": [],
+              "default": "second"
+            }
+          },
+          {
+            "id": "second",
+            "questions": {
+              "ok": {
+                "type": "boolean",
+                "instructions": "Is this eligible?"
+              }
+            },
+            "depends_on": [
+              {
+                "step": "first",
+                "question": "ok",
+                "op": "confidence_gte",
+                "value": 0.5
+              }
+            ],
+            "next": {
+              "rules": [],
+              "default": null
+            }
+          }
+        ]
+      },
+      "responses": [
+        {
+          "status": 200,
+          "headers": {
+            "x-request-id": "request-fixture"
+          },
+          "body": {
+            "id": "szd_00000000000000000000000000000000",
+            "model": "system-zero",
+            "served_by": "test",
+            "created": 0,
+            "context": {
+              "route": "direct",
+              "tokens": 12
+            },
+            "answers": {
+              "ok": {
+                "type": "boolean",
+                "probability": 0.8,
+                "confidence": 0.6,
+                "calibration_version": "v1"
+              }
+            },
+            "usage": {
+              "input_tokens": 12,
+              "cached_input_tokens": 0,
+              "media_tokens": 0,
+              "long_input_tokens": 0,
+              "media_items": 0,
+              "thought_tokens": 0
+            }
+          }
+        }
+      ],
+      "expect": {
+        "step_indexes": [
+          0,
+          1
+        ],
+        "status": "completed",
+        "step_statuses": [
+          "completed",
+          "skipped"
+        ]
+      }
+    },
+    {
+      "name": "invalid_cycle",
+      "definition": {
+        "version": 1,
+        "request": {
+          "model": "system-zero",
+          "state": {
+            "case": "synthetic"
+          }
+        },
+        "steps": [
+          {
+            "id": "first",
+            "questions": {
+              "ok": {
+                "type": "boolean",
+                "instructions": "Is this eligible?"
+              }
+            },
+            "next": {
+              "rules": [],
+              "default": "second"
+            }
+          },
+          {
+            "id": "second",
+            "questions": {
+              "ok": {
+                "type": "boolean",
+                "instructions": "Is this eligible?"
+              }
+            },
+            "next": {
+              "rules": [],
+              "default": "first"
+            }
+          }
+        ]
+      },
+      "responses": [],
+      "expect": {
+        "error_code": "invalid_request"
+      },
+      "validate_only": true
+    },
+    {
+      "name": "invalid_unknown_next",
+      "definition": {
+        "version": 1,
+        "request": {
+          "model": "system-zero",
+          "state": {
+            "case": "synthetic"
+          }
+        },
+        "steps": [
+          {
+            "id": "first",
+            "questions": {
+              "ok": {
+                "type": "boolean",
+                "instructions": "Is this eligible?"
+              }
+            },
+            "next": {
+              "rules": [],
+              "default": "absent"
+            }
+          }
+        ]
+      },
+      "responses": [],
+      "expect": {
+        "error_code": "invalid_request"
+      },
+      "validate_only": true
+    },
+    {
+      "name": "invalid_unknown_answer",
+      "definition": {
+        "version": 1,
+        "request": {
+          "model": "system-zero",
+          "state": {
+            "case": "synthetic"
+          }
+        },
+        "steps": [
+          {
+            "id": "first",
+            "questions": {
+              "ok": {
+                "type": "boolean",
+                "instructions": "Is this eligible?"
+              }
+            },
+            "depends_on": [
+              {
+                "step": "absent",
+                "question": "ok",
+                "op": "eq",
+                "value": true
+              }
+            ],
+            "next": {
+              "rules": [],
+              "default": null
+            }
+          }
+        ]
+      },
+      "responses": [],
+      "expect": {
+        "error_code": "invalid_request"
+      },
+      "validate_only": true
+    },
+    {
+      "name": "invalid_forward_dependency",
+      "definition": {
+        "version": 1,
+        "request": {
+          "model": "system-zero",
+          "state": {
+            "case": "synthetic"
+          }
+        },
+        "steps": [
+          {
+            "id": "first",
+            "questions": {
+              "ok": {
+                "type": "boolean",
+                "instructions": "Is this eligible?"
+              }
+            },
+            "depends_on": [
+              {
+                "step": "second",
+                "question": "ok",
+                "op": "eq",
+                "value": true
+              }
+            ],
+            "next": {
+              "rules": [],
+              "default": "second"
+            }
+          },
+          {
+            "id": "second",
+            "questions": {
+              "ok": {
+                "type": "boolean",
+                "instructions": "Is this eligible?"
+              }
+            },
+            "next": {
+              "rules": [],
+              "default": null
+            }
+          }
+        ]
+      },
+      "responses": [],
+      "expect": {
+        "error_code": "invalid_request"
+      },
+      "validate_only": true
+    },
+    {
+      "name": "invalid_too_many_steps",
+      "definition": {
+        "version": 1,
+        "request": {
+          "model": "system-zero",
+          "state": {
+            "case": "synthetic"
+          }
+        },
+        "steps": [
+          {
+            "id": "s0",
+            "questions": {
+              "ok": {
+                "type": "boolean",
+                "instructions": "Is this eligible?"
+              }
+            },
+            "next": {
+              "rules": [],
+              "default": "s1"
+            }
+          },
+          {
+            "id": "s1",
+            "questions": {
+              "ok": {
+                "type": "boolean",
+                "instructions": "Is this eligible?"
+              }
+            },
+            "next": {
+              "rules": [],
+              "default": "s2"
+            }
+          },
+          {
+            "id": "s2",
+            "questions": {
+              "ok": {
+                "type": "boolean",
+                "instructions": "Is this eligible?"
+              }
+            },
+            "next": {
+              "rules": [],
+              "default": "s3"
+            }
+          },
+          {
+            "id": "s3",
+            "questions": {
+              "ok": {
+                "type": "boolean",
+                "instructions": "Is this eligible?"
+              }
+            },
+            "next": {
+              "rules": [],
+              "default": "s4"
+            }
+          },
+          {
+            "id": "s4",
+            "questions": {
+              "ok": {
+                "type": "boolean",
+                "instructions": "Is this eligible?"
+              }
+            },
+            "next": {
+              "rules": [],
+              "default": "s5"
+            }
+          },
+          {
+            "id": "s5",
+            "questions": {
+              "ok": {
+                "type": "boolean",
+                "instructions": "Is this eligible?"
+              }
+            },
+            "next": {
+              "rules": [],
+              "default": "s6"
+            }
+          },
+          {
+            "id": "s6",
+            "questions": {
+              "ok": {
+                "type": "boolean",
+                "instructions": "Is this eligible?"
+              }
+            },
+            "next": {
+              "rules": [],
+              "default": "s7"
+            }
+          },
+          {
+            "id": "s7",
+            "questions": {
+              "ok": {
+                "type": "boolean",
+                "instructions": "Is this eligible?"
+              }
+            },
+            "next": {
+              "rules": [],
+              "default": "s8"
+            }
+          },
+          {
+            "id": "s8",
+            "questions": {
+              "ok": {
+                "type": "boolean",
+                "instructions": "Is this eligible?"
+              }
+            },
+            "next": {
+              "rules": [],
+              "default": "s9"
+            }
+          },
+          {
+            "id": "s9",
+            "questions": {
+              "ok": {
+                "type": "boolean",
+                "instructions": "Is this eligible?"
+              }
+            },
+            "next": {
+              "rules": [],
+              "default": "s10"
+            }
+          },
+          {
+            "id": "s10",
+            "questions": {
+              "ok": {
+                "type": "boolean",
+                "instructions": "Is this eligible?"
+              }
+            },
+            "next": {
+              "rules": [],
+              "default": "s11"
+            }
+          },
+          {
+            "id": "s11",
+            "questions": {
+              "ok": {
+                "type": "boolean",
+                "instructions": "Is this eligible?"
+              }
+            },
+            "next": {
+              "rules": [],
+              "default": "s12"
+            }
+          },
+          {
+            "id": "s12",
+            "questions": {
+              "ok": {
+                "type": "boolean",
+                "instructions": "Is this eligible?"
+              }
+            },
+            "next": {
+              "rules": [],
+              "default": "s13"
+            }
+          },
+          {
+            "id": "s13",
+            "questions": {
+              "ok": {
+                "type": "boolean",
+                "instructions": "Is this eligible?"
+              }
+            },
+            "next": {
+              "rules": [],
+              "default": "s14"
+            }
+          },
+          {
+            "id": "s14",
+            "questions": {
+              "ok": {
+                "type": "boolean",
+                "instructions": "Is this eligible?"
+              }
+            },
+            "next": {
+              "rules": [],
+              "default": "s15"
+            }
+          },
+          {
+            "id": "s15",
+            "questions": {
+              "ok": {
+                "type": "boolean",
+                "instructions": "Is this eligible?"
+              }
+            },
+            "next": {
+              "rules": [],
+              "default": "s16"
+            }
+          },
+          {
+            "id": "s16",
+            "questions": {
+              "ok": {
+                "type": "boolean",
+                "instructions": "Is this eligible?"
+              }
+            },
+            "next": {
+              "rules": [],
+              "default": "s17"
+            }
+          },
+          {
+            "id": "s17",
+            "questions": {
+              "ok": {
+                "type": "boolean",
+                "instructions": "Is this eligible?"
+              }
+            },
+            "next": {
+              "rules": [],
+              "default": "s18"
+            }
+          },
+          {
+            "id": "s18",
+            "questions": {
+              "ok": {
+                "type": "boolean",
+                "instructions": "Is this eligible?"
+              }
+            },
+            "next": {
+              "rules": [],
+              "default": "s19"
+            }
+          },
+          {
+            "id": "s19",
+            "questions": {
+              "ok": {
+                "type": "boolean",
+                "instructions": "Is this eligible?"
+              }
+            },
+            "next": {
+              "rules": [],
+              "default": "s20"
+            }
+          },
+          {
+            "id": "s20",
+            "questions": {
+              "ok": {
+                "type": "boolean",
+                "instructions": "Is this eligible?"
+              }
+            },
+            "next": {
+              "rules": [],
+              "default": "s21"
+            }
+          },
+          {
+            "id": "s21",
+            "questions": {
+              "ok": {
+                "type": "boolean",
+                "instructions": "Is this eligible?"
+              }
+            },
+            "next": {
+              "rules": [],
+              "default": "s22"
+            }
+          },
+          {
+            "id": "s22",
+            "questions": {
+              "ok": {
+                "type": "boolean",
+                "instructions": "Is this eligible?"
+              }
+            },
+            "next": {
+              "rules": [],
+              "default": "s23"
+            }
+          },
+          {
+            "id": "s23",
+            "questions": {
+              "ok": {
+                "type": "boolean",
+                "instructions": "Is this eligible?"
+              }
+            },
+            "next": {
+              "rules": [],
+              "default": "s24"
+            }
+          },
+          {
+            "id": "s24",
+            "questions": {
+              "ok": {
+                "type": "boolean",
+                "instructions": "Is this eligible?"
+              }
+            },
+            "next": {
+              "rules": [],
+              "default": "s25"
+            }
+          },
+          {
+            "id": "s25",
+            "questions": {
+              "ok": {
+                "type": "boolean",
+                "instructions": "Is this eligible?"
+              }
+            },
+            "next": {
+              "rules": [],
+              "default": "s26"
+            }
+          },
+          {
+            "id": "s26",
+            "questions": {
+              "ok": {
+                "type": "boolean",
+                "instructions": "Is this eligible?"
+              }
+            },
+            "next": {
+              "rules": [],
+              "default": "s27"
+            }
+          },
+          {
+            "id": "s27",
+            "questions": {
+              "ok": {
+                "type": "boolean",
+                "instructions": "Is this eligible?"
+              }
+            },
+            "next": {
+              "rules": [],
+              "default": "s28"
+            }
+          },
+          {
+            "id": "s28",
+            "questions": {
+              "ok": {
+                "type": "boolean",
+                "instructions": "Is this eligible?"
+              }
+            },
+            "next": {
+              "rules": [],
+              "default": "s29"
+            }
+          },
+          {
+            "id": "s29",
+            "questions": {
+              "ok": {
+                "type": "boolean",
+                "instructions": "Is this eligible?"
+              }
+            },
+            "next": {
+              "rules": [],
+              "default": "s30"
+            }
+          },
+          {
+            "id": "s30",
+            "questions": {
+              "ok": {
+                "type": "boolean",
+                "instructions": "Is this eligible?"
+              }
+            },
+            "next": {
+              "rules": [],
+              "default": "s31"
+            }
+          },
+          {
+            "id": "s31",
+            "questions": {
+              "ok": {
+                "type": "boolean",
+                "instructions": "Is this eligible?"
+              }
+            },
+            "next": {
+              "rules": [],
+              "default": "s32"
+            }
+          },
+          {
+            "id": "s32",
+            "questions": {
+              "ok": {
+                "type": "boolean",
+                "instructions": "Is this eligible?"
+              }
+            },
+            "next": {
+              "rules": [],
+              "default": null
+            }
+          }
+        ]
+      },
+      "responses": [],
+      "expect": {
+        "error_code": "invalid_request"
+      },
+      "validate_only": true
+    },
+    {
+      "name": "invalid_empty_questions",
+      "definition": {
+        "version": 1,
+        "request": {
+          "model": "system-zero",
+          "state": {
+            "case": "synthetic"
+          }
+        },
+        "steps": [
+          {
+            "id": "first",
+            "questions": {},
+            "next": {
+              "rules": [],
+              "default": null
+            }
+          }
+        ]
+      },
+      "responses": [],
+      "expect": {
+        "error_code": "invalid_request"
+      },
+      "validate_only": true
+    },
+    {
+      "name": "invalid_unknown_template_question",
+      "definition": {
+        "version": 1,
+        "request": {
+          "model": "system-zero",
+          "state": {
+            "case": "synthetic"
+          }
+        },
+        "steps": [
+          {
+            "id": "first",
+            "questions": {
+              "ok": {
+                "type": "boolean",
+                "instructions": "Is this eligible?"
+              }
+            },
+            "next": {
+              "rules": [],
+              "default": "second"
+            }
+          },
+          {
+            "id": "second",
+            "questions": {
+              "ok": {
+                "type": "boolean",
+                "instructions": "Is this eligible?"
+              }
+            },
+            "state_template": {
+              "answer": {
+                "step": "first",
+                "question": "missing",
+                "field": "decision"
+              }
+            },
+            "next": {
+              "rules": [],
+              "default": null
+            }
+          }
+        ]
+      },
+      "responses": [],
+      "expect": {
+        "error_code": "invalid_request"
+      },
+      "validate_only": true
+    },
+    {
+      "name": "invalid_missing_default",
+      "definition": {
+        "version": 1,
+        "request": {
+          "model": "system-zero",
+          "state": {
+            "case": "synthetic"
+          }
+        },
+        "steps": [
+          {
+            "id": "first",
+            "questions": {
+              "ok": {
+                "type": "boolean",
+                "instructions": "Is this eligible?"
+              }
+            },
+            "next": {
+              "rules": []
+            }
+          }
+        ]
+      },
+      "responses": [],
+      "expect": {
+        "error_code": "invalid_request"
+      },
+      "validate_only": true
+    },
+    {
+      "name": "numeric_question_order",
+      "definition": {
+        "version": 1,
+        "request": {
+          "model": "system-zero",
+          "state": {
+            "case": "synthetic"
+          }
+        },
+        "steps": [
+          {
+            "id": "first",
+            "questions": {
+              "2": {
+                "type": "boolean",
+                "instructions": "Two?"
+              },
+              "10": {
+                "type": "boolean",
+                "instructions": "Ten?"
+              },
+              "z": {
+                "type": "boolean",
+                "instructions": "Z?"
+              },
+              "a": {
+                "type": "boolean",
+                "instructions": "A?"
+              }
+            },
+            "next": {
+              "rules": [],
+              "default": null
+            }
+          }
+        ]
+      },
+      "responses": [
+        {
+          "status": 200,
+          "headers": {
+            "x-request-id": "request-fixture"
+          },
+          "body": {
+            "id": "szd_00000000000000000000000000000000",
+            "model": "system-zero",
+            "served_by": "test",
+            "created": 0,
+            "context": {
+              "route": "direct",
+              "tokens": 12
+            },
+            "answers": {
+              "2": {
+                "type": "boolean",
+                "probability": 0.8,
+                "confidence": 0.8,
+                "calibration_version": "v1",
+                "decision": true,
+                "alternatives": [
+                  {
+                    "decision": false,
+                    "confidence": 0.2
+                  }
+                ],
+                "calibrated": true
+              },
+              "10": {
+                "type": "boolean",
+                "probability": 0.8,
+                "confidence": 0.8,
+                "calibration_version": "v1",
+                "decision": true,
+                "alternatives": [
+                  {
+                    "decision": false,
+                    "confidence": 0.2
+                  }
+                ],
+                "calibrated": true
+              },
+              "z": {
+                "type": "boolean",
+                "probability": 0.8,
+                "confidence": 0.8,
+                "calibration_version": "v1",
+                "decision": true,
+                "alternatives": [
+                  {
+                    "decision": false,
+                    "confidence": 0.2
+                  }
+                ],
+                "calibrated": true
+              },
+              "a": {
+                "type": "boolean",
+                "probability": 0.8,
+                "confidence": 0.8,
+                "calibration_version": "v1",
+                "decision": true,
+                "alternatives": [
+                  {
+                    "decision": false,
+                    "confidence": 0.2
+                  }
+                ],
+                "calibrated": true
+              }
+            },
+            "usage": {
+              "input_tokens": 12,
+              "cached_input_tokens": 0,
+              "media_tokens": 0,
+              "long_input_tokens": 0,
+              "media_items": 0,
+              "thought_tokens": 0
+            }
+          }
+        }
+      ],
+      "expect": {
+        "step_indexes": [
+          0
+        ],
+        "status": "completed"
+      }
+    },
+    {
+      "name": "numeric_first_refusal",
+      "definition": {
+        "version": 1,
+        "request": {
+          "model": "system-zero",
+          "state": {
+            "case": "synthetic"
+          }
+        },
+        "steps": [
+          {
+            "id": "first",
+            "questions": {
+              "2": {
+                "type": "boolean",
+                "instructions": "Two?"
+              },
+              "10": {
+                "type": "boolean",
+                "instructions": "Ten?"
+              },
+              "z": {
+                "type": "boolean",
+                "instructions": "Z?"
+              },
+              "a": {
+                "type": "boolean",
+                "instructions": "A?"
+              }
+            },
+            "next": {
+              "rules": [],
+              "default": null
+            }
+          }
+        ]
+      },
+      "responses": [
+        {
+          "status": 200,
+          "headers": {
+            "x-request-id": "request-fixture"
+          },
+          "body": {
+            "id": "szd_00000000000000000000000000000000",
+            "model": "system-zero",
+            "served_by": "test",
+            "created": 0,
+            "context": {
+              "route": "direct",
+              "tokens": 12
+            },
+            "answers": {
+              "2": {
+                "error": {
+                  "code": "injection_suspected",
+                  "retryable": false
+                }
+              },
+              "10": {
+                "error": {
+                  "code": "question_not_grounded",
+                  "retryable": false
+                }
+              },
+              "z": {
+                "type": "boolean",
+                "probability": 0.8,
+                "confidence": 0.8,
+                "calibration_version": "v1",
+                "decision": true,
+                "alternatives": [
+                  {
+                    "decision": false,
+                    "confidence": 0.2
+                  }
+                ],
+                "calibrated": true
+              },
+              "a": {
+                "type": "boolean",
+                "probability": 0.8,
+                "confidence": 0.8,
+                "calibration_version": "v1",
+                "decision": true,
+                "alternatives": [
+                  {
+                    "decision": false,
+                    "confidence": 0.2
+                  }
+                ],
+                "calibrated": true
+              }
+            },
+            "usage": {
+              "input_tokens": 12,
+              "cached_input_tokens": 0,
+              "media_tokens": 0,
+              "long_input_tokens": 0,
+              "media_items": 0,
+              "thought_tokens": 0
+            }
+          }
+        }
+      ],
+      "expect": {
+        "step_indexes": [
+          0
+        ],
+        "status": "refused",
+        "error_code": "question_not_grounded"
+      }
+    },
+    {
+      "name": "choice_decision_branch",
+      "definition": {
+        "version": 1,
+        "request": {
+          "model": "system-zero",
+          "state": {
+            "case": "synthetic"
+          }
+        },
+        "steps": [
+          {
+            "id": "first",
+            "questions": {
+              "ok": {
+                "type": "choice",
+                "instructions": "Which route?",
+                "criteria": {
+                  "accept": "eligible",
+                  "review": "review"
+                }
+              }
+            },
+            "next": {
+              "rules": [
+                {
+                  "when": {
+                    "step": "first",
+                    "question": "ok",
+                    "op": "in",
+                    "values": [
+                      "accept"
+                    ]
+                  },
+                  "next": "second"
+                }
+              ],
+              "default": null
+            }
+          },
+          {
+            "id": "second",
+            "questions": {
+              "ok": {
+                "type": "boolean",
+                "instructions": "Is this eligible?"
+              }
+            },
+            "next": {
+              "rules": [],
+              "default": null
+            }
+          }
+        ]
+      },
+      "responses": [
+        {
+          "status": 200,
+          "headers": {
+            "x-request-id": "request-fixture"
+          },
+          "body": {
+            "id": "szd_00000000000000000000000000000000",
+            "model": "system-zero",
+            "served_by": "test",
+            "created": 0,
+            "context": {
+              "route": "direct",
+              "tokens": 12
+            },
+            "answers": {
+              "ok": {
+                "type": "choice",
+                "choice": "accept",
+                "probabilities": {
+                  "accept": 0.8,
+                  "review": 0.2
+                },
+                "decision": "accept",
+                "confidence": 0.8,
+                "calibration_version": "v1",
+                "alternatives": [
+                  {
+                    "decision": "review",
+                    "confidence": 0.2
+                  }
+                ],
+                "calibrated": true
+              }
+            },
+            "usage": {
+              "input_tokens": 12,
+              "cached_input_tokens": 0,
+              "media_tokens": 0,
+              "long_input_tokens": 0,
+              "media_items": 0,
+              "thought_tokens": 0
+            }
+          }
+        },
+        {
+          "status": 200,
+          "headers": {
+            "x-request-id": "request-fixture"
+          },
+          "body": {
+            "id": "szd_00000000000000000000000000000000",
+            "model": "system-zero",
+            "served_by": "test",
+            "created": 0,
+            "context": {
+              "route": "direct",
+              "tokens": 12
+            },
+            "answers": {
+              "ok": {
+                "type": "boolean",
+                "probability": 0.2,
+                "confidence": 0.8,
+                "calibration_version": "v1",
+                "decision": false,
+                "alternatives": [
+                  {
+                    "decision": true,
+                    "confidence": 0.2
+                  }
+                ],
+                "calibrated": true
+              }
+            },
+            "usage": {
+              "input_tokens": 12,
+              "cached_input_tokens": 0,
+              "media_tokens": 0,
+              "long_input_tokens": 0,
+              "media_items": 0,
+              "thought_tokens": 0
+            }
+          }
+        }
+      ],
+      "expect": {
+        "step_indexes": [
+          0,
+          1
+        ],
+        "status": "completed",
+        "branch_rule_indexes": [
+          0,
+          null
+        ]
+      }
+    },
+    {
+      "name": "score_decision_branch",
+      "definition": {
+        "version": 1,
+        "request": {
+          "model": "system-zero",
+          "state": {
+            "case": "synthetic"
+          }
+        },
+        "steps": [
+          {
+            "id": "first",
+            "questions": {
+              "ok": {
+                "type": "score",
+                "instructions": "Which score?",
+                "criteria": [
+                  "low",
+                  "high"
+                ]
+              }
+            },
+            "next": {
+              "rules": [
+                {
+                  "when": {
+                    "step": "first",
+                    "question": "ok",
+                    "op": "in",
+                    "values": [
+                      "1"
+                    ]
+                  },
+                  "next": "second"
+                }
+              ],
+              "default": null
+            }
+          },
+          {
+            "id": "second",
+            "questions": {
+              "ok": {
+                "type": "boolean",
+                "instructions": "Is this eligible?"
+              }
+            },
+            "next": {
+              "rules": [],
+              "default": null
+            }
+          }
+        ]
+      },
+      "responses": [
+        {
+          "status": 200,
+          "headers": {
+            "x-request-id": "request-fixture"
+          },
+          "body": {
+            "id": "szd_00000000000000000000000000000000",
+            "model": "system-zero",
+            "served_by": "test",
+            "created": 0,
+            "context": {
+              "route": "direct",
+              "tokens": 12
+            },
+            "answers": {
+              "ok": {
+                "type": "score",
+                "score": 0.8,
+                "legend": {
+                  "0": "low",
+                  "1": "high"
+                },
+                "probabilities": {
+                  "0": 0.2,
+                  "1": 0.8
+                },
+                "decision": "1",
+                "confidence": 0.8,
+                "calibration_version": "v1",
+                "alternatives": [
+                  {
+                    "decision": "0",
+                    "confidence": 0.2
+                  }
+                ],
+                "calibrated": true
+              }
+            },
+            "usage": {
+              "input_tokens": 12,
+              "cached_input_tokens": 0,
+              "media_tokens": 0,
+              "long_input_tokens": 0,
+              "media_items": 0,
+              "thought_tokens": 0
+            }
+          }
+        },
+        {
+          "status": 200,
+          "headers": {
+            "x-request-id": "request-fixture"
+          },
+          "body": {
+            "id": "szd_00000000000000000000000000000000",
+            "model": "system-zero",
+            "served_by": "test",
+            "created": 0,
+            "context": {
+              "route": "direct",
+              "tokens": 12
+            },
+            "answers": {
+              "ok": {
+                "type": "boolean",
+                "probability": 0.2,
+                "confidence": 0.8,
+                "calibration_version": "v1",
+                "decision": false,
+                "alternatives": [
+                  {
+                    "decision": true,
+                    "confidence": 0.2
+                  }
+                ],
+                "calibrated": true
+              }
+            },
+            "usage": {
+              "input_tokens": 12,
+              "cached_input_tokens": 0,
+              "media_tokens": 0,
+              "long_input_tokens": 0,
+              "media_items": 0,
+              "thought_tokens": 0
+            }
+          }
+        }
+      ],
+      "expect": {
+        "step_indexes": [
+          0,
+          1
+        ],
+        "status": "completed",
+        "branch_rule_indexes": [
+          0,
+          null
+        ]
+      }
+    },
+    {
+      "name": "invalid_template_field_type",
+      "definition": {
+        "version": 1,
+        "request": {
+          "model": "system-zero",
+          "state": {
+            "case": "synthetic"
+          }
+        },
+        "steps": [
+          {
+            "id": "first",
+            "questions": {
+              "ok": {
+                "type": "boolean",
+                "instructions": "Is this eligible?"
+              }
+            },
+            "next": {
+              "rules": [],
+              "default": "second"
+            }
+          },
+          {
+            "id": "second",
+            "questions": {
+              "ok": {
+                "type": "boolean",
+                "instructions": "Is this eligible?"
+              }
+            },
+            "state_template": {
+              "answer": {
+                "step": "first",
+                "question": "ok",
+                "field": [
+                  "decision"
+                ]
+              }
+            },
+            "next": {
+              "rules": [],
+              "default": null
+            }
+          }
+        ]
+      },
+      "responses": [],
+      "expect": {
+        "error_code": "invalid_request"
+      },
+      "validate_only": true
+    }
+  ]
+}
