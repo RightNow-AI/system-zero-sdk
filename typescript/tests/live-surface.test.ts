@@ -6,14 +6,20 @@ import * as sdk from '../src/index.js';
 
 const names = (text: string): string[] => text.trim().split(/\s+/u).sort();
 const apiCodes = names(`
-  invalid_request invalid_criteria injection_suspected input_quarantined workspace_quarantined
-  request_refused question_too_large question_not_grounded questions_too_large state_too_large
-  state_too_large_unguarded payload_too_large long_context_not_available long_recording_not_available
-  video_not_available image_not_available audio_not_available document_not_available
-  committee_not_available
-  deliberate_not_available https_required rate_limit_exceeded workspace_limit_exceeded
-  capacity_exhausted daily_dispatch_limit idempotency_key_reuse service_unavailable
-  system_zero_unavailable system_zero_timeout
+  attachment_too_large audio_not_available capacity_exhausted committee_not_available
+  daily_dispatch_limit deliberate_not_available document_controls_not_available document_decode_failed
+  document_not_available document_pictures_not_available document_too_large document_unsupported
+  https_required idempotency_key_reuse image_not_available injection_suspected
+  input_quarantined insufficient_credits invalid_criteria invalid_request
+  long_context_not_available long_duration_unsupported long_evidence_incomplete long_media_guard_refused
+  long_no_readable_window long_options_unsupported long_phrase_invalid long_question_type_unsupported
+  long_question_unsupported long_recording_not_available long_state_unsupported long_too_many_phrases
+  media_decode_failed media_too_large media_unpriced media_unsupported
+  payload_too_large question_not_grounded question_too_large questions_too_large
+  rate_limit_exceeded request_refused service_unavailable staging_attempt_ceiling
+  state_too_large state_too_large_unguarded system_zero_timeout system_zero_unavailable
+  upload_in_use upload_not_found upload_not_ready video_not_available
+  workspace_limit_exceeded workspace_quarantined
 `);
 const gatewayCodes = names(`
   auth_error account_suspended model_not_found unknown_endpoint method_not_allowed invalid_trace_header invalid_api_key invalid_idempotency_key
@@ -52,6 +58,8 @@ const entries = {
 
 describe('public package surface', () => {
   it('publishes exactly the API error conveniences', () => {
+    expect(apiCodes).toHaveLength(54);
+    expect(gatewayCodes).toHaveLength(17);
     expect([...sdk.SYSTEM_ZERO_ERROR_CODES].sort()).toEqual(apiCodes);
     expect([...sdk.GATEWAY_ERROR_CODES].sort()).toEqual(gatewayCodes);
     expect(Object.values(sdk.ERROR_CODES).sort()).toEqual([...apiCodes, ...gatewayCodes].sort());

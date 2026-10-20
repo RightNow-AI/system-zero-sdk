@@ -77,7 +77,7 @@ describe('live HTTP and local helper behavior', () => {
   });
 
   it('refuses local call admission before transport without an API error code', async () => {
-    expect(Object.keys(SYSTEM_ZERO_ERRORS)).toHaveLength(46);
+    expect(Object.keys(SYSTEM_ZERO_ERRORS)).toHaveLength(71);
     expect(Object.hasOwn(SYSTEM_ZERO_ERRORS, 'call_limit_reached')).toBe(false);
     const transport = vi.fn(async () => Response.json({ answers: {} }));
     const client = new sdk.SystemZeroClient({ apiKey: 'SYNTHETIC', fetch: transport, maxRetries: 0 });
@@ -131,6 +131,208 @@ describe('live HTTP and local helper behavior', () => {
     expect(await createToolHandler({ client })('system_zero_list_models', {})).toEqual({
       status: 'error', request_id: 'synthetic-request', error: { code, message: 'Synthetic refusal.' },
     });
+  });
+
+  it.each([
+    ["insufficient_credits", 402, "permission_error", "PermissionError", false],
+  [
+    "attachment_too_large",
+    413,
+    "invalid_request_error",
+    "InvalidRequestError",
+    false
+  ],
+  [
+    "document_controls_not_available",
+    404,
+    "not_found_error",
+    "NotFoundError",
+    false
+  ],
+  [
+    "document_decode_failed",
+    422,
+    "invalid_request_error",
+    "InvalidRequestError",
+    false
+  ],
+  [
+    "document_pictures_not_available",
+    404,
+    "not_found_error",
+    "NotFoundError",
+    false
+  ],
+  [
+    "document_too_large",
+    413,
+    "invalid_request_error",
+    "InvalidRequestError",
+    false
+  ],
+  [
+    "document_unsupported",
+    415,
+    "invalid_request_error",
+    "InvalidRequestError",
+    false
+  ],
+  [
+    "long_duration_unsupported",
+    413,
+    "invalid_request_error",
+    "InvalidRequestError",
+    false
+  ],
+  [
+    "long_evidence_incomplete",
+    422,
+    "invalid_request_error",
+    "InvalidRequestError",
+    false
+  ],
+  [
+    "long_media_guard_refused",
+    422,
+    "invalid_request_error",
+    "InvalidRequestError",
+    false
+  ],
+  [
+    "long_no_readable_window",
+    422,
+    "invalid_request_error",
+    "InvalidRequestError",
+    false
+  ],
+  [
+    "long_options_unsupported",
+    422,
+    "invalid_request_error",
+    "InvalidRequestError",
+    false
+  ],
+  [
+    "long_phrase_invalid",
+    422,
+    "invalid_request_error",
+    "InvalidRequestError",
+    false
+  ],
+  [
+    "long_question_type_unsupported",
+    422,
+    "invalid_request_error",
+    "InvalidRequestError",
+    false
+  ],
+  [
+    "long_question_unsupported",
+    422,
+    "invalid_request_error",
+    "InvalidRequestError",
+    false
+  ],
+  [
+    "long_state_unsupported",
+    400,
+    "invalid_request_error",
+    "InvalidRequestError",
+    false
+  ],
+  [
+    "long_too_many_phrases",
+    413,
+    "invalid_request_error",
+    "InvalidRequestError",
+    false
+  ],
+  [
+    "media_decode_failed",
+    422,
+    "invalid_request_error",
+    "InvalidRequestError",
+    false
+  ],
+  [
+    "media_too_large",
+    413,
+    "invalid_request_error",
+    "InvalidRequestError",
+    false
+  ],
+  [
+    "media_unpriced",
+    403,
+    "permission_error",
+    "PermissionError",
+    false
+  ],
+  [
+    "media_unsupported",
+    400,
+    "invalid_request_error",
+    "InvalidRequestError",
+    false
+  ],
+  [
+    "staging_attempt_ceiling",
+    429,
+    "overloaded_error",
+    "OverloadedError",
+    true
+  ],
+  [
+    "upload_in_use",
+    409,
+    "invalid_request_error",
+    "InvalidRequestError",
+    true
+  ],
+  [
+    "upload_not_found",
+    404,
+    "not_found_error",
+    "NotFoundError",
+    false
+  ],
+  [
+    "upload_not_ready",
+    409,
+    "invalid_request_error",
+    "InvalidRequestError",
+    false
+  ]
+] as const)('catalogs and preserves stateless refusal %s', async (code, status, type, className, retryable) => {
+    expect(sdk.ERROR_CODES[code.toUpperCase() as keyof typeof sdk.ERROR_CODES]).toBe(code);
+    expect(SYSTEM_ZERO_ERRORS[code][0]).toBe(status);
+    const transport = vi.fn(async () => Response.json({
+      error: { code, type, message: 'Synthetic refusal.', retryable },
+    }, { status }));
+    const client = new sdk.SystemZeroClient({ apiKey: 'SYNTHETIC', fetch: transport });
+    await expect(client.decide(request)).rejects.toBeInstanceOf(sdk[className]);
+    expect(transport).toHaveBeenCalledTimes(1);
+    await expect(client.decide(request)).rejects.toMatchObject({ code, status, retryable });
+    expect(transport).toHaveBeenCalledTimes(2);
+    expect(await createToolHandler({ client })('system_zero_decide', toolArguments)).toMatchObject({
+      status: ['document_controls_not_available', 'document_pictures_not_available'].includes(code) ? 'held' : 'error',
+      error: { code, message: 'Synthetic refusal.' },
+    });
+    expect(transport).toHaveBeenCalledTimes(3);
+  });
+
+  it.each([
+    [422, 'invalid_request_error', 'InvalidRequestError', false],
+    [503, 'api_error', 'APIError', true],
+  ] as const)('retains the open-code fallback for a future %s refusal', async (status, type, className, retryable) => {
+    const transport = vi.fn(async () => Response.json({
+      error: { code: 'future_refusal', type, message: 'Synthetic refusal.', retryable },
+    }, { status }));
+    const client = new sdk.SystemZeroClient({ apiKey: 'SYNTHETIC', fetch: transport });
+    const failure = await client.decide(request).catch((error: unknown) => error);
+    expect(failure).toBeInstanceOf(sdk[className]);
+    expect(failure).toMatchObject({ code: 'future_refusal', status, retryable });
+    expect(transport).toHaveBeenCalledOnce();
   });
 
   it('rejects insecure remote bases before transport and accepts HTTPS', () => {

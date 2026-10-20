@@ -76,7 +76,7 @@ class LiveBehaviorTests(unittest.TestCase):
 
     def test_local_call_admission_refuses_before_transport(self):
         catalog = json.loads(Path(tools.__file__).with_name("error-catalog.json").read_text(encoding="utf-8"))
-        self.assertEqual(len(catalog), 46)
+        self.assertEqual(len(catalog), 71)
         self.assertNotIn("call_limit_reached", catalog)
         seen = []
         with sdk.SystemZero(api_key="SYNTHETIC", max_retries=0, transport=httpx.MockTransport(
@@ -128,6 +128,47 @@ class LiveBehaviorTests(unittest.TestCase):
                     handler = tools.create_tool_handler(client)
                     self.assertEqual(handler("system_zero_list_models", {}), {"status": "error",
                         "request_id": "synthetic-request", "error": {"code": code, "message": "Synthetic refusal."}})
+
+
+    def test_stateless_refusal_catalogs_preserve_classes_retry_flags_and_open_codes(self):
+        catalog = json.loads(Path(tools.__file__).with_name("error-catalog.json").read_text(encoding="utf-8"))
+        cases = [['attachment_too_large', 413, 'invalid_request_error', 'InvalidRequestError', False], ['document_controls_not_available', 404, 'not_found_error', 'NotFoundError', False], ['document_decode_failed', 422, 'invalid_request_error', 'InvalidRequestError', False], ['document_pictures_not_available', 404, 'not_found_error', 'NotFoundError', False], ['document_too_large', 413, 'invalid_request_error', 'InvalidRequestError', False], ['document_unsupported', 415, 'invalid_request_error', 'InvalidRequestError', False], ['long_duration_unsupported', 413, 'invalid_request_error', 'InvalidRequestError', False], ['long_evidence_incomplete', 422, 'invalid_request_error', 'InvalidRequestError', False], ['long_media_guard_refused', 422, 'invalid_request_error', 'InvalidRequestError', False], ['long_no_readable_window', 422, 'invalid_request_error', 'InvalidRequestError', False], ['long_options_unsupported', 422, 'invalid_request_error', 'InvalidRequestError', False], ['long_phrase_invalid', 422, 'invalid_request_error', 'InvalidRequestError', False], ['long_question_type_unsupported', 422, 'invalid_request_error', 'InvalidRequestError', False], ['long_question_unsupported', 422, 'invalid_request_error', 'InvalidRequestError', False], ['long_state_unsupported', 400, 'invalid_request_error', 'InvalidRequestError', False], ['long_too_many_phrases', 413, 'invalid_request_error', 'InvalidRequestError', False], ['media_decode_failed', 422, 'invalid_request_error', 'InvalidRequestError', False], ['media_too_large', 413, 'invalid_request_error', 'InvalidRequestError', False], ['media_unpriced', 403, 'permission_error', 'PermissionError', False], ['media_unsupported', 400, 'invalid_request_error', 'InvalidRequestError', False], ['staging_attempt_ceiling', 429, 'overloaded_error', 'OverloadedError', True], ['upload_in_use', 409, 'invalid_request_error', 'InvalidRequestError', True], ['upload_not_found', 404, 'not_found_error', 'NotFoundError', False], ['upload_not_ready', 409, 'invalid_request_error', 'InvalidRequestError', False], ['insufficient_credits', 402, 'permission_error', 'PermissionError', False]]
+        for code, status, kind, class_name, retryable in cases:
+            with self.subTest(code=code):
+                self.assertIn(code, sdk.KNOWN_ERROR_CODES)
+                self.assertEqual(sdk.ErrorCode(code).value, code)
+                self.assertEqual(catalog[code]["status"], status)
+                seen = []
+                def send(request):
+                    seen.append(request)
+                    return httpx.Response(status, json={"error": {
+                        "code": code, "type": kind, "message": "Synthetic refusal.", "retryable": retryable}})
+                with sdk.SystemZero(api_key="SYNTHETIC", transport=httpx.MockTransport(send)) as client:
+                    with self.assertRaises(getattr(sdk, class_name)) as caught:
+                        client.decide(REQUEST)
+                    self.assertEqual((caught.exception.code, caught.exception.status, caught.exception.retryable),
+                                     (code, status, retryable))
+                    self.assertEqual(len(seen), 1)
+                    result = tools.create_tool_handler(client)("system_zero_decide", TOOL_ARGUMENTS)
+                    self.assertEqual(result["error"], {"code": code, "message": "Synthetic refusal."})
+                    self.assertEqual(result["status"], "held" if code in
+                                     ("document_controls_not_available", "document_pictures_not_available") else "error")
+                    self.assertEqual(len(seen), 2)
+        for status, kind, class_name, retryable in ((422, "invalid_request_error", "InvalidRequestError", False),
+                                                   (503, "api_error", "APIError", True)):
+            with self.subTest(future_status=status):
+                seen = []
+                def send_future(request):
+                    seen.append(request)
+                    return httpx.Response(status, json={"error": {
+                        "code": "future_refusal", "type": kind,
+                        "message": "Synthetic refusal.", "retryable": retryable}})
+                with sdk.SystemZero(api_key="SYNTHETIC", transport=httpx.MockTransport(send_future)) as client:
+                    with self.assertRaises(getattr(sdk, class_name)) as caught:
+                        client.decide(REQUEST)
+                    self.assertEqual((caught.exception.code, caught.exception.status, caught.exception.retryable),
+                                     ("future_refusal", status, retryable))
+                    self.assertEqual(len(seen), 1)
 
     def test_secure_base_is_accepted_and_insecure_remote_base_is_refused(self):
         with self.assertRaises(ValueError):

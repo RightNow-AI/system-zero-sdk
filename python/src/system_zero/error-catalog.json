@@ -3,6 +3,10 @@
     "status": 403,
     "message": "This account does not currently have API access."
   },
+  "attachment_too_large": {
+    "message": "This input exceeds the supported limits.",
+    "status": 413
+  },
   "audio_not_available": {
     "message": "Audio is unavailable. Send the request without the audio attachment.",
     "status": 404
@@ -31,9 +35,29 @@
     "message": "This mode is not available.",
     "status": 404
   },
+  "document_controls_not_available": {
+    "message": "Documents with control characters are unavailable. Remove the control characters and send it again.",
+    "status": 404
+  },
+  "document_decode_failed": {
+    "message": "The document could not be decoded.",
+    "status": 422
+  },
   "document_not_available": {
     "message": "Documents are unavailable. Send the request without the document attachment.",
     "status": 404
+  },
+  "document_pictures_not_available": {
+    "message": "Pictures inside documents are unavailable. Send the document without pictures, or as text.",
+    "status": 404
+  },
+  "document_too_large": {
+    "message": "The document exceeds the decoded byte limit.",
+    "status": 413
+  },
+  "document_unsupported": {
+    "message": "The document format is not supported.",
+    "status": 415
   },
   "https_required": {
     "message": "This API answers only over HTTPS. Send the request to the https address.",
@@ -71,6 +95,10 @@
     "message": "This exact input caused repeated serving failures, so it is refused for up to 24 hours. Change the input or contact support.",
     "status": 422
   },
+  "insufficient_credits": {
+    "message": "The workspace's balance does not cover this call.",
+    "status": 402
+  },
   "internal_error": {
     "status": 500,
     "message": "The request failed unexpectedly. Retry the request. Keep the request id if the failure persists."
@@ -103,13 +131,69 @@
     "message": "This route is not available.",
     "status": 404
   },
+  "long_duration_unsupported": {
+    "message": "This input exceeds the supported limits.",
+    "status": 413
+  },
+  "long_evidence_incomplete": {
+    "message": "This input could not be read completely.",
+    "status": 422
+  },
+  "long_media_guard_refused": {
+    "message": "This input was refused.",
+    "status": 422
+  },
+  "long_no_readable_window": {
+    "message": "This input could not be read.",
+    "status": 422
+  },
+  "long_options_unsupported": {
+    "message": "These options cannot be evaluated for this input.",
+    "status": 422
+  },
+  "long_phrase_invalid": {
+    "message": "This phrase cannot be evaluated for this input.",
+    "status": 422
+  },
+  "long_question_type_unsupported": {
+    "message": "This question type cannot be answered for this input.",
+    "status": 422
+  },
+  "long_question_unsupported": {
+    "message": "This question cannot be answered for this input.",
+    "status": 422
+  },
   "long_recording_not_available": {
     "message": "This input type is not supported.",
     "status": 404
   },
+  "long_state_unsupported": {
+    "message": "This input combination is not supported.",
+    "status": 400
+  },
+  "long_too_many_phrases": {
+    "message": "This request exceeds the supported limits.",
+    "status": 413
+  },
   "maintenance": {
     "status": 503,
     "message": "The API is down for maintenance. Retry after the Retry-After delay."
+  },
+  "media_decode_failed": {
+    "message": "The media bytes do not match the declared format.",
+    "status": 422
+  },
+  "media_too_large": {
+    "message": "The media exceeds the decoded byte limit.",
+    "status": 413
+  },
+  "media_unpriced": {
+    "message": "This input type is not supported.",
+    "status": 403
+  },
+  "media_unsupported": {
+    "message": "This input kind or count is not supported.",
+    "status": 400
   },
   "method_not_allowed": {
     "status": 405,
@@ -151,6 +235,10 @@
     "message": "RightNow System Zero cannot serve this request right now. Retry after the Retry-After delay.",
     "status": 503
   },
+  "staging_attempt_ceiling": {
+    "message": "The staging request ceiling is reached. Retry after the Retry-After delay.",
+    "status": 429
+  },
   "state_too_large": {
     "message": "The state exceeds the size or nesting limit.",
     "status": 413
@@ -170,6 +258,18 @@
   "unknown_endpoint": {
     "status": 404,
     "message": "The requested API endpoint was not found."
+  },
+  "upload_in_use": {
+    "message": "The requested item is in use by another request.",
+    "status": 409
+  },
+  "upload_not_found": {
+    "message": "The requested item is not available to this account.",
+    "status": 404
+  },
+  "upload_not_ready": {
+    "message": "The requested item is not ready.",
+    "status": 409
   },
   "video_not_available": {
     "message": "This input type is not supported.",

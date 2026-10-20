@@ -3,6 +3,10 @@ export const SYSTEM_ZERO_ERRORS = {
     403,
     "This account does not currently have API access."
   ],
+  "attachment_too_large": [
+    413,
+    "This input exceeds the supported limits."
+  ],
   "audio_not_available": [
     404,
     "Audio is unavailable. Send the request without the audio attachment."
@@ -31,9 +35,29 @@ export const SYSTEM_ZERO_ERRORS = {
     404,
     "This mode is not available."
   ],
+  "document_controls_not_available": [
+    404,
+    "Documents with control characters are unavailable. Remove the control characters and send it again."
+  ],
+  "document_decode_failed": [
+    422,
+    "The document could not be decoded."
+  ],
   "document_not_available": [
     404,
     "Documents are unavailable. Send the request without the document attachment."
+  ],
+  "document_pictures_not_available": [
+    404,
+    "Pictures inside documents are unavailable. Send the document without pictures, or as text."
+  ],
+  "document_too_large": [
+    413,
+    "The document exceeds the decoded byte limit."
+  ],
+  "document_unsupported": [
+    415,
+    "The document format is not supported."
   ],
   "https_required": [
     403,
@@ -71,6 +95,10 @@ export const SYSTEM_ZERO_ERRORS = {
     422,
     "This exact input caused repeated serving failures, so it is refused for up to 24 hours. Change the input or contact support."
   ],
+  "insufficient_credits": [
+    402,
+    "The workspace's balance does not cover this call."
+  ],
   "internal_error": [
     500,
     "The request failed unexpectedly. Retry the request. Keep the request id if the failure persists."
@@ -103,13 +131,69 @@ export const SYSTEM_ZERO_ERRORS = {
     404,
     "This route is not available."
   ],
+  "long_duration_unsupported": [
+    413,
+    "This input exceeds the supported limits."
+  ],
+  "long_evidence_incomplete": [
+    422,
+    "This input could not be read completely."
+  ],
+  "long_media_guard_refused": [
+    422,
+    "This input was refused."
+  ],
+  "long_no_readable_window": [
+    422,
+    "This input could not be read."
+  ],
+  "long_options_unsupported": [
+    422,
+    "These options cannot be evaluated for this input."
+  ],
+  "long_phrase_invalid": [
+    422,
+    "This phrase cannot be evaluated for this input."
+  ],
+  "long_question_type_unsupported": [
+    422,
+    "This question type cannot be answered for this input."
+  ],
+  "long_question_unsupported": [
+    422,
+    "This question cannot be answered for this input."
+  ],
   "long_recording_not_available": [
     404,
     "This input type is not supported."
   ],
+  "long_state_unsupported": [
+    400,
+    "This input combination is not supported."
+  ],
+  "long_too_many_phrases": [
+    413,
+    "This request exceeds the supported limits."
+  ],
   "maintenance": [
     503,
     "The API is down for maintenance. Retry after the Retry-After delay."
+  ],
+  "media_decode_failed": [
+    422,
+    "The media bytes do not match the declared format."
+  ],
+  "media_too_large": [
+    413,
+    "The media exceeds the decoded byte limit."
+  ],
+  "media_unpriced": [
+    403,
+    "This input type is not supported."
+  ],
+  "media_unsupported": [
+    400,
+    "This input kind or count is not supported."
   ],
   "method_not_allowed": [
     405,
@@ -151,6 +235,10 @@ export const SYSTEM_ZERO_ERRORS = {
     503,
     "RightNow System Zero cannot serve this request right now. Retry after the Retry-After delay."
   ],
+  "staging_attempt_ceiling": [
+    429,
+    "The staging request ceiling is reached. Retry after the Retry-After delay."
+  ],
   "state_too_large": [
     413,
     "The state exceeds the size or nesting limit."
@@ -170,6 +258,18 @@ export const SYSTEM_ZERO_ERRORS = {
   "unknown_endpoint": [
     404,
     "The requested API endpoint was not found."
+  ],
+  "upload_in_use": [
+    409,
+    "The requested item is in use by another request."
+  ],
+  "upload_not_found": [
+    404,
+    "The requested item is not available to this account."
+  ],
+  "upload_not_ready": [
+    409,
+    "The requested item is not ready."
   ],
   "video_not_available": [
     404,
