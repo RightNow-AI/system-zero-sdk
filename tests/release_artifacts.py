@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Exercise artifact compression, text encodings and final package names offline."""
 
+import base64
 import gzip
 import hashlib
 import importlib.util
@@ -34,7 +35,9 @@ def fixture_entries(check):
                 "License-Expression: Apache-2.0\nLicense-File: LICENSE\nLicense-File: NOTICE\n"
                 "Requires-Python: >=3.10\nRequires-Dist: httpx<0.29,>=0.28.1\n"
                 "Requires-Dist: httpcore<2,>=1.0.9\n"
-                f"Project-URL: Source, {repository}\nProject-URL: Issues, {repository}/issues\n").encode("ascii")
+                f"Project-URL: Changelog, {repository}/blob/main/CHANGELOG.md\nProject-URL: Source, {repository}\n"
+                f"Project-URL: Issues, {repository}/issues\nProject-URL: Homepage, {repository}\n"
+                f"Project-URL: Documentation, {repository}\n").encode("ascii")
     license_body = b"Apache License\nVersion 2.0, January 2004\n"
     notice = b"System Zero SDKs\nSynthetic package notice.\n"
     package = json.dumps({
@@ -276,6 +279,24 @@ def metadata_controls(check, entries):
     count += 1
     for suffix in ("-other", ".git-other"):
         refuses(lambda: check.scan_text("Project-URL: Source, " + repository + suffix + "\n", "METADATA"),
+                check.ReleaseError)
+        count += 1
+    metadata = entries["wheel"]["rightnow_system_zero-0.1.0.dist-info/METADATA"]
+    changed = metadata.replace(b"Project-URL: Homepage, " + repository.encode("ascii") + b"\n",
+                               b"Project-URL: Homepage, https://example.com/other\n")
+    assert changed != metadata
+    refuses(lambda: check.python_identity(changed, VERSION), check.ReleaseError)
+    count += 1
+    record_name = "rightnow_system_zero-0.1.0.dist-info/RECORD"
+    digest = base64.urlsafe_b64encode(hashlib.sha256(b"example").digest()).rstrip(b"=").decode("ascii")
+    check.check_member_content(record_name, f"system_zero/__init__.py,sha256={digest},7\n{record_name},,\n".encode("ascii"))
+    count += 1
+    for row in (f"system_zero/__init__.py,sha256={digest[:20]},7\n", f"system_zero/{digest}.py,sha256={digest},7\n"):
+        refuses(lambda: check.check_member_content(record_name, row.encode("ascii")), check.ReleaseError)
+        count += 1
+    for label in ("Homepage", "Documentation"):
+        refuses(lambda: check.scan_text("Project-URL: " + label + ", " + repository + "-other\n"
+                                        "Project-URL: Issues, " + repository + "/issues\n", "METADATA"),
                 check.ReleaseError)
         count += 1
     for url in (repository + "-other", repository + ".git-other", "https://example.com/repository"):

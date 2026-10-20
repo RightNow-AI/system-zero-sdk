@@ -199,6 +199,10 @@ def decode_text(raw: bytes) -> str:
     require(not any((ord(character) < 32 and character not in '\t\r\n' or 127 <= ord(character) < 160 for character in value)), 'unsupported binary or control data', 'binary-content')
     return value
 
+def public_project_urls(repository: str) -> dict[str, str]:
+    """The public Python package's canonical Project-URL headers, labels as written to METADATA."""
+    return {'Changelog': repository + '/blob/main/CHANGELOG.md', 'Source': repository, 'Issues': repository + '/issues', 'Homepage': repository, 'Documentation': repository}
+
 def scan_text(value: str, path: str='') -> None:
     forms, joined = normalized_forms(value)
     scanner = load_content_rules()
@@ -217,7 +221,8 @@ def scan_text(value: str, path: str='') -> None:
         require(len(versions) == 1, 'artifact content has invalid Python metadata', 'invalid-metadata')
         check_public_python_identity(raw_metadata, str(versions[0]))
         approved = load_release_policy().public_repository().removesuffix('.git')
-        headers = {'Project-URL: Source, ' + approved: 'Project-URL: Source, https://sdk.example.com', 'Project-URL: Issues, ' + approved + '/issues': 'Project-URL: Issues, https://sdk.example.com/issues'}
+        example = 'https://sdk.example.com'
+        headers = {f'Project-URL: {label}, {url}': f'Project-URL: {label}, ' + example + url[len(approved):] for label, url in public_project_urls(approved).items()}
         lines = repository_view.splitlines(keepends=True)
         for index, line in enumerate(lines):
             complete = line.rstrip('\r\n')
@@ -268,12 +273,23 @@ def check_npm_metadata(raw: bytes) -> None:
         release_policy.check_npm_repository(package)
     except release_policy.ReleaseRuleError:
         raise ReleaseError('artifact content violates repository metadata policy', 'repository-metadata') from None
+WHEEL_RECORD_ROW = re.compile('[^,\\r\\n]+,sha256=[A-Za-z0-9_-]{43},[0-9]+|[^,\\r\\n]+,,')
+
+def wheel_record_view(value: str) -> str:
+    """A wheel RECORD has one row per file: its path, urlsafe base64 SHA-256 digest and size. Every row must have
+    exactly that shape; the digests are opaque by design, so only paths and sizes reach the content scanner."""
+    rows = value.splitlines()
+    require(all((WHEEL_RECORD_ROW.fullmatch(row) for row in rows)), 'artifact content has an invalid wheel RECORD', 'wheel-record')
+    return '\n'.join((row.partition(',sha256=')[0] + ',' + row.rpartition(',')[2] for row in rows))
 
 def check_member_content(name: str, raw: bytes, *, npm_metadata: bool=False) -> None:
     """The same name/body scanner applies to every format and text metadata record."""
     with member_context(name):
         check_member_name(name)
         value = decode_text(raw)
+        member = PurePosixPath(name)
+        if member.name == 'RECORD' and member.parent.name.endswith('.dist-info'):
+            value = wheel_record_view(value)
         scan_text(value, name)
         if PurePosixPath(name).name.casefold().partition('.')[0] == 'readme':
             names = load_package_names()
@@ -460,6 +476,8 @@ def check_public_python_identity(raw: bytes, version: str) -> None:
     if release_policy.SDK_SOURCE_PUBLIC:
         repository = release_policy.public_repository().removesuffix('.git')
         require(urls.get('source') == repository and urls.get('issues') == repository + '/issues', 'artifact content has invalid Python source URLs', 'python-repository-metadata')
+        canonical = {label.casefold(): url for label, url in public_project_urls(repository).items()}
+        require(all((url == canonical[label] for label, url in urls.items() if label in canonical)), 'artifact content has invalid Python project URLs', 'python-repository-metadata')
 
 def check_payload_inventory(kind: str, contents: dict[str, bytes], expected: dict[str, bytes], version: str, notices: dict[str, bytes]) -> None:
     """Require exact package bytes with only named build metadata additions."""
