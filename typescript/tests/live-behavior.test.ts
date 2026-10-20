@@ -48,7 +48,7 @@ describe('live HTTP and local helper behavior', () => {
     expect(result.data).toEqual(reply);
     expect(Object.keys(result.data)).toEqual(Object.keys(reply));
     expect(result.metadata).toEqual({
-      requestId: 'req_synthetic', clientRequestId: 'client-synthetic', latencyMs: 12.5, replayed: true,
+      requestId: 'req_synthetic', clientRequestId: 'client-synthetic', latencyMs: 12.5, replayed: true, idempotencyKey: 'stable-synthetic-key',
       rateLimit: { limit: 100, remaining: 99, reset: 1800000000 },
     });
     expect(result.response).toBe(response);
@@ -68,7 +68,7 @@ describe('live HTTP and local helper behavior', () => {
         runId: 'synthetic-count', resultsPath: join(directory, 'results.jsonl'), maxDecideCalls: 0,
         deadlineMs: 1000, concurrency: 1,
       });
-      expect(result).toEqual({ records: [], stopped: 'call_limit' });
+      expect(result).toEqual({ records: [], stopped: 'call_limit', decide_calls: 0 });
       expect(transport).not.toHaveBeenCalled();
     } finally {
       if (dirname(directory) !== scratchRoot) throw new Error('Scratch directory escaped its root.');
@@ -77,7 +77,7 @@ describe('live HTTP and local helper behavior', () => {
   });
 
   it('refuses local call admission before transport without an API error code', async () => {
-    expect(Object.keys(SYSTEM_ZERO_ERRORS)).toHaveLength(45);
+    expect(Object.keys(SYSTEM_ZERO_ERRORS)).toHaveLength(46);
     expect(Object.hasOwn(SYSTEM_ZERO_ERRORS, 'call_limit_reached')).toBe(false);
     const transport = vi.fn(async () => Response.json({ answers: {} }));
     const client = new sdk.SystemZeroClient({ apiKey: 'SYNTHETIC', fetch: transport, maxRetries: 0 });

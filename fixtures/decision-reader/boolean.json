@@ -5,7 +5,7 @@
       "type": "boolean",
       "probability": 0,
       "confidence": 1,
-      "calibration_version": "synthetic/reader-parity",
+      "calibration_version": "unpublished",
       "calibrated": false,
       "decision": false,
       "alternatives": [
@@ -32,7 +32,7 @@
       "type": "boolean",
       "probability": 0.06,
       "confidence": 0.94,
-      "calibration_version": "synthetic/reader-parity",
+      "calibration_version": "unpublished",
       "calibrated": false,
       "decision": false,
       "alternatives": [
@@ -59,7 +59,7 @@
       "type": "boolean",
       "probability": 0.499999,
       "confidence": 0.500001,
-      "calibration_version": "synthetic/reader-parity",
+      "calibration_version": "unpublished",
       "calibrated": false,
       "decision": false,
       "alternatives": [
@@ -86,7 +86,7 @@
       "type": "boolean",
       "probability": 0.5,
       "confidence": 0.5,
-      "calibration_version": "synthetic/reader-parity",
+      "calibration_version": "unpublished",
       "calibrated": false,
       "decision": true,
       "alternatives": [
@@ -113,7 +113,7 @@
       "type": "boolean",
       "probability": 0.500001,
       "confidence": 0.500001,
-      "calibration_version": "synthetic/reader-parity",
+      "calibration_version": "unpublished",
       "calibrated": false,
       "decision": true,
       "alternatives": [
@@ -140,7 +140,7 @@
       "type": "boolean",
       "probability": 1,
       "confidence": 1,
-      "calibration_version": "synthetic/reader-parity",
+      "calibration_version": "unpublished",
       "calibrated": false,
       "decision": true,
       "alternatives": [
@@ -167,7 +167,7 @@
       "type": "boolean",
       "probability": 0.06,
       "confidence": 0.94,
-      "calibration_version": "synthetic/reader-parity",
+      "calibration_version": "unpublished",
       "calibrated": false,
       "decision": false,
       "alternatives": [
@@ -194,7 +194,7 @@
       "type": "boolean",
       "probability": 0.0600000001,
       "confidence": 0.94,
-      "calibration_version": "synthetic/reader-parity",
+      "calibration_version": "unpublished",
       "calibrated": false,
       "decision": false,
       "alternatives": [
@@ -212,7 +212,7 @@
       "type": "boolean",
       "probability": 0.06,
       "confidence": 0.940000000001,
-      "calibration_version": "synthetic/reader-parity",
+      "calibration_version": "unpublished",
       "calibrated": false,
       "decision": false,
       "alternatives": [
@@ -230,7 +230,7 @@
       "type": "boolean",
       "probability": 0.06,
       "confidence": 0.94,
-      "calibration_version": "synthetic/reader-parity",
+      "calibration_version": "unpublished",
       "calibrated": false,
       "decision": false,
       "alternatives": [
@@ -248,7 +248,7 @@
       "type": "boolean",
       "probability": -1e-06,
       "confidence": 0.94,
-      "calibration_version": "synthetic/reader-parity",
+      "calibration_version": "unpublished",
       "calibrated": false,
       "decision": false,
       "alternatives": [
@@ -266,7 +266,7 @@
       "type": "boolean",
       "probability": 1.000001,
       "confidence": 0.94,
-      "calibration_version": "synthetic/reader-parity",
+      "calibration_version": "unpublished",
       "calibrated": false,
       "decision": false,
       "alternatives": [

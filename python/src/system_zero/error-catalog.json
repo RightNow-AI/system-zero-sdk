@@ -4,7 +4,7 @@
     "message": "This account does not currently have API access."
   },
   "audio_not_available": {
-    "message": "Audio is not available. Send the request without the audio attachment.",
+    "message": "Audio is unavailable. Send the request without the audio attachment.",
     "status": 404
   },
   "auth_error": {
@@ -32,7 +32,7 @@
     "status": 404
   },
   "document_not_available": {
-    "message": "Documents are not available. Send the request without the document attachment.",
+    "message": "Documents are unavailable. Send the request without the document attachment.",
     "status": 404
   },
   "https_required": {
@@ -51,12 +51,16 @@
     "status": 409,
     "message": "The answer to this request is no longer stored. Send it again with a new Idempotency-Key."
   },
+  "idempotency_replayed_error": {
+    "status": 500,
+    "message": "The original request failed. Its stored error response is replayed."
+  },
   "idempotency_unavailable": {
     "status": 503,
     "message": "Replay protection is temporarily unavailable. Retry this request with the same Idempotency-Key."
   },
   "image_not_available": {
-    "message": "Images are not available. Send the request without the image attachment.",
+    "message": "Images are unavailable. Send the request without the image attachment.",
     "status": 404
   },
   "injection_suspected": {
@@ -64,7 +68,7 @@
     "status": 422
   },
   "input_quarantined": {
-    "message": "This exact input caused repeated serving failures, so it is refused for up to 24 hours. Change the input before retrying.",
+    "message": "This exact input caused repeated serving failures, so it is refused for up to 24 hours. Change the input or contact support.",
     "status": 422
   },
   "internal_error": {
@@ -176,7 +180,7 @@
     "status": 429
   },
   "workspace_quarantined": {
-    "message": "This account's requests are paused for up to an hour after repeated serving failures.",
+    "message": "This account's requests are paused for up to an hour after repeated serving failures. Contact support.",
     "status": 422
   }
 }

@@ -100,11 +100,11 @@ class FlowDefinition(TypedDict):
 class _FlowOptionsOptional(TypedDict, total=False):
     include_content: bool
     now: Optional[Callable[[], float]]
+    max_decide_calls: int
 
 
 class FlowOptions(_FlowOptionsOptional):
     run_id: str
-    max_decide_calls: int
     deadline_ms: float
 
 
@@ -141,6 +141,7 @@ class _FlowStepTraceOptional(TypedDict, total=False):
 
 
 class FlowStepTrace(_FlowStepTraceOptional):
+    decide_calls: int
     step_index: int
     status: Literal["completed", "skipped", "held", "refused", "failed"]
     request_id: Optional[str]
@@ -149,7 +150,6 @@ class FlowStepTrace(_FlowStepTraceOptional):
     question_count: int
     started_ms: float
     elapsed_ms: float
-    decide_calls: int
     replayed: bool
     usage: Optional[Dict[str, float]]
     answers: List[FlowAnswerTrace]
@@ -157,12 +157,12 @@ class FlowStepTrace(_FlowStepTraceOptional):
 
 
 class FlowTrace(TypedDict):
+    decide_calls: int
     version: Literal[1]
     run_hash: str
     status: Literal["completed", "refused", "held", "failed"]
     started_ms: float
     elapsed_ms: float
-    decide_calls: int
     steps: List[FlowStepTrace]
 
 
@@ -271,8 +271,8 @@ class BatchItem(TypedDict):
     expected: ExpectedAnswers
 
 
-class BatchUsage(Usage):
-    """The counters returned in a decision reply."""
+class BatchUsage(Usage, total=False):
+    pass
 
 
 class BatchRecord(TypedDict):
@@ -298,15 +298,16 @@ class _BatchOptionsOptional(TypedDict, total=False):
     now_ms: Callable[[], float]
     sleep_ms: Callable[[float], None]
     random: Callable[[], float]
+    max_decide_calls: int
 
 
 class BatchOptions(_BatchOptionsOptional):
     run_id: str
     results_path: Union[str, Path]
-    max_decide_calls: int
     deadline_ms: float
 
 
 class BatchResult(TypedDict):
+    decide_calls: int
     records: List[BatchRecord]
-    stopped: Optional[Literal["call_limit", "deadline"]]
+    stopped: Optional[Literal["deadline", "call_limit"]]

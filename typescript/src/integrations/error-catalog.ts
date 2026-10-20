@@ -5,7 +5,7 @@ export const SYSTEM_ZERO_ERRORS = {
   ],
   "audio_not_available": [
     404,
-    "Audio is not available. Send the request without the audio attachment."
+    "Audio is unavailable. Send the request without the audio attachment."
   ],
   "auth_error": [
     403,
@@ -33,7 +33,7 @@ export const SYSTEM_ZERO_ERRORS = {
   ],
   "document_not_available": [
     404,
-    "Documents are not available. Send the request without the document attachment."
+    "Documents are unavailable. Send the request without the document attachment."
   ],
   "https_required": [
     403,
@@ -51,13 +51,17 @@ export const SYSTEM_ZERO_ERRORS = {
     409,
     "The answer to this request is no longer stored. Send it again with a new Idempotency-Key."
   ],
+  "idempotency_replayed_error": [
+    500,
+    "The original request failed. Its stored error response is replayed."
+  ],
   "idempotency_unavailable": [
     503,
     "Replay protection is temporarily unavailable. Retry this request with the same Idempotency-Key."
   ],
   "image_not_available": [
     404,
-    "Images are not available. Send the request without the image attachment."
+    "Images are unavailable. Send the request without the image attachment."
   ],
   "injection_suspected": [
     422,
@@ -65,7 +69,7 @@ export const SYSTEM_ZERO_ERRORS = {
   ],
   "input_quarantined": [
     422,
-    "This exact input caused repeated serving failures, so it is refused for up to 24 hours. Change the input before retrying."
+    "This exact input caused repeated serving failures, so it is refused for up to 24 hours. Change the input or contact support."
   ],
   "internal_error": [
     500,
@@ -177,7 +181,7 @@ export const SYSTEM_ZERO_ERRORS = {
   ],
   "workspace_quarantined": [
     422,
-    "This account's requests are paused for up to an hour after repeated serving failures."
+    "This account's requests are paused for up to an hour after repeated serving failures. Contact support."
   ]
 } as const;
 export type SystemZeroErrorCode = keyof typeof SYSTEM_ZERO_ERRORS;

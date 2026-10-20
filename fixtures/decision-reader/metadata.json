@@ -3,7 +3,7 @@
     "name": "metadata-text-without-preview",
     "accepts": true,
     "metadata": {
-      "calibration_version": "Text/Release@3"
+      "calibration_version": "unpublished"
     },
     "answer": {
       "type": "boolean",
@@ -17,7 +17,7 @@
         }
       ],
       "calibrated": true,
-      "calibration_version": "Text/Release@3"
+      "calibration_version": "unpublished"
     }
   },
   {

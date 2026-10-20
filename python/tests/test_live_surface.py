@@ -19,7 +19,7 @@ API_CODES = set("""
 """.split())
 GATEWAY_CODES = set("""
     auth_error account_suspended model_not_found unknown_endpoint method_not_allowed invalid_trace_header invalid_api_key invalid_idempotency_key
-    idempotency_conflict idempotency_replay_unavailable idempotency_unavailable limiter_unavailable
+    idempotency_conflict idempotency_replay_unavailable idempotency_replayed_error idempotency_unavailable limiter_unavailable
     maintenance internal_error concurrency_limit_exceeded monthly_cap_reached
 """.split())
 

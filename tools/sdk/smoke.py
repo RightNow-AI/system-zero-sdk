@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Exercise public Python entrypoints and an injected HTTP transport offline."""
 
+from importlib.metadata import version as installed_version
 import json
 import os
 import re
@@ -8,8 +9,10 @@ from pathlib import Path
 import sys
 
 
-root = Path(sys.argv[1]) if len(sys.argv) > 1 else Path(__file__).resolve().parents[2] / "python"
-sys.path.insert(0, str(root.resolve() / "src"))
+installed = len(sys.argv) > 1 and sys.argv[1] == "--installed"
+root = None if installed else Path(sys.argv[1]) if len(sys.argv) > 1 else Path(__file__).resolve().parents[2] / "python"
+if root is not None:
+    sys.path.insert(0, str(root.resolve() / "src"))
 
 import httpx  # noqa: E402
 import system_zero  # noqa: E402
@@ -19,9 +22,13 @@ import system_zero.tools  # noqa: E402
 expected_python = os.environ.get("SDK_EXPECTED_PYTHON")
 if expected_python:
     assert tuple(map(int, expected_python.split("."))) == sys.version_info[:2]
-metadata = (root / "pyproject.toml").read_text(encoding="utf-8")
-version = re.search(r'^version\s*=\s*"([^"\n]+)"', metadata, re.MULTILINE)
-assert version is not None and system_zero.__version__ == version[1]
+if installed:
+    assert system_zero.__version__ == installed_version("rightnow-system-zero")
+    assert Path(system_zero.__file__).resolve().is_relative_to(Path(sys.prefix).resolve())
+else:
+    metadata = (root / "pyproject.toml").read_text(encoding="utf-8")
+    version = re.search(r'^version\s*=\s*"([^"\n]+)"', metadata, re.MULTILINE)
+    assert version is not None and system_zero.__version__ == version[1]
 
 
 request_body = {

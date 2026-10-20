@@ -204,7 +204,7 @@ class SystemZero:
         on_deadline = context.get("on_deadline", lambda: None)
         outgoing = httpx.Headers(headers)
         outgoing["Authorization"] = "Bearer " + self._api_key
-        outgoing["User-Agent"] = "rightnow-system-zero/" + VERSION + " (python; server-side)"
+        outgoing["User-Agent"] = "system-zero-python/" + VERSION + " python/" + ".".join(map(str, sys.version_info[:3]))
         outgoing["Accept"] = "application/json"
         if body is not None:
             outgoing["Content-Type"] = "application/json"
@@ -217,6 +217,11 @@ class SystemZero:
                 idempotency_key = "szsdk_" + uuid4().hex
             if idempotency_key is not None:
                 outgoing["Idempotency-Key"] = idempotency_key
+        if "Idempotency-Key" in outgoing and not outgoing["Idempotency-Key"].strip():
+            del outgoing["Idempotency-Key"]
+        if "X-Client-Request-Id" in outgoing and not outgoing["X-Client-Request-Id"].strip():
+            del outgoing["X-Client-Request-Id"]
+        used_key = outgoing.get("Idempotency-Key")
         # Python dict insertion order is preserved. Serialize once for all attempts.
         payload = json.dumps(body, ensure_ascii=False, separators=(",", ":")).encode("utf-8") if body is not None else None
         safe_replay = method in {"GET", "HEAD", "OPTIONS"} or bool(outgoing.get("Idempotency-Key", "").strip())
@@ -232,14 +237,15 @@ class SystemZero:
         for attempt in range(max_retries + 1):
             outside = external_remaining()
             remaining = min(retry_deadline - self._monotonic(), outside)
-            if outside <= 0 or attempt and remaining <= 0:
+            if outside <= 0 or attempt and remaining < 0.001:
                 if outside <= 0:
                     on_deadline()
                 if last_error is not None:
                     raise last_error
                 raise APITimeoutError("System Zero request deadline exceeded.",
-                                      type="timeout_error", code="system_zero_timeout")
+                                      type="timeout_error", code="system_zero_timeout", idempotency_key=used_key)
             timeout = min(self.timeout, remaining) if attempt else min(self.timeout, outside)
+            outgoing["X-SDK-Retry-Count"] = str(attempt)
             request = self._http.build_request(method, _checked_base_url(self.base_url) + path, content=payload, headers=outgoing, timeout=timeout)
             state = AttemptState(time.monotonic() + timeout)
             token = attempt_state.set(state)
@@ -254,13 +260,13 @@ class SystemZero:
             try:
                 outside = external_remaining()
                 remaining = min(retry_deadline - self._monotonic(), outside)
-                if outside <= 0 or attempt and remaining <= 0:
+                if outside <= 0 or attempt and remaining < 0.001:
                     if outside <= 0:
                         on_deadline()
                     if last_error is not None:
                         raise last_error
                     raise APITimeoutError("System Zero request deadline exceeded.",
-                                          type="timeout_error", code="system_zero_timeout")
+                                          type="timeout_error", code="system_zero_timeout", idempotency_key=used_key)
                 dispatch_timeout = min(timeout, remaining) if attempt else min(timeout, outside)
                 request.extensions["timeout"] = httpx.Timeout(dispatch_timeout).as_dict()
                 state.deadline = min(state.deadline, time.monotonic() + dispatch_timeout)
@@ -282,7 +288,7 @@ class SystemZero:
                     parsed = None
                 if response.is_success and isinstance(parsed, dict):
                     result_headers = MappingProxyType(dict(response.headers))
-                    result = ResponseResult(parsed, response_metadata(result_headers), response.status_code, result_headers)
+                    result = ResponseResult(parsed, response_metadata(result_headers, used_key), response.status_code, result_headers)
                 else:
                     error = _api_error(response, parsed)
                     envelope_error = parsed.get("error") if isinstance(parsed, dict) else None
@@ -308,6 +314,8 @@ class SystemZero:
                 if (not is_transport_error(cause, context_boundary=context_boundary) or
                         isinstance(cause, APITimeoutError) and not dispatched):
                     propagating = True
+                    if isinstance(cause, SystemZeroError):
+                        cause.idempotency_key = used_key
                     raise
                 started = state.response_started or bool(request.extensions.get("system_zero_response_started"))
                 # Keep the existing ordinary retry classes and response-byte gate.
@@ -358,6 +366,7 @@ class SystemZero:
                 return result
             if error is None:
                 raise RuntimeError("System Zero transport did not return a result.")
+            error.idempotency_key = used_key
             last_error = error
             if external_remaining() <= 0:
                 on_deadline()

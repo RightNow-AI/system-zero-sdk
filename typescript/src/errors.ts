@@ -1,3 +1,4 @@
+import { retryAfterMs } from './retry.js';
 import type { ErrorEnvelope } from './api-types.js';
 
 export interface ErrorFields {
@@ -8,6 +9,7 @@ export interface ErrorFields {
   retryable?: boolean;
   details?: Record<string, unknown>;
   request_id?: string | null;
+  idempotencyKey?: string | null;
   headers?: Headers;
   cause?: unknown;
 }
@@ -21,6 +23,7 @@ export class SystemZeroError extends Error {
   readonly retryable: boolean;
   readonly details: Record<string, unknown> | undefined;
   readonly request_id: string | null;
+  idempotencyKey: string | null;
   readonly headers: Headers;
 
   constructor(message: string, fields: ErrorFields = {}) {
@@ -33,6 +36,7 @@ export class SystemZeroError extends Error {
     this.retryable = fields.retryable ?? false;
     this.details = fields.details;
     this.request_id = fields.request_id ?? null;
+    this.idempotencyKey = fields.idempotencyKey ?? null;
     this.headers = new Headers(fields.headers);
   }
 }
@@ -41,8 +45,12 @@ export class InvalidRequestError extends SystemZeroError {}
 export class AuthenticationError extends SystemZeroError {}
 export class PermissionError extends SystemZeroError {}
 export class NotFoundError extends SystemZeroError {}
-export class RateLimitError extends SystemZeroError {}
-export class OverloadedError extends SystemZeroError {}
+export class RateLimitError extends SystemZeroError {
+  get retryAfterMs(): number | null { return retryAfterMs(this.headers); }
+}
+export class OverloadedError extends SystemZeroError {
+  get retryAfterMs(): number | null { return retryAfterMs(this.headers); }
+}
 export class APIError extends SystemZeroError {}
 export class ServerError extends SystemZeroError {}
 export interface ConnectionErrorFields extends ErrorFields {
@@ -83,7 +91,8 @@ export class APIConnectionError extends SystemZeroError {
 /** Retained for compatibility and local workflow deadlines; transport failures use APIConnectionError. */
 export class APITimeoutError extends APIConnectionError {}
 
-// Specialized exceptions retain the API's code and envelope fields.
+ 
+// but these names do not presume a class grant or a new refusal vocabulary.
 export class PayloadTooLargeError extends InvalidRequestError {}
 export class InvalidCriteriaError extends InvalidRequestError {}
 export class ServiceUnavailableError extends APIError {}

@@ -87,7 +87,7 @@ def _distribution(answer: Mapping[str, Any], canonical: bool) -> Dict[str, Union
             _invalid("probabilities must be finite numbers in [0, 1]")
         values[key] = _units(value) if canonical else value
     total = sum(values.values())
-    # Allow one millionth of probability-mass drift without normalization.
+    
     if (canonical and (abs(total - _MILLION) > 1 or (len(values) == 1 and total != _MILLION))) or (not canonical and abs(total - 1) > 0.000001):
         _invalid("probabilities must sum to one")
     return values
@@ -112,7 +112,7 @@ def _rank(values: Mapping[str, Union[int, float]], score: bool):
 
 
 def _raw_probability_bound(value: Union[int, float], increasing: bool) -> float:
-    # Invert the probability rounding check, including floating-point rounding.
+    # Invert upstream.ts's near(p * million, round(p * million)), including its float rounding.
     bound = max(0.0, min(1.0, (value + (1e-6 if increasing else -1e-6)) / _MILLION))
     direction = math.inf if increasing else -math.inf
     while abs(bound * _MILLION - value) > 1e-6:
@@ -266,7 +266,7 @@ def _expected_score(score: float, values: Mapping[str, Union[int, float]]) -> bo
             total += value
         return total - 1 <= 1e-6 if increasing else 1 - total <= 1e-6
 
-    # The response preserves the raw score while projecting probabilities. Find an
+    # decision-fields.ts preserves the raw score while projecting probabilities. Find an
     # attainable boundary candidate by moving the lowest levels first. Binary search keeps
     # the original mass predicate; the witness search below handles IEEE sum plateaus.
     for index in range(len(raw)):

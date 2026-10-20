@@ -13,7 +13,7 @@
         "1": 0.25
       },
       "confidence": 0.75,
-      "calibration_version": "synthetic/reader-parity",
+      "calibration_version": "unpublished",
       "calibrated": false,
       "decision": "0",
       "alternatives": [
@@ -56,7 +56,7 @@
         "1": 0.249999
       },
       "confidence": 0.75,
-      "calibration_version": "synthetic/reader-parity",
+      "calibration_version": "unpublished",
       "calibrated": false,
       "decision": "0",
       "alternatives": [
@@ -99,7 +99,7 @@
         "1": 0.250001
       },
       "confidence": 0.75,
-      "calibration_version": "synthetic/reader-parity",
+      "calibration_version": "unpublished",
       "calibrated": false,
       "decision": "0",
       "alternatives": [
@@ -142,7 +142,7 @@
         "1": 0.249998
       },
       "confidence": 0.75,
-      "calibration_version": "synthetic/reader-parity",
+      "calibration_version": "unpublished",
       "calibrated": false,
       "decision": "0",
       "alternatives": [
@@ -185,7 +185,7 @@
         "1": 0.250002
       },
       "confidence": 0.75,
-      "calibration_version": "synthetic/reader-parity",
+      "calibration_version": "unpublished",
       "calibrated": false,
       "decision": "0",
       "alternatives": [
@@ -228,7 +228,7 @@
         "1": 0.25
       },
       "confidence": 0.75,
-      "calibration_version": "synthetic/reader-parity",
+      "calibration_version": "unpublished",
       "calibrated": false,
       "decision": "0",
       "alternatives": [
@@ -271,7 +271,7 @@
         "1": 0.25
       },
       "confidence": 0.75,
-      "calibration_version": "synthetic/reader-parity",
+      "calibration_version": "unpublished",
       "calibrated": false,
       "decision": "0",
       "alternatives": [
@@ -314,7 +314,7 @@
         "1": 0.25
       },
       "confidence": 0.75,
-      "calibration_version": "synthetic/reader-parity",
+      "calibration_version": "unpublished",
       "calibrated": false,
       "decision": "0",
       "alternatives": [
@@ -357,7 +357,7 @@
         "1": 0.25
       },
       "confidence": 0.75,
-      "calibration_version": "synthetic/reader-parity",
+      "calibration_version": "unpublished",
       "calibrated": false,
       "decision": "0",
       "alternatives": [
@@ -400,7 +400,7 @@
         "1": 0.25
       },
       "confidence": 0.75,
-      "calibration_version": "synthetic/reader-parity",
+      "calibration_version": "unpublished",
       "calibrated": false,
       "decision": "0",
       "alternatives": [
@@ -443,7 +443,7 @@
         "1": 0.25
       },
       "confidence": 0.75,
-      "calibration_version": "synthetic/reader-parity",
+      "calibration_version": "unpublished",
       "calibrated": false,
       "decision": "0",
       "alternatives": [
@@ -486,7 +486,7 @@
         "1": 0
       },
       "confidence": 1,
-      "calibration_version": "synthetic/reader-parity",
+      "calibration_version": "unpublished",
       "calibrated": false,
       "decision": "0",
       "alternatives": [
@@ -529,7 +529,7 @@
         "1": 0
       },
       "confidence": 1,
-      "calibration_version": "synthetic/reader-parity",
+      "calibration_version": "unpublished",
       "calibrated": false,
       "decision": "0",
       "alternatives": [
@@ -572,7 +572,7 @@
         "1": 1
       },
       "confidence": 1,
-      "calibration_version": "synthetic/reader-parity",
+      "calibration_version": "unpublished",
       "calibrated": false,
       "decision": "1",
       "alternatives": [
@@ -615,7 +615,7 @@
         "1": 1
       },
       "confidence": 1,
-      "calibration_version": "synthetic/reader-parity",
+      "calibration_version": "unpublished",
       "calibrated": false,
       "decision": "1",
       "alternatives": [
@@ -660,7 +660,7 @@
         "2": 0.2
       },
       "confidence": 0.4,
-      "calibration_version": "synthetic/reader-parity",
+      "calibration_version": "unpublished",
       "calibrated": false,
       "decision": "0",
       "alternatives": [
@@ -725,7 +725,7 @@
         "9": 0.25
       },
       "confidence": 0.75,
-      "calibration_version": "synthetic/reader-parity",
+      "calibration_version": "unpublished",
       "calibrated": false,
       "decision": "0",
       "alternatives": [
@@ -832,7 +832,7 @@
         "9": 0.25
       },
       "confidence": 0.75,
-      "calibration_version": "synthetic/reader-parity",
+      "calibration_version": "unpublished",
       "calibrated": false,
       "decision": "0",
       "alternatives": [
@@ -925,7 +925,7 @@
         "2": 0.250001
       },
       "confidence": 0.75,
-      "calibration_version": "synthetic/reader-parity",
+      "calibration_version": "unpublished",
       "calibrated": false,
       "decision": "0",
       "alternatives": [
@@ -976,7 +976,7 @@
         "2": 0.250001
       },
       "confidence": 0.75,
-      "calibration_version": "synthetic/reader-parity",
+      "calibration_version": "unpublished",
       "calibrated": false,
       "decision": "0",
       "alternatives": [
@@ -1027,7 +1027,7 @@
         "2": 0.249999
       },
       "confidence": 0.75,
-      "calibration_version": "synthetic/reader-parity",
+      "calibration_version": "unpublished",
       "calibrated": false,
       "decision": "1",
       "alternatives": [
@@ -1078,7 +1078,7 @@
         "2": 0.249999
       },
       "confidence": 0.75,
-      "calibration_version": "synthetic/reader-parity",
+      "calibration_version": "unpublished",
       "calibrated": false,
       "decision": "1",
       "alternatives": [
@@ -1127,7 +1127,7 @@
         "1": 0
       },
       "confidence": 1,
-      "calibration_version": "synthetic/reader-parity",
+      "calibration_version": "unpublished",
       "decision": "0",
       "calibrated": false,
       "alternatives": [
@@ -1170,7 +1170,7 @@
         "1": 1
       },
       "confidence": 1,
-      "calibration_version": "synthetic/reader-parity",
+      "calibration_version": "unpublished",
       "decision": "1",
       "calibrated": false,
       "alternatives": [
@@ -1213,7 +1213,7 @@
         "1": 0.25
       },
       "confidence": 0.75,
-      "calibration_version": "synthetic/reader-parity",
+      "calibration_version": "unpublished",
       "decision": "0",
       "alternatives": [
         {
@@ -1256,7 +1256,7 @@
         "1": 0.25
       },
       "confidence": 0.75,
-      "calibration_version": "synthetic/reader-parity",
+      "calibration_version": "unpublished",
       "decision": "0",
       "alternatives": [
         {
@@ -1299,7 +1299,7 @@
         "1": 0.25
       },
       "confidence": 0.75,
-      "calibration_version": "synthetic/reader-parity",
+      "calibration_version": "unpublished",
       "decision": "0",
       "alternatives": [
         {
@@ -1344,7 +1344,7 @@
         "2": 0.296063
       },
       "confidence": 0.392584,
-      "calibration_version": "synthetic/reader-parity",
+      "calibration_version": "unpublished",
       "decision": "1",
       "alternatives": [
         {
@@ -1409,7 +1409,7 @@
         "9": 0.100001
       },
       "confidence": 0.100001,
-      "calibration_version": "synthetic/reader-parity",
+      "calibration_version": "unpublished",
       "decision": "9",
       "alternatives": [
         {
@@ -1516,7 +1516,7 @@
         "9": 0.100001
       },
       "confidence": 0.100001,
-      "calibration_version": "synthetic/reader-parity",
+      "calibration_version": "unpublished",
       "decision": "9",
       "alternatives": [
         {

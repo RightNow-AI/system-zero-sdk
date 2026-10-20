@@ -9,12 +9,12 @@ import re
 import sys
 
 
-# This destination identifies the reviewed public SDK repository.
-# Publication requires approval for this repository.
+# This destination identifies the public SDK repository.
+# Publishing requires the configured SDK repository.
 SDK_SOURCE_PUBLIC = True
-PUBLIC_CI_MODE = 'manual'
+PUBLIC_CI_MODE = 'hosted'
 PUBLIC_SDK_REPOSITORY = "https://github.com/RightNow-AI/system-zero-sdk.git"
-PUBLISH_WAIT = "Publishing requires the approved public SDK repository."
+PUBLISH_WAIT = "Publishing waits for the public SDK repository."
 
 
 class ReleaseRuleError(ValueError):
@@ -41,7 +41,7 @@ def check_npm_repository(package: dict[str, object]) -> None:
     expected = public_repository()
     if not SDK_SOURCE_PUBLIC:
         if "repository" in package:
-            raise ReleaseRuleError("Repository metadata is not permitted by this release policy.")
+            raise ReleaseRuleError("Repository metadata is omitted when publishing is disabled.")
         return
     repository = package.get("repository")
     if not isinstance(repository, dict) or repository.get("url") != expected:
@@ -62,9 +62,14 @@ def main() -> int:
     parser.add_argument("--github-output", type=Path)
     parser.add_argument("--require-public", action="store_true")
     parser.add_argument("--repository", default="")
+    parser.add_argument("--repository-url", action="store_true")
     args = parser.parse_args()
     try:
         public_repository()
+        if args.repository_url:
+            if not SDK_SOURCE_PUBLIC:
+                raise ReleaseRuleError(PUBLISH_WAIT)
+            print(public_repository())
         if args.require_public:
             require_public(args.repository)
         if args.github_output is not None:

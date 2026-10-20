@@ -27,6 +27,7 @@ class ResponseMetadata:
     latency_ms: Optional[float]
     replayed: bool
     replay_header: Optional[str]
+    idempotency_key: Optional[str] = None
 
 
 @dataclass(frozen=True)
@@ -49,13 +50,13 @@ def _number(raw: Optional[str]) -> Optional[float]:
     return value if math.isfinite(value) and value >= 0 else None
 
 
-def response_metadata(headers: Mapping[str, str]) -> ResponseMetadata:
+def response_metadata(headers: Mapping[str, str], idempotency_key: Optional[str] = None) -> ResponseMetadata:
     primary = [_integer(headers.get("x-ratelimit-" + name)) for name in ("limit", "remaining", "reset")]
     requests = [_integer(headers.get("x-ratelimit-" + name + "-requests")) for name in ("limit", "remaining", "reset")]
     rates = RateLimitInfo(*[first if first is not None else second for first, second in zip(primary, requests)], *requests)
     replay = headers.get("x-rightnow-idempotent-replay")
     return ResponseMetadata(
-        request_id=headers.get("x-request-id"),
+        idempotency_key=idempotency_key, request_id=headers.get("x-request-id"),
         client_request_id=headers.get("x-client-request-id"),
         rate_limit=rates, latency_ms=_number(headers.get("x-latency-ms")),
         replayed=replay == "true", replay_header=replay,

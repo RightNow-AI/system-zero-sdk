@@ -65,7 +65,7 @@ export interface EvaluationReport {
   records: EvaluationRecord[];
 }
 const knownCodes = new Set<string>(Object.values(ERROR_CODES));
-// QuestionRefusalData carries the API's question-level refusal codes.
+ 
 const questionRefusalCodes = new Set<string>([
   'injection_suspected', 'question_not_grounded', ] satisfies QuestionRefusalData['error']['code'][]);
 const semanticRefusalCodes = new Set([...questionRefusalCodes, 'request_refused']);
@@ -335,7 +335,7 @@ function markdown(value: string | number | null): string {
 }
 export function reportMarkdown(report: EvaluationReport): string {
   const lines = [
-    '# Batch evaluation', '',
+    '# Batch evaluation ', '',
     '| Items | Completed | Refused | Held | Errors |', '| --- | --- | --- | --- | --- |',
     `| ${report.items.total} | ${report.items.completed} | ${report.items.refused} | ${report.items.held} | ${report.items.error} |`, '',
     '| Type | Questions | Correct | Accuracy | False-refusal rate |', '| --- | --- | --- | --- | --- |',

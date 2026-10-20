@@ -1,23 +1,26 @@
-const capacityCodes = new Set(['capacity_exhausted', 'rate_limit', 'rate_limit_exceeded']);
+const capacityCodes = new Set(['capacity_exhausted', 'rate_limit', 'rate_limit_exceeded', 'concurrency_limit_exceeded', 'workspace_limit_exceeded']);
 
-/** Classify HTTP responses for bounded client recovery. */
-export function shouldRetry(status: number, code: string | null, headers: Headers, retryable?: boolean, _nowMs: number = Date.now()): boolean {
+ 
+export function shouldRetry(status: number, code: string | null, headers: Headers, retryable?: boolean, nowMs: number = Date.now()): boolean {
   const hint = headers.get('x-should-retry');
   if (hint === 'false' || retryable === false) return false;
   const marked = hint === 'true' || retryable === true;
   if (status === 429) return marked && code !== null && capacityCodes.has(code);
+  if (status === 409) return marked && code === 'idempotency_conflict';
   if (status !== 503) return false;
-  if (code === 'service_unavailable' && marked) return true;
-  return false;
+  if ((code === 'service_unavailable' || code === 'system_zero_unavailable') && marked) return true;
+  const starting = code === 'starting' || ((code === null || code === 'service_unavailable') && ['true', '1'].includes(headers.get(('x-sz-' + 'starting')) ?? ''));
+  return starting && retryAfterMs(headers, nowMs) !== null;
 }
 
-/** Workflow recovery accepts explicit admission code/cause pairs. */
+ 
 export function shouldRecoverWorkflow(status: number, code: string | null, headers: Headers,
   retryable?: boolean, details?: Readonly<Record<string, unknown>>): boolean {
   const hint = headers.get('x-should-retry');
   if (status !== 429 || hint === 'false' || retryable === false || !(hint === 'true' || retryable === true)) return false;
   const cause = details?.cause;
-  // Only these code and cause pairs establish refusal before work started.
+  // Structured node capacity shares cause capacity with gateway admission.
+  // Neither that pair, an invented dispatched marker nor starting/5xx proves no work.
   return code === 'rate_limit_exceeded' && (cause === 'key_rate' || cause === 'preauth')
     || code === 'concurrency_limit_exceeded' && cause === 'account_concurrency';
 }
@@ -28,9 +31,9 @@ function nonnegativeNumber(value: string | null): number | null {
   return Number.isFinite(number) && number >= 0 ? number : null;
 }
 
-/** Every valid server delay is a minimum, including when both headers are present. */
+/** The precise millisecond header takes precedence; seconds apply only when it is absent. */
 export function retryAfterMs(headers: Headers, nowMs: number = Date.now()): number | null {
-  const milliseconds = nonnegativeNumber(headers.get('retry-after-ms'));
+  if (headers.has('retry-after-ms')) return nonnegativeNumber(headers.get('retry-after-ms'));
   const raw = headers.get('retry-after');
   const seconds = nonnegativeNumber(raw);
   let delay = seconds === null ? null : seconds * 1000;
@@ -41,8 +44,7 @@ export function retryAfterMs(headers: Headers, nowMs: number = Date.now()): numb
     const time = Date.parse(/\d{2}:\d{2}:\d{2}(?:\s+\d{4})?$/u.test(date) ? `${date} GMT` : date);
     if (Number.isFinite(time)) delay = Math.max(0, time - nowMs);
   }
-  if (milliseconds === null) return delay;
-  return delay === null ? milliseconds : Math.max(milliseconds, delay);
+  return delay;
 }
 
 /** Milliseconds; retryIndex is zero for the first retry. */

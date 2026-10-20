@@ -1,4 +1,12 @@
 export default {
+  "account_suspended": {
+    "status": 403,
+    "message": "This account does not currently have API access."
+  },
+  "auth_error": {
+    "status": 403,
+    "message": "API key is revoked"
+  },
   "concurrency_limit_exceeded": {
     "status": 429,
     "message": "This account has reached its concurrent call limit. Retry after the Retry-After delay."
@@ -10,6 +18,10 @@ export default {
   "idempotency_replay_unavailable": {
     "status": 409,
     "message": "The answer to this request is no longer stored. Send it again with a new Idempotency-Key."
+  },
+  "idempotency_replayed_error": {
+    "status": 500,
+    "message": "The original request failed. Its stored error response is replayed."
   },
   "idempotency_unavailable": {
     "status": 503,
@@ -43,6 +55,10 @@ export default {
     "status": 405,
     "message": "The HTTP method is not supported by this endpoint."
   },
+  "model_not_found": {
+    "status": 404,
+    "message": "The requested model is not available."
+  },
   "monthly_cap_reached": {
     "status": 429,
     "message": "This workspace reached its monthly decision cap."
@@ -50,17 +66,5 @@ export default {
   "unknown_endpoint": {
     "status": 404,
     "message": "The requested API endpoint was not found."
-  },
-  "auth_error": {
-    "status": 403,
-    "message": "API key is revoked"
-  },
-  "account_suspended": {
-    "status": 403,
-    "message": "This account does not currently have API access."
-  },
-  "model_not_found": {
-    "status": 404,
-    "message": "The requested model is not available."
   }
 };

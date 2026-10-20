@@ -15,15 +15,17 @@ FIXTURE = json.loads((Path(__file__).resolve().parents[2] / "fixtures" / "batch"
 def records():
     return [{
         "id": row["id"], "outcome": row["outcome"], "latency_ms": row["latency_ms"],
-        "usage": row.get("reply", {}).get("usage"), "code": row["code"],
+        "usage": row.get("reply", {}).get("usage"),
+ "code": row["code"],
         "questions": score_reply(row["request"], row["expected"], row["reply"]) if "reply" in row else [],
     } for row in FIXTURE["cases"]]
 
 
-def test_shared_hand_computed_accuracy_false_refusal_usage_and_latency():
+def test_shared_hand_computed_accuracy_false_refusal_usage_cost_and_latency():
     report = evaluate(records(), bins=FIXTURE["bins"])
     for key in ("items", "metrics", "by_type", "latency_ms", "usage"):
         assert report[key] == FIXTURE["expected"][key]
+    assert "cost" not in report
 
 
 def test_shared_reliability_bins_ece_and_selected_outcome_brier_on_caller_data_only():
@@ -78,7 +80,7 @@ def test_reports_are_content_free_json_and_markdown():
         assert "PRIVATE_" not in output
         assert "legacy-margin" not in output
         assert "served_by" not in output
-        assert "held-input" in output
+        assert "held-capability" in output
         assert "video_not_available" in output
 
 
@@ -89,6 +91,7 @@ def test_empty_metrics_and_absent_calibration_remain_null():
     assert report["calibration"] is None
     assert report["latency_ms"] == {"count": 0, "p50": None, "p95": None}
     assert report["usage"]["records_with_usage"] == 0
+    assert "cost" not in report
 
 
 def test_expected_answers_reject_missing_extra_or_wrong_typed_labels():
@@ -146,7 +149,7 @@ def test_invalid_metrics_duplicate_records_and_bins_are_typed_input_errors():
     invalid_refusal["questions"][0].update(outcome="refused", correct=False, confidence=None, code="video_not_available")
     invalid_confidence = copy.deepcopy(row)
     invalid_confidence["questions"][0]["confidence"] = 0.2900000001
-    for rows in ([row, row], [{**row, "latency_ms": -1}], [{**row, "usage": {**row["usage"], "input_tokens": float("nan")}}], [invalid_refusal], [invalid_confidence]):
+    for rows in ([row, row], [{**row, "latency_ms": -1}], [{**row, "latency_ms": float("nan")}], [{**row, "usage": {**row["usage"], "input_tokens": float("nan")}}], [invalid_refusal], [invalid_confidence]):
         with pytest.raises(SystemZeroError) as caught:
             evaluate(rows)
         assert caught.value.code == "invalid_request"

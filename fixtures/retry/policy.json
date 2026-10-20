@@ -198,14 +198,14 @@
     "retry": false
   },
   {
-    "name": "status 409 cannot force retry",
+    "name": "marked idempotency conflict retries with the same key",
     "status": 409,
     "code": "idempotency_conflict",
     "retryable": true,
     "headers": {
       "x-should-retry": "true"
     },
-    "retry": false
+    "retry": true
   },
   {
     "name": "status 413 cannot force retry",
@@ -276,5 +276,149 @@
       "x-should-retry": " true "
     },
     "retry": true
+  },
+  {
+    "name": "concurrency_limit_exceeded body",
+    "status": 429,
+    "code": "concurrency_limit_exceeded",
+    "headers": {},
+    "retryable": true,
+    "retry": true
+  },
+  {
+    "name": "concurrency_limit_exceeded header",
+    "status": 429,
+    "code": "concurrency_limit_exceeded",
+    "headers": {
+      "x-should-retry": "true"
+    },
+    "retry": true,
+    "retryable": null
+  },
+  {
+    "name": "concurrency_limit_exceeded false-header",
+    "status": 429,
+    "code": "concurrency_limit_exceeded",
+    "headers": {
+      "x-should-retry": "false"
+    },
+    "retryable": true,
+    "retry": false
+  },
+  {
+    "name": "concurrency_limit_exceeded unmarked",
+    "status": 429,
+    "code": "concurrency_limit_exceeded",
+    "headers": {},
+    "retry": false,
+    "retryable": null
+  },
+  {
+    "name": "workspace_limit_exceeded body",
+    "status": 429,
+    "code": "workspace_limit_exceeded",
+    "headers": {},
+    "retryable": true,
+    "retry": true
+  },
+  {
+    "name": "workspace_limit_exceeded header",
+    "status": 429,
+    "code": "workspace_limit_exceeded",
+    "headers": {
+      "x-should-retry": "true"
+    },
+    "retry": true,
+    "retryable": null
+  },
+  {
+    "name": "workspace_limit_exceeded false-header",
+    "status": 429,
+    "code": "workspace_limit_exceeded",
+    "headers": {
+      "x-should-retry": "false"
+    },
+    "retryable": true,
+    "retry": false
+  },
+  {
+    "name": "workspace_limit_exceeded unmarked",
+    "status": 429,
+    "code": "workspace_limit_exceeded",
+    "headers": {},
+    "retry": false,
+    "retryable": null
+  },
+  {
+    "name": "system_zero_unavailable body",
+    "status": 503,
+    "code": "system_zero_unavailable",
+    "headers": {},
+    "retryable": true,
+    "retry": true
+  },
+  {
+    "name": "system_zero_unavailable header",
+    "status": 503,
+    "code": "system_zero_unavailable",
+    "headers": {
+      "x-should-retry": "true"
+    },
+    "retry": true,
+    "retryable": null
+  },
+  {
+    "name": "system_zero_unavailable false-header",
+    "status": 503,
+    "code": "system_zero_unavailable",
+    "headers": {
+      "x-should-retry": "false"
+    },
+    "retryable": true,
+    "retry": false
+  },
+  {
+    "name": "system_zero_unavailable unmarked",
+    "status": 503,
+    "code": "system_zero_unavailable",
+    "headers": {},
+    "retry": false,
+    "retryable": null
+  },
+  {
+    "name": "idempotency_conflict body",
+    "status": 409,
+    "code": "idempotency_conflict",
+    "headers": {},
+    "retryable": true,
+    "retry": true
+  },
+  {
+    "name": "idempotency_conflict header",
+    "status": 409,
+    "code": "idempotency_conflict",
+    "headers": {
+      "x-should-retry": "true"
+    },
+    "retry": true,
+    "retryable": null
+  },
+  {
+    "name": "idempotency_conflict false-header",
+    "status": 409,
+    "code": "idempotency_conflict",
+    "headers": {
+      "x-should-retry": "false"
+    },
+    "retryable": true,
+    "retry": false
+  },
+  {
+    "name": "idempotency_conflict unmarked",
+    "status": 409,
+    "code": "idempotency_conflict",
+    "headers": {},
+    "retry": false,
+    "retryable": null
   }
 ]

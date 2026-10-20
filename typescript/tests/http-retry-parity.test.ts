@@ -9,7 +9,8 @@ const refusal = { request_id: 'req_http_parity', error: {
   type: 'api_error', code: 'service_unavailable', message: 'SYNTHETIC refusal', retryable: true,
 } };
 
-// The paired Python tests cover the same terminal and retryable cases.
+ 
+// The paired Python file pins the same terminal and retryable cases.
 for (const method of ['GET', 'POST'] as const) {
   describe(`${method} ordinary HTTP retry parity`, () => {
     async function observe(transport: Fetch, keyed = true) {
@@ -101,7 +102,7 @@ for (const method of ['GET', 'POST'] as const) {
         const { attempts, failure } = await observe(async () => {
           throw Object.assign(new Error('SYNTHETIC before-response reset'), { code: 'ECONNRESET' });
         }, false);
-        expect(attempts).toEqual([{ method: 'POST', key: '' }]);
+        expect(attempts).toEqual([{ method: 'POST', key: null }]);
         expect(failure.constructor).toBe(APIConnectionError);
         expect(failure.retryable).toBe(false);
       });

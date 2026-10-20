@@ -113,12 +113,12 @@ def check(args):
     npm = json.loads(prepare.read(stage / "npm/package.json"))
     python = tomllib.loads(prepare.read(stage / "python/pyproject.toml"))["project"]
     version = npm["version"]
-    require(npm["name"] == "@rightnow/system-zero" and python["name"] == "rightnow-system-zero"
+    require(npm["name"] == "@rightnowai/system-zero" and python["name"] == "rightnow-system-zero"
             and python["version"] == version, "package-identities")
     with contextlib.redirect_stdout(io.StringIO()):
         checker.check_artifacts(artifacts, "sdk-v" + version, version, False)
     paths = {
-        "npm": artifacts / "npm" / ("rightnow-system-zero-" + version + ".tgz"),
+        "npm": artifacts / "npm" / ("rightnowai-system-zero-" + version + ".tgz"),
         "wheel": artifacts / "python" / ("rightnow_system_zero-" + version + "-py3-none-any.whl"),
         "sdist": artifacts / "python" / ("rightnow_system_zero-" + version + ".tar.gz"),
     }

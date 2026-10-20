@@ -2,7 +2,8 @@ import { createServer, type IncomingMessage, type ServerResponse } from 'node:ht
 import { existsSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
-import { APIConnectionError, APIError, SystemZeroClient } from '../src/index.js';
+import { APIConnectionError, APIError } from '../src/index.js';
+import { SystemZeroClient } from '../src/client.js';
 import { runBatch } from '../src/batch.js';
 
 const host = [127, 0, 0, 1].join('.');
@@ -121,7 +122,7 @@ describe('client target revalidation', () => {
       try {
         if (method === 'GET') await sdk.models.list();
         else if (method === 'POST') await sdk.decide(requestBody);
-        else await runBatch(sdk, [], { runId: 'synthetic', resultsPath, maxDecideCalls: 1, deadlineMs: 1000 });
+        else await runBatch(sdk, [], { runId: 'synthetic', resultsPath,  deadlineMs: 1000 });
       } catch (error) { failure = error; }
       expect(failure).toBeInstanceOf(Error);
       expect(fetch).not.toHaveBeenCalled();

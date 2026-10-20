@@ -1,4 +1,5 @@
 """Transport classification without exposing native messages, URLs, or headers."""
+import asyncio
 import errno
 import re
 import socket
@@ -26,7 +27,7 @@ def _causes(error: BaseException, context_boundary: Optional[BaseException]=None
 def _is_network(error: BaseException) -> bool:
     if type(error) is APIConnectionError or isinstance(error, APITimeoutError):
         return True
-    return isinstance(error, (OSError, EOFError, httpx.TransportError, httpcore.NetworkError, httpcore.TimeoutException, httpcore.ProtocolError, httpcore.ProxyError))
+    return isinstance(error, (OSError, EOFError, asyncio.TimeoutError, httpx.TransportError, httpcore.NetworkError, httpcore.TimeoutException, httpcore.ProtocolError, httpcore.ProxyError))
 
 def is_transport_error(error: BaseException, *, context_boundary: Optional[BaseException]=None) -> bool:
     return any((_is_network(cause) for cause in _causes(error, context_boundary)))
@@ -95,7 +96,7 @@ def connection_error(error: BaseException, message: str, *, request_sent: Option
         fields = retained
         if request_sent is None:
             request_sent = error.request_sent
-    timeout = any((isinstance(cause, (TimeoutError, APITimeoutError, httpx.TimeoutException, httpcore.TimeoutException)) for cause in _causes(error, context_boundary)))
+    timeout = any((isinstance(cause, (TimeoutError, asyncio.TimeoutError, APITimeoutError, httpx.TimeoutException, httpcore.TimeoutException)) for cause in _causes(error, context_boundary)))
     if request_sent is None and _before_send(error, context_boundary=context_boundary):
         request_sent = False
     fields.setdefault('type', 'timeout_error' if timeout else 'connection_error')

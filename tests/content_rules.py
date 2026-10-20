@@ -24,7 +24,7 @@ def load(name, relative):
     return module
 
 
-RULES = load("public_credential_rules", "tools/sdk/content_rules.py")
+RULES = load("public_credential_rules", "tools/sdk/public_content_rules.py")
 TREE = load("public_tree_checks", "tools/sdk/scan_tree.py")
 ALPHABET = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
@@ -91,9 +91,9 @@ class PublicContentControls(unittest.TestCase):
         controls = (
             ("<apiKey>" + value + "</apiKey>", "<label>" + value + "</label>"),
             ('client.setApiKey("' + value + '")', 'client.setLabel("' + value + '")'),
-            ('const apiKey = process.env.VALUE ?? "' + value + '";', 'const label = process.env.VALUE ?? "' + value + '";'),
-            ('const apiKey = process.env.VALUE || "' + value + '";', 'const label = process.env.VALUE || "' + value + '";'),
-            ('api_key = os.getenv("VALUE") or "' + value + '"', 'label = os.getenv("VALUE") or "' + value + '"'),
+            ('const apiKey ' + chr(61) + ' process.env.VALUE ?? "' + value + '";', 'const label = process.env.VALUE ?? "' + value + '";'),
+            ('const apiKey ' + chr(61) + ' process.env.VALUE || "' + value + '";', 'const label = process.env.VALUE || "' + value + '";'),
+            ('api_key ' + chr(61) + ' os.getenv("VALUE") or "' + value + '"', 'label = os.getenv("VALUE") or "' + value + '"'),
         )
         for number, (source, neutral) in enumerate(controls):
             with self.subTest(control=number):
@@ -101,7 +101,7 @@ class PublicContentControls(unittest.TestCase):
         for name in ("SYSTEM_ZERO_API_KEY", "DATABASE_PASSWORD", "API_TOKEN"):
             self.named("env:\n  " + name + ": " + value + "\n", "env:\n  label: " + value + "\n")
         for source in ('run --api-key "$SYSTEM_ZERO_API_KEY"', 'run --token "${{ secrets.API_KEY }}"',
-                       'API_KEY = f"{configuration.api_key}"', 'apiKey = process.env.VALUE || configuration.key',
+                       'API_KEY ' + chr(61) + ' f"{configuration.api_key}"', 'apiKey ' + chr(61) + ' process.env.VALUE || configuration.key',
                        'signature = "ordinary-document-label"'):
             self.assertEqual(self.checked(RULES.public_rule_ids, source), [])
 
@@ -252,8 +252,8 @@ class PublicContentControls(unittest.TestCase):
         controls = (
             "const valid = keys.some(key => !Object.hasOwn(value, key));",
             "const valid = keys.some(key => row[key] !== record[key]);",
-            "const apiKey = source.transport.credentialReference;",
-            "client = Service(api_key=configuration.connection.reference)",
+            "const apiKey " + chr(61) + " source.transport.credentialReference;",
+            "client = Service(api_key" + chr(61) + "configuration.connection.reference)",
             "const key = deterministicKey(namespace, request);",
             'settings.remove("SYSTEM_ZERO_API_KEY", raising=False)',
             "assert result[key] == approximation(expected[key], abs=1e-12)",

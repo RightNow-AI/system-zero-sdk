@@ -17,7 +17,7 @@ const apiCodes = names(`
 `);
 const gatewayCodes = names(`
   auth_error account_suspended model_not_found unknown_endpoint method_not_allowed invalid_trace_header invalid_api_key invalid_idempotency_key
-  idempotency_conflict idempotency_replay_unavailable idempotency_unavailable limiter_unavailable
+  idempotency_conflict idempotency_replay_unavailable idempotency_replayed_error idempotency_unavailable limiter_unavailable
   maintenance internal_error concurrency_limit_exceeded monthly_cap_reached
 `);
 const rootNames = names(`
@@ -78,7 +78,8 @@ describe('public package surface', () => {
       }
     }
     const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
-    expect(Object.keys(pkg.exports).sort()).toEqual(Object.keys(entries).sort());
+    expect(Object.keys(pkg.exports).sort()).toEqual([...Object.keys(entries), './package.json'].sort());
+    expect(pkg.exports['./package.json']).toBe('./package.json');
   });
 
   it('exposes only the HTTP client resources and metadata options', () => {

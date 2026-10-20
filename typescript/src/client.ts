@@ -30,7 +30,7 @@ export interface ClientOptions {
 export interface RequestOptions {
   idempotencyKey?: string;
   clientRequestId?: string;
-  /** Additional request headers. */
+  /** Extra headers, including x-mock-scenario in local tests. */
   headers?: HeadersInit;
   /** Override the client's retry budget for this call, in milliseconds. */
   retryBudget?: number;
@@ -46,10 +46,10 @@ interface RetryContext {
   onDeadline?: () => void;
 }
 const retryContexts = new WeakMap<RequestOptions, RetryContext>();
-const clientSecrets = new WeakMap<SystemZeroClient, string>();
+const clientSecrets = new WeakMap<object, string>();
 
 /** Redact tool-visible text without exposing a client's credential. */
-export function redactClientText(client: SystemZeroClient | undefined, text: string): string {
+export function redactClientText(client: object | undefined, text: string): string {
   for (const key of [client && clientSecrets.get(client), process.env.SYSTEM_ZERO_API_KEY]) {
     if (key) text = text.split(key).join('[redacted]');
   }
@@ -69,7 +69,12 @@ export function checkedBaseURL(value: string): string {
   return url.href.replace(/\/+$/u, '');
 }
 
-/** Workflow retry and admission hooks for the shared transport. */
+function requestHeaders(value?: HeadersInit): Headers {
+  try { return new Headers(value); }
+  catch { throw new TypeError('Request headers are invalid.'); }
+}
+
+/** Internal workflow policy and admission hooks for the shared transport. */
 export function withRetryContext(options: RequestOptions, context: RetryContext): RequestOptions {
   retryContexts.set(options, context);
   return options;
@@ -78,6 +83,7 @@ export function withRetryContext(options: RequestOptions, context: RetryContext)
 export interface ResponseMetadata {
   requestId: string | null;
   clientRequestId: string | null;
+  idempotencyKey: string | null;
   rateLimit: { limit: number | null; remaining: number | null; reset: number | null };
   latencyMs: number | null;
   replayed: boolean;
@@ -120,9 +126,9 @@ function headerNumber(headers: Headers, primary: string, alias?: string): number
   return null;
 }
 
-function metadata(headers: Headers): ResponseMetadata {
+function metadata(headers: Headers, idempotencyKey: string | null): ResponseMetadata {
   return {
-    requestId: headers.get('x-request-id'), clientRequestId: headers.get('x-client-request-id'),
+    idempotencyKey, requestId: headers.get('x-request-id'), clientRequestId: headers.get('x-client-request-id'),
     rateLimit: {
       limit: headerNumber(headers, 'x-ratelimit-limit', 'x-ratelimit-limit-requests'),
       remaining: headerNumber(headers, 'x-ratelimit-remaining', 'x-ratelimit-remaining-requests'),
@@ -182,21 +188,25 @@ export class SystemZeroClient {
     this.#checkRetryBudget(retryBudget);
     const context = retryContexts.get(options);
     const maxRetries = Math.min(this.options.maxRetries, context?.maxRetries ?? this.options.maxRetries);
-    let headers: Headers;
-    try { headers = new Headers(options.headers); }
-    catch { throw new TypeError('Request headers are invalid.'); }
+    const headers = requestHeaders(options.headers);
     try {
       headers.set('authorization', `Bearer ${this.#apiKey}`);
-      headers.set('user-agent', `system-zero-typescript/${VERSION}`);
+      headers.set('user-agent', `system-zero-typescript/${VERSION} node/${process.versions.node}`);
       headers.set('accept', 'application/json');
       if (body !== undefined) headers.set('content-type', 'application/json');
       if (options.clientRequestId !== undefined) headers.set('x-client-request-id', options.clientRequestId);
       if (options.idempotencyKey !== undefined) headers.set('idempotency-key', options.idempotencyKey);
-      if (method === 'POST' && maxRetries > 0 && retryBudget > 0 && !headers.has('idempotency-key')) headers.set('idempotency-key', `sz-sdk-${randomUUID()}`);
+      const blankKey = headers.has('idempotency-key') && !headers.get('idempotency-key')!.trim();
+      if (blankKey) headers.delete('idempotency-key');
+      if (headers.has('x-client-request-id') && !headers.get('x-client-request-id')!.trim()) headers.delete('x-client-request-id');
+      if (method === 'POST' && !blankKey && maxRetries > 0 && retryBudget > 0 && !headers.has('idempotency-key')) headers.set('idempotency-key', `sz-sdk-${randomUUID()}`);
     } catch { throw new TypeError('Request headers are invalid.'); }
     const init: RequestInit = { method, headers, redirect: 'error' };
     if (body !== undefined) init.body = body;
-    return new APIPromise(this.#send<T>(`${baseURL}${path}`, init, maxRetries, retryBudget, context));
+    return new APIPromise(this.#send<T>(`${baseURL}${path}`, init, maxRetries, retryBudget, context).catch((error: unknown) => {
+      if (error instanceof SystemZeroError) error.idempotencyKey = headers.get('idempotency-key');
+      throw error;
+    }));
   }
 
   #checkRetryBudget(retryBudget: number): void {
@@ -226,7 +236,7 @@ export class SystemZeroClient {
       }
       previous = error;
       await sleep(wait);
-      if (remaining() <= 0) {
+      if (remaining() < 1) {
         if (externalRemaining() <= 0) context?.onDeadline?.();
         throw error;
       }
@@ -234,10 +244,12 @@ export class SystemZeroClient {
     for (let attempt = 0; ; attempt++) {
       const timeLeft = remaining();
       const admittedTimeLeft = externalRemaining();
-      if (previous && timeLeft <= 0 || admittedTimeLeft <= 0) {
+      if (previous && timeLeft < 1 || admittedTimeLeft <= 0) {
         if (admittedTimeLeft <= 0) context?.onDeadline?.();
         throw previous ?? new APITimeoutError('System Zero request timed out.', { code: 'system_zero_timeout' });
       }
+      // One millisecond is the minimum useful retry timeout on supported runtimes.
+      (init.headers as Headers).set('x-sdk-retry-count', String(attempt));
       context?.onAttempt?.();
       let result: AttemptResult;
       // The first request retains its normal timeout, subject to any batch deadline.
@@ -252,7 +264,7 @@ export class SystemZeroClient {
       const { response, body, json } = result;
       if (response.ok) {
         if (!json) throw new APIError('System Zero returned invalid JSON.', { status: response.status, type: 'api_error', headers: response.headers, request_id: response.headers.get('x-request-id') });
-        return { data: body as T, response, metadata: metadata(response.headers) };
+        return { data: body as T, response, metadata: metadata(response.headers, new Headers(init.headers).get('idempotency-key')) };
       }
       let error = responseError(response.status, response.headers, body, false);
       const retryable = body !== null && typeof body === 'object' && 'error' in body && body.error !== null && typeof body.error === 'object' && 'retryable' in body.error && typeof body.error.retryable === 'boolean' ? body.error.retryable : undefined;

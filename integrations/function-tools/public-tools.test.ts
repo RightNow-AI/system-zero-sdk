@@ -34,7 +34,7 @@ describe('public function integrations', () => {
     expect(() => validateToolArguments('system_zero_decide', { state: { json: '[' + document + ']' }, questions: [] })).toThrow();
   });
 
-  it('runs model discovery through an injected transport without consuming a decide call', async () => {
+  it('runs model discovery through an injected transport without spending a decide budget', async () => {
     const fetch = vi.fn(async (_url: string | URL | Request, init?: RequestInit) => {
       expect(init?.method).toBe('GET');
       expect(init?.body).toBeUndefined();

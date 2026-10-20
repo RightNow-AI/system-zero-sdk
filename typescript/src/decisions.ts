@@ -68,7 +68,7 @@ function distribution(answer: Record<string, unknown>, canonical: boolean): Map<
     values.set(key, amount);
     total += amount;
   }
-  // Allow one millionth of probability-mass drift without normalization.
+   
   if (canonical ? Math.abs(total - million) > 1 || (values.size === 1 && total !== million) : Math.abs(total - 1) > 0.000001) invalid('probabilities must sum to one');
   return values;
 }
@@ -94,7 +94,7 @@ function adjacent(value: number, increasing: boolean): number {
   return bytes.getFloat64(0);
 }
 function rawProbabilityBound(value: number, increasing: boolean): number {
-  // Invert the probability rounding check, including floating-point rounding.
+  // Invert upstream.ts's near(p * million, round(p * million)), including its float rounding.
   let bound = Math.max(0, Math.min(1, (value + (increasing ? 1e-6 : -1e-6)) / million));
   while (Math.abs(bound * million - value) > 1e-6) bound = adjacent(bound, !increasing);
   while (increasing ? bound < 1 : bound > 0) {
@@ -190,7 +190,7 @@ function expectedScore(score: number, values: Map<string, number>): boolean {
     const total = raw.reduce((sum, value) => sum + value, 0);
     return increasing ? total - 1 <= 1e-6 : 1 - total <= 1e-6;
   };
-  // The response preserves the raw score while projecting probabilities. Find an
+  // decision-fields.ts preserves the raw score while projecting probabilities. Find an
   // attainable boundary candidate by moving the lowest levels first. Binary search keeps
   // the original mass predicate; the witness search below handles IEEE sum plateaus.
   for (let index = 0; index < raw.length && !withinMassBound(); index++) {

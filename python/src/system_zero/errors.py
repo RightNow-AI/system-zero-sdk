@@ -1,10 +1,11 @@
 """Typed public failures with open code strings and unmodified envelope details."""
+from ._retry import _retry_after_seconds
 from types import MappingProxyType
 from typing import Any, Literal, Mapping, Optional
 
 class SystemZeroError(Exception):
 
-    def __init__(self, message: str, *, status: Optional[int]=None, type: str='api_error', code: Optional[str]=None, param: Optional[str]=None, retryable: bool=False, details: Optional[Mapping[str, Any]]=None, request_id: Optional[str]=None, headers: Optional[Mapping[str, str]]=None):
+    def __init__(self, message: str, *, status: Optional[int]=None, type: str='api_error', code: Optional[str]=None, param: Optional[str]=None, retryable: bool=False, details: Optional[Mapping[str, Any]]=None, request_id: Optional[str]=None, headers: Optional[Mapping[str, str]]=None, idempotency_key: Optional[str]=None):
         super().__init__(message)
         self.message = message
         self.status = status
@@ -14,6 +15,7 @@ class SystemZeroError(Exception):
         self.retryable = retryable
         self.details = details
         self.request_id = request_id
+        self.idempotency_key = idempotency_key
         self.headers = MappingProxyType(dict(headers or {}))
 
 class InvalidRequestError(SystemZeroError):
@@ -31,8 +33,18 @@ class NotFoundError(SystemZeroError):
 class RateLimitError(SystemZeroError):
     """The server refused a rate or allowance limit."""
 
+    def __init__(self, message: str, **fields: Any):
+        super().__init__(message, **fields)
+        seconds = _retry_after_seconds(self.headers)
+        self.retry_after_ms = None if seconds is None else seconds * 1000
+
 class OverloadedError(SystemZeroError):
     """The platform has no available capacity."""
+
+    def __init__(self, message: str, **fields: Any):
+        super().__init__(message, **fields)
+        seconds = _retry_after_seconds(self.headers)
+        self.retry_after_ms = None if seconds is None else seconds * 1000
 
 class APIError(SystemZeroError):
     """An API or proxy failure, including a non-JSON response."""
@@ -61,32 +73,32 @@ class ServiceUnavailableError(APIError):
     """The gateway cannot serve the request; preserve its retryability hint."""
 
 class CapabilityNotAvailableError(NotFoundError):
-    """The API refused this route or input class."""
+    """An independently held route or input class is unavailable."""
 RouteNotAvailableError = CapabilityNotAvailableError
 
 class LongContextNotAvailableError(RouteNotAvailableError):
-    """The API refused long context."""
+    """Long context is held."""
 
 class LongRecordingNotAvailableError(RouteNotAvailableError):
-    """The API refused a long recording."""
+    """Long recordings are held independently of short audio."""
 
 class VideoNotAvailableError(RouteNotAvailableError):
-    """The API refused video input."""
+    """Video is held."""
 
 class ImageNotAvailableError(RouteNotAvailableError):
-    """The API refused image input."""
+    """Images are held."""
 
 class AudioNotAvailableError(RouteNotAvailableError):
-    """The API refused audio input."""
+    """Short audio is held."""
 
 class DocumentNotAvailableError(RouteNotAvailableError):
-    """The API refused document input."""
+    """Documents are held."""
 
 class CommitteeNotAvailableError(RouteNotAvailableError):
-    """The API refused the committee route."""
+    """The committee route is held."""
 
 class DeliberateNotAvailableError(RouteNotAvailableError):
-    """The API refused deliberate mode."""
+    """The deliberate mode is held."""
 MEDIA_ERROR_CLASSES = {'payload_too_large': PayloadTooLargeError, 'invalid_criteria': InvalidCriteriaError, 'service_unavailable': ServiceUnavailableError, 'long_context_not_available': LongContextNotAvailableError, 'long_recording_not_available': LongRecordingNotAvailableError, 'video_not_available': VideoNotAvailableError, 'image_not_available': ImageNotAvailableError, 'audio_not_available': AudioNotAvailableError, 'document_not_available': DocumentNotAvailableError, 'committee_not_available': CommitteeNotAvailableError, 'deliberate_not_available': DeliberateNotAvailableError}
 ERROR_CLASSES = {'invalid_request_error': InvalidRequestError, 'authentication_error': AuthenticationError, 'permission_error': PermissionError, 'not_found_error': NotFoundError, 'rate_limit_error': RateLimitError, 'overloaded_error': OverloadedError, 'api_error': APIError, 'server_error': ServerError}
 

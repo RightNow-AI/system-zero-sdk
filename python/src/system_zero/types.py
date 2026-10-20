@@ -191,7 +191,11 @@ class TextMediaRange(TypedDict):
     media: ServedRange
 
 
-class ModelLimits(TypedDict):
+class _ModelLimitsOptional(TypedDict, total=False):
+    pass
+
+
+class ModelLimits(_ModelLimitsOptional):
     state_tokens: int
     rendered_tokens: int
     questions: int
@@ -200,8 +204,6 @@ class ModelLimits(TypedDict):
     choice_options: TextMediaRange
     score_levels: TextMediaRange
     attachments: int
-    images: int
-    audio: int
     body_bytes: int
     inline_attachment_bytes: int
 

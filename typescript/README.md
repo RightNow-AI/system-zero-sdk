@@ -4,12 +4,12 @@ Server-side TypeScript client for the System Zero API.
 
 Requires Node 22 or newer and ES modules (ESM).
 
-The npm package is `@rightnow/system-zero`.
+The npm package is `@rightnowai/system-zero`.
 
 Set `SYSTEM_ZERO_API_KEY` in the server environment, then call the API:
 
 ```ts
-import { SystemZeroClient } from '@rightnow/system-zero';
+import { SystemZeroClient } from '@rightnowai/system-zero';
 
 const client = new SystemZeroClient();
 const reply = await client.decide({
@@ -43,8 +43,8 @@ They support local call limits, bounded retries, stable request fingerprints and
 typed result reports. A local flow call limit can stop a workflow before dispatch.
 
 Function tools are exported from
-`@rightnow/system-zero/integrations/function-tools`; the MCP adapter is exported
-from `@rightnow/system-zero/integrations/mcp-server`. Both wrap the two API calls
+`@rightnowai/system-zero/integrations/function-tools`; the MCP adapter is exported
+from `@rightnowai/system-zero/integrations/mcp-server`. Both wrap the two API calls
 above and share their request validation and error vocabulary.
 
 Keep API keys on trusted servers. See [the security policy](https://github.com/RightNow-AI/system-zero-sdk/blob/main/SECURITY.md) for private
@@ -61,3 +61,22 @@ tool loop. Model listing does not consume that count.
 
 The MCP adapter permits two concurrent tool calls. Additional concurrent calls
 receive a local `call_limit_reached` result without dispatch.
+
+## Retries and response metadata
+
+Ordinary HTTP calls retry marked 429 capacity_exhausted, rate_limit,
+rate_limit_exceeded, concurrency_limit_exceeded and workspace_limit_exceeded;
+marked 503 service_unavailable and system_zero_unavailable; and marked 409
+idempotency_conflict. Marked means error.retryable=true or x-should-retry=true.
+An explicit false vetoes retry. Each retry keeps the same key and request body.
+
+Defaults remain five retries, 150 seconds per attempt, a 60-second retry budget
+and a 60-second maximum wait. Longer waits surface the last error.
+Retry-After-Ms takes precedence; Retry-After is used only when milliseconds are
+absent. Full jitter remains a minimum wait. A retry requires at least one
+millisecond remaining, or the previous error is raised. Explicit blank keys
+disable retries and omit the header; blank client request IDs omit the header.
+Errors and response metadata expose idempotencyKey / idempotency_key.
+Rate-limit and overloaded errors expose retryAfterMs / retry_after_ms.
+Every attempt sends X-SDK-Retry-Count and a User-Agent with SDK name, version
+and runtime version only.

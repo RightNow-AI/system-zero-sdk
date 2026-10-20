@@ -5,7 +5,7 @@ from pathlib import Path
 import httpx
 import pytest
 from system_zero import SystemZero
-from system_zero.errors import APIConnectionError, APIError, APITimeoutError, InvalidRequestError, SystemZeroError, VideoNotAvailableError
+from system_zero.errors import APIConnectionError, APIError, APITimeoutError, InvalidRequestError, PermissionError, SystemZeroError, VideoNotAvailableError
 from system_zero.flows import flow_idempotency_key, flow_request_hash, run_flow, validate_flow
 FIXTURES = json.loads((Path(__file__).resolve().parents[2] / 'fixtures' / 'flows' / 'conformance.json').read_text(encoding='utf-8'))['cases']
 BOUNDARIES = json.loads((Path(__file__).resolve().parents[2] / 'fixtures' / 'flows' / 'boundaries.json').read_text(encoding='utf-8'))
@@ -21,7 +21,7 @@ def reply(value=True, confidence=0.8):
     return {'id': 'szd_synthetic', 'model': 'system-zero', 'served_by': 'synthetic', 'created': 1, 'context': {'route': 'direct', 'tokens': 1}, 'answers': {'ok': answer(value, confidence)}, 'usage': {'input_tokens': 1, 'cached_input_tokens': 0, 'media_tokens': 0, 'long_input_tokens': 0, 'media_items': 0, 'thought_tokens': 1}}
 
 def options(**overrides):
-    return {'run_id': 'synthetic-run', 'max_decide_calls': 32, 'deadline_ms': 10000, 'include_content': True, 'now': lambda: 0, **overrides}
+    return {'run_id': 'synthetic-run', 'deadline_ms': 10000, 'include_content': True, 'now': lambda: 0, **overrides}
 
 def client_for(send, **overrides):
     return SystemZero(api_key='rnsk_synthetic', timeout=0.05, max_retries=0, transport=httpx.MockTransport(send), **overrides)
@@ -135,7 +135,7 @@ def test_shared_hash_and_idempotency_vectors(vector):
     assert flow_request_hash(vector['value']) == vector['sha256']
     assert flow_idempotency_key('fixture-run', 'start', vector['value']) == vector['idempotency_key']
 
-def test_idempotent_replay_reuses_stored_answers_without_counting_twice():
+def test_idempotent_replay_reuses_stored_answers_without_double_billing():
     stored, calls, counted = ({}, [], [])
 
     def send(request):
@@ -156,7 +156,7 @@ def test_idempotent_replay_reuses_stored_answers_without_counting_twice():
     assert all((step['replayed'] for step in replay['steps']))
     assert replay['decide_calls'] == 2
 
-def test_call_limit_counts_before_dispatch():
+def test_cost_cap_reserves_before_dispatch_and_never_uses_token_usage_as_charge():
     calls = []
     with client_for(lambda request: (calls.append(request), httpx.Response(200, json=reply()))[1]) as client:
         with pytest.raises(SystemZeroError) as caught:
@@ -164,16 +164,17 @@ def test_call_limit_counts_before_dispatch():
     assert caught.value.code == 'call_limit_reached'
     assert len(calls) == 1
     assert caught.value.trace['decide_calls'] == 1
+    assert 'max_spend_cents' not in json.loads(calls[0].content)
 
-def test_exact_32_step_boundary_is_bounded_and_every_dispatch_is_counted():
+def test_exact_32_step_boundary_is_bounded_and_every_dispatch_is_reserved():
     calls = []
     with client_for(lambda request: (calls.append(request), httpx.Response(200, json=reply()))[1]) as client:
-        trace = run_flow(client, definition(32), **options(max_decide_calls=32))
+        trace = run_flow(client, definition(32), **options())
     assert len(calls) == len(trace['steps']) == 32
     assert len({request.headers['idempotency-key'] for request in calls}) == 32
     assert trace['decide_calls'] == 32
 
-def test_sdk_retry_reuses_step_key_and_one_local_call():
+def test_sdk_retry_reuses_step_key_and_one_conservative_reservation():
     calls = []
 
     def send(request):
@@ -183,7 +184,7 @@ def test_sdk_retry_reuses_step_key_and_one_local_call():
         error['error']['details'] = {'cause': 'key_rate'}
         return httpx.Response(429, json=error, headers={'retry-after': '0'}) if len(calls) == 1 else httpx.Response(200, json=reply())
     with SystemZero(api_key='rnsk_synthetic', timeout=0.05, max_retries=1, max_retry_wait=0, transport=httpx.MockTransport(send), sleep=lambda _: None, random=lambda: 0) as client:
-        trace = run_flow(client, definition(), **options(max_decide_calls=1))
+        trace = run_flow(client, definition(), **options())
     assert len(calls) == 2
     assert calls[0].content == calls[1].content
     assert calls[0].headers['idempotency-key'] == calls[1].headers['idempotency-key']
@@ -288,7 +289,7 @@ def test_legacy_confidence_stays_unavailable_in_trace_and_conditions():
     assert trace['steps'][0]['answers'][0]['confidence'] is None
     assert trace['steps'][0]['branch']['reason'] == 'default'
 
-@pytest.mark.parametrize('overrides', [{'run_id': ''}, {'run_id': 'x' * 257}, {'max_decide_calls': True}, {'max_decide_calls': -1}, {'deadline_ms': True}, {'deadline_ms': 0}, {'deadline_ms': 1.5}, {'deadline_ms': float('inf')}, {'include_content': 'yes'}])
+@pytest.mark.parametrize('overrides', [{'run_id': ''}, {'run_id': 'x' * 257}, {'max_decide_calls': -1}, {'max_decide_calls': 1.5}, {'deadline_ms': True}, {'deadline_ms': 0}, {'deadline_ms': 1.5}, {'deadline_ms': float('inf')}, {'include_content': 'yes'}])
 def test_invalid_runtime_options_use_typed_error_without_dispatch(overrides):
     calls = []
     with client_for(lambda request: (calls.append(request), httpx.Response(200, json=reply()))[1]) as client:
@@ -324,7 +325,7 @@ def test_body_timeout_retains_known_request_id():
 
 def test_unknown_question_refusal_is_typed_service_unavailable():
     body = reply()
-    body['answers']['ok'] = {'error': {'code': 'call_limit_reached', 'retryable': False}}
+    body['answers']['ok'] = {'error': {'code': 'request_refused', 'retryable': False}}
     with client_for(lambda _: httpx.Response(200, json=body, headers={'x-request-id': 'req_invalid_reply'})) as client:
         with pytest.raises(APIError) as caught:
             run_flow(client, definition(), **options())
@@ -343,7 +344,163 @@ def test_throwing_clock_uses_typed_invalid_request():
             run_flow(client, definition(), **options(now=broken_clock))
 
 @pytest.mark.parametrize('code,saved_code', [('SYNTHETIC_private_code', 'service_unavailable')])
-def test_flow_trace_preserves_cumulative_public_codes_without_private_content(code, saved_code):
+def test_c_rebase_flow_trace_preserves_cumulative_public_codes_without_private_content(code, saved_code):
+    calls = []
+
+    def send(request):
+        calls.append(request)
+        return httpx.Response(409, json=error_body(code))
+    with client_for(send) as client:
+        with pytest.raises(SystemZeroError) as caught:
+            run_flow(client, definition(), **options(include_content=False))
+    error = caught.value
+    assert error.code == code
+    assert error.details == {'private': 'SYNTHETIC sensitive'}
+    assert error.trace['status'] == 'refused'
+    assert error.trace['decide_calls'] == 1
+    assert error.trace['steps'][0]['error'] == {'code': saved_code, 'type': 'invalid_request_error', 'status': 409, 'retryable': False}
+    assert 'SYNTHETIC private' not in json.dumps(error.trace)
+    assert 'SYNTHETIC sensitive' not in json.dumps(error.trace)
+    assert len(calls) == 1
+
+@pytest.mark.parametrize('case_name,count_cap,expected_count,error_code', [('sequential', 32, 2, None), ('dependency_false_skips', 32, 2, None), ('call_cap_before_second_call', 1, 1, 'call_limit_reached'), ('deadline_before_first_call', 32, 0, 'system_zero_timeout'), ('request_refusal_mid_run', 32, 2, 'input_quarantined')])
+def test_shared_flow_conformance_with_explicit_count_cap(case_name, count_cap, expected_count, error_code):
+    case = next((case for case in FIXTURES if case['name'] == case_name))
+    seen = []
+    responses = iter(case.get('responses', []))
+
+    def send(request):
+        seen.append(json.loads(request.content))
+        response = next(responses)
+        return httpx.Response(response['status'], json=response['body'], headers=response.get('headers'))
+    run_options = options(run_id='fixture-run', **case.get('options', {}))
+    run_options.update(max_decide_calls=count_cap)
+    with SystemZero(api_key='SYNTHETIC', timeout=case.get('client_timeout_ms', 50) / 1000, max_retries=0, transport=httpx.MockTransport(send)) as client:
+        if error_code is not None:
+            with pytest.raises(SystemZeroError) as caught:
+                run_flow(client, case['definition'], **run_options)
+            assert caught.value.code == error_code
+            trace = caught.value.trace
+        else:
+            trace = run_flow(client, case['definition'], **run_options)
+    assert trace['status'] == case['expect']['status']
+    assert [step['step_index'] for step in trace['steps']] == case['expect']['step_indexes']
+    if 'step_statuses' in case['expect']:
+        assert [step['status'] for step in trace['steps']] == case['expect']['step_statuses']
+    assert trace['decide_calls'] == expected_count
+    assert sum((step['decide_calls'] for step in trace['steps'])) == expected_count
+    assert len(seen) == expected_count
+    assert trace['decide_calls'] == expected_count
+
+def test_explicit_count_cap_records_each_replayed_logical_decision_once():
+    stored, calls, counted = ({}, [], [])
+
+    def send(request):
+        key = request.headers['idempotency-key']
+        calls.append((key, request.content))
+        replayed = key in stored
+        if not replayed:
+            stored[key] = reply()
+            counted.append(key)
+        return httpx.Response(200, json=stored[key], headers={'x-rightnow-idempotent-replay': str(replayed).lower(), 'x-request-id': 'req_replay'})
+    flow = definition(2)
+    with client_for(send) as client:
+        first = run_flow(client, flow, **options(max_decide_calls=2))
+        replay = run_flow(client, flow, **options(max_decide_calls=2))
+    assert len(calls) == 4
+    assert calls[:2] == calls[2:]
+    assert len(counted) == 2
+    assert not any((step['replayed'] for step in first['steps']))
+    assert all((step['replayed'] for step in replay['steps']))
+    assert first['decide_calls'] == replay['decide_calls'] == 2
+    assert [step['decide_calls'] for step in replay['steps']] == [1, 1]
+    assert replay['decide_calls'] == 2
+
+def test_explicit_count_cap_records_all_32_steps_with_cost_reservations():
+    calls = []
+    with client_for(lambda request: (calls.append(request), httpx.Response(200, json=reply()))[1]) as client:
+        trace = run_flow(client, definition(32), **options(max_decide_calls=32))
+    assert len(calls) == len(trace['steps']) == 32
+    assert len({request.headers['idempotency-key'] for request in calls}) == 32
+    assert trace['decide_calls'] == 32
+    assert [step['decide_calls'] for step in trace['steps']] == [1] * 32
+    assert trace['decide_calls'] == 32
+
+def test_explicit_count_cap_charges_one_logical_decision_for_sdk_retry():
+    calls = []
+
+    def send(request):
+        calls.append(request)
+        error = error_body('rate_limit_exceeded', 'rate_limit_error')
+        error['error']['retryable'] = True
+        error['error']['details'] = {'cause': 'key_rate'}
+        return httpx.Response(429, json=error, headers={'retry-after': '0'}) if len(calls) == 1 else httpx.Response(200, json=reply())
+    with SystemZero(api_key='SYNTHETIC', timeout=0.05, max_retries=1, max_retry_wait=0, transport=httpx.MockTransport(send), sleep=lambda _: None, random=lambda: 0) as client:
+        trace = run_flow(client, definition(), **options(max_decide_calls=1))
+    assert len(calls) == 2
+    assert calls[0].content == calls[1].content
+    assert calls[0].headers['idempotency-key'] == calls[1].headers['idempotency-key']
+    assert trace['decide_calls'] == 1
+    assert trace['steps'][0]['decide_calls'] == 1
+    assert trace['decide_calls'] == 1
+
+def test_explicit_count_cap_retains_one_decision_when_deadline_elapses_after_reply():
+    clock = [0]
+    calls = []
+
+    def send(request):
+        calls.append(request)
+        clock[0] = 100
+        return httpx.Response(200, json=reply())
+    with client_for(send) as client:
+        original = (client.timeout, client.max_retries, client.max_retry_wait)
+        with pytest.raises(APITimeoutError) as caught:
+            run_flow(client, definition(2), **options(max_decide_calls=2, deadline_ms=50, now=lambda: clock[0]))
+        assert (client.timeout, client.max_retries, client.max_retry_wait) == original
+    assert caught.value.code == 'system_zero_timeout'
+    assert len(calls) == 1
+    assert caught.value.trace['decide_calls'] == 1
+    assert sum((step['decide_calls'] for step in caught.value.trace['steps'])) == 1
+    assert caught.value.trace['decide_calls'] == 1
+
+def test_explicit_count_cap_retains_admissions_when_mutated_timeout_blocks_next_step():
+    calls = []
+
+    def send(request):
+        calls.append(request)
+        client.timeout = 1
+        return httpx.Response(200, json=reply())
+    with client_for(send) as client:
+        with pytest.raises(APITimeoutError) as caught:
+            run_flow(client, definition(2), **options(max_decide_calls=2, deadline_ms=100))
+    assert caught.value.code == 'system_zero_timeout'
+    assert len(calls) == 1
+    assert caught.value.trace['decide_calls'] == 1
+    assert sum((step['decide_calls'] for step in caught.value.trace['steps'])) == 1
+    assert caught.value.trace['decide_calls'] == 1
+
+def test_explicit_count_cap_includes_the_refused_http_decision_in_partial_trace():
+    calls = []
+    responses = iter([httpx.Response(200, json=reply(), headers={'x-request-id': 'req_first'}), httpx.Response(404, json=error_body('video_not_available', 'not_found_error'))])
+
+    def send(request):
+        calls.append(request)
+        return next(responses)
+    with client_for(send) as client:
+        with pytest.raises(VideoNotAvailableError) as caught:
+            run_flow(client, definition(3), **options(max_decide_calls=3))
+    assert caught.value.message == 'SYNTHETIC private refusal'
+    assert caught.value.details == {'private': 'SYNTHETIC sensitive'}
+    assert caught.value.trace['status'] == 'held'
+    assert [step['status'] for step in caught.value.trace['steps']] == ['completed', 'held']
+    assert caught.value.trace['steps'][0]['request_id'] == 'req_first'
+    assert len(calls) == 2
+    assert caught.value.trace['decide_calls'] == 2
+    assert [step['decide_calls'] for step in caught.value.trace['steps']] == [1, 1]
+    assert caught.value.trace['decide_calls'] == 2
+
+@pytest.mark.parametrize('code,saved_code', [('SYNTHETIC_private_code', 'service_unavailable')])
+def test_explicit_count_cap_keeps_redacted_trace_codes_and_logical_count(code, saved_code):
     calls = []
 
     def send(request):
@@ -356,6 +513,8 @@ def test_flow_trace_preserves_cumulative_public_codes_without_private_content(co
     assert error.code == code
     assert error.details == {'private': 'SYNTHETIC sensitive'}
     assert error.trace['status'] == 'refused'
+    assert error.trace['decide_calls'] == 1
+    assert error.trace['steps'][0]['decide_calls'] == 1
     assert error.trace['decide_calls'] == 1
     assert error.trace['steps'][0]['error'] == {'code': saved_code, 'type': 'invalid_request_error', 'status': 409, 'retryable': False}
     assert 'SYNTHETIC private' not in json.dumps(error.trace)

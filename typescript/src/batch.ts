@@ -2,7 +2,8 @@ import { createHash } from 'node:crypto';
 import { appendFileSync, closeSync, existsSync, fsyncSync, openSync, readFileSync, ftruncateSync, unlinkSync, mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 import type { DecideRequest } from './api-types.js';
-import { checkedBaseURL, withRetryContext, type SystemZeroClient } from './client.js';
+import { checkedBaseURL, withRetryContext } from './client.js';
+import type { SystemZeroClient } from './client.js';
 import { InvalidRequestError, SystemZeroError } from './errors.js';
 import { SYSTEM_ZERO_ERROR_CODES, GATEWAY_ERROR_CODES } from './public-error-codes.js';
 import { scoreReply, scoreRefusal, validateExpected, evaluate, type QuestionScore, type EvaluationRecord } from './evaluate.js';
@@ -18,10 +19,12 @@ export interface BatchRecord extends Admission {
   usage: BatchUsage | null; questions: QuestionScore[];
 }
 export interface BatchOptions {
-  runId: string; resultsPath: string; maxDecideCalls: number; deadlineMs: number; concurrency?: number; maxRetries?: number;
+  runId: string; resultsPath: string; deadlineMs: number; concurrency?: number; maxRetries?: number;
+  /** Admission count cap; defaults to 1,000 and includes durable admissions on resume. */
+  maxDecideCalls?: number;
   now?: () => number; random?: () => number; sleep?: (milliseconds: number) => Promise<void>;
 }
-export interface BatchResult { records: BatchRecord[]; stopped: 'call_limit' | 'deadline' | null }
+export interface BatchResult { records: BatchRecord[]; decide_calls: number; stopped: 'deadline' | 'call_limit' | null }
 const REPLAY_MS = 86_400_000;
 const CONFLICT = new Set(['idempotency_conflict']);
 const HELD = new Set(['long_context_not_available', 'long_recording_not_available', 'video_not_available', 'image_not_available', 'audio_not_available', 'document_not_available', 'committee_not_available', 'deliberate_not_available']);
@@ -59,7 +62,7 @@ export function idempotencyKey(runId: string, id: string, hash: string): string 
   return 'szbatch_' + createHash('sha256').update(runId + '\0' + id + '\0' + hash).digest('hex');
 }
 
-function replyUsage(reply: unknown): BatchUsage | null {
+function reportedUsage(reply: unknown): BatchUsage | null {
   const source = (reply as { usage?: unknown })?.usage;
   if (!source || typeof source !== 'object') return null;
   const usage: Record<string, number> = {};
@@ -81,16 +84,17 @@ function readRows<T>(path: string): T[] {
   try { return bytes.subarray(0, end).toString('utf8').split('\n').filter(Boolean).map(line => JSON.parse(line) as T); } catch { invalid(); }
 }
 /** Offline persistence plus ordinary decide calls. Use one results path and API key per run. */
-export async function runBatch(client: SystemZeroClient, input: readonly BatchItem[], options: BatchOptions): Promise<BatchResult> {
+export async function runBatch(client: Pick<SystemZeroClient, 'decide' | 'options'>, input: readonly BatchItem[], options: BatchOptions): Promise<BatchResult> {
   // One elapsed deadline includes preparation and is shared by every item.
   const started = performance.now();
   const now = options.now ?? Date.now;
   const concurrency = options.concurrency ?? 2; const retries = options.maxRetries ?? client.options.maxRetries;
+  const maxDecideCalls = options.maxDecideCalls === undefined ? 1000 : options.maxDecideCalls;
+  if (!count(maxDecideCalls)) invalid('max_decide_calls');
   if (!safeId(options.runId) || !options.resultsPath || !Number.isFinite(options.deadlineMs) || options.deadlineMs <= 0 || options.deadlineMs > 2_147_483_647 || !count(retries) || ![1, 2].includes(concurrency)) invalid();
   let target: string; try { target = checkedBaseURL(client.options.baseURL); } catch { invalid(); }
   const targetHash = createHash('sha256').update(target).digest('hex');
   const wallStarted = now(); if (!Number.isFinite(wallStarted) || wallStarted < 0 || wallStarted > Number.MAX_SAFE_INTEGER - options.deadlineMs) invalid();
-  if (!count(options.maxDecideCalls)) invalid('max_decide_calls');
   const deadline = started + options.deadlineMs;
   const ids = new Set<string>();
   const prepared = input.map(item => {
@@ -107,6 +111,11 @@ export async function runBatch(client: SystemZeroClient, input: readonly BatchIt
     const journalPath = options.resultsPath + '.admissions.jsonl';
     const journal = readRows<Admission>(journalPath); const records = readRows<BatchRecord>(options.resultsPath);
     const byId = new Map(prepared.map(entry => [entry.item.id, entry])); const admitted = new Map<string, Admission>(); const completed = new Map<string, BatchRecord>();
+    for (const legacy of [...journal, ...records]) {
+      if (legacy && (Object.hasOwn(legacy, 'reserved_nanocents') || Object.hasOwn(legacy, 'rate_card'))) {
+        throw new InvalidRequestError('Legacy cost-based batch receipts cannot be resumed; use a new results path.', { status: 400, type: 'invalid_request_error', code: 'invalid_request', param: 'results_path' });
+      }
+    }
     for (const a of journal) {
       const wanted = byId.get(a?.id)?.admission;
       if (!wanted || admitted.has(a.id) || !count(a.admitted_at_ms) || Object.keys(a).length !== Object.keys(wanted).length || Object.keys(wanted).some(key => key !== 'admitted_at_ms' && a[key as keyof Admission] !== wanted[key as keyof Admission])) invalid();
@@ -122,15 +131,13 @@ export async function runBatch(client: SystemZeroClient, input: readonly BatchIt
         const wantedQuestions = Object.keys(byId.get(row.id)!.item.request.questions);
         if (row.questions.length !== wantedQuestions.length || row.questions.some(q => !wantedQuestions.includes(q.question_id))) invalid();
       }
-      if (row.outcome === 'held') {
-        if (!row.code || !HELD.has(row.code) || row.usage !== null || row.questions.length) invalid();
-      } else if (row.outcome === 'completed') {
-        if (row.code !== null || (row.usage !== null && replyUsage({ usage: row.usage }) === null)) invalid();
-      } else if (row.usage !== null) invalid();
+      if (row.outcome === 'held' && (!row.code || !HELD.has(row.code))) invalid();
+      if (row.outcome !== 'completed' && row.usage !== null) invalid();
+      if (row.outcome === 'completed' && (row.code !== null || row.usage !== null && !reportedUsage({ usage: row.usage }))) invalid();
       completed.set(row.id, row);
     }
     evaluate(records);
-    if (admitted.size > options.maxDecideCalls) invalid('max_decide_calls');
+    if (admitted.size > maxDecideCalls) invalid('max_decide_calls');
     let stopped: BatchResult['stopped'] = null; let cursor = 0; let failed = false;
     const pending = prepared.filter(entry => !completed.has(entry.item.id));
     // A completed local row never needs server replay. An uncertain expired row must never dispatch anew.
@@ -139,7 +146,7 @@ export async function runBatch(client: SystemZeroClient, input: readonly BatchIt
       while (!failed && !stopped && cursor < pending.length) {
         const entry = pending[cursor]!;
         let a = admitted.get(entry.item.id);
-        if (!a && admitted.size >= options.maxDecideCalls) { stopped = 'call_limit'; return; }
+        if (!a && admitted.size >= maxDecideCalls) { stopped = 'call_limit'; return; }
         if (performance.now() + client.options.timeout > deadline) { stopped = 'deadline'; return; }
         if (!a) {
           a = { ...entry.admission, admitted_at_ms: Math.floor(now()) }; append(journalPath, a); admitted.set(a.id, a);
@@ -166,10 +173,9 @@ export async function runBatch(client: SystemZeroClient, input: readonly BatchIt
                 return random;
               } }),
             }));
-            const usage = replyUsage(reply);
+            row.usage = reportedUsage(reply);
             row.questions = scoreReply(entry.item.request, entry.item.expected, reply);
             row.outcome = 'completed'; row.code = null;
-            row.usage = usage;
           } catch (error) {
             row.code = error instanceof SystemZeroError && error.code && (KNOWN.has(error.code) || CONFLICT.has(error.code)) ? error.code : 'service_unavailable';
             if (error instanceof SystemZeroError && error.status === 404 && HELD.has(row.code)) { row.outcome = 'held'; }
@@ -186,7 +192,7 @@ export async function runBatch(client: SystemZeroClient, input: readonly BatchIt
       try { await worker(); } catch (error) { failed = true; throw error; }
     }));
     if (workers.some(result => result.status === 'rejected')) invalid();
-    return { records: prepared.flatMap(entry => { const row = completed.get(entry.item.id); return row ? [row] : []; }), stopped };
+    return { records: prepared.flatMap(entry => { const row = completed.get(entry.item.id); return row ? [row] : []; }), stopped, decide_calls: admitted.size };
   } catch (error) { if (error instanceof SystemZeroError) throw error; invalid(); }
   finally { closeSync(lockFd); unlinkSync(lock); }
 }

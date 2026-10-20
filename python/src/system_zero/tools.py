@@ -1,4 +1,7 @@
-"""Provider-independent function tools with a local call limit and stable retry keys."""
+"""Provider-independent System Zero function tools using the existing Python SDK.
+
+The host sets a finite call cap. Ordinary SDK retries keep one deterministic idempotency key.
+"""
 
 from copy import deepcopy
 from decimal import Decimal
@@ -7,8 +10,8 @@ from importlib.resources import files as _resource_files
 import json
 import math
 import os
-import re
 from pathlib import Path
+import re
 import struct
 from threading import Lock
 from typing import Any, Dict, Optional
@@ -22,7 +25,8 @@ _HERE = _resource_files(__package__) if __package__ else Path(__file__).resolve(
 _DEFINITIONS = json.loads(_HERE.joinpath("tool-schemas.json").read_text(encoding="utf-8"))
 _ERRORS = json.loads(_HERE.joinpath("error-catalog.json").read_text(encoding="utf-8"))
 _ARGUMENT_LIMITS = json.loads(_HERE.joinpath("argument-limits.json").read_text(encoding="utf-8"))
-_SCHEMAS = {tool["name"]: tool["inputSchema"] for tool in _DEFINITIONS}
+_SCHEMAS = {tool["name"]: deepcopy(tool["inputSchema"]) for tool in _DEFINITIONS}
+# Publication follows OpenAPI; retained raw argument acceptance is unchanged.
 _MAX_SAFE_INTEGER = 9_007_199_254_740_991
 
 OPENAI_TOOLS = [
@@ -129,7 +133,7 @@ def _screen_arguments(value: Any, raw_values: Optional[int] = None) -> None:
 
     def add_value() -> None:
         nonlocal values
-        # Raw input already counted every outer token, including duplicate names.
+        # Raw input already charged every outer token, including duplicate names.
         if raw_values is None:
             values += 1
             if values > _ARGUMENT_LIMITS["maxValues"]:
@@ -353,7 +357,7 @@ def _canonical(value: Any) -> bytes:
 
 
 class ToolHandler:
-    """One host-owned call limit and idempotency namespace for an agent's tool loop.
+    """One host-owned budget and idempotency namespace for an agent's tool loop.
 
     A client supplied by the host stays host-owned. Otherwise this handler creates
     and closes an SDK client whose key comes only from SYSTEM_ZERO_API_KEY.
@@ -450,16 +454,15 @@ class ToolHandler:
         if request is not None:
             with self._lock:
                 if self._decide_calls >= self._max_decide_calls:
-                    return {"status": "error", "request_id": None,
-                            "error": {"code": "call_limit_reached", "message": "The local call limit has been reached."}}
+                    return {"status": "error", "request_id": None, "error": {"code": "call_limit_reached", "message": "The local call limit has been reached."}}
         try:
             client = self._sdk()
             if request is not None:
                 with self._lock:
-                    # Another caller may have used the last slot during client creation.
+                    # Another caller may have reserved the remaining allowance
+                    # while the lazy client was being constructed and validated.
                     if self._decide_calls >= self._max_decide_calls:
-                        return {"status": "error", "request_id": None,
-                                "error": {"code": "call_limit_reached", "message": "The local call limit has been reached."}}
+                        return {"status": "error", "request_id": None, "error": {"code": "call_limit_reached", "message": "The local call limit has been reached."}}
                     self._decide_calls += 1
             token = _retry_context.set({"workflow_recovery": True})
             try:

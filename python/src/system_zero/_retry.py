@@ -23,7 +23,7 @@ class _RetryContext(TypedDict, total=False):
     on_deadline: Callable[[], None]
 
 
-# Batch workers count attempts and apply a tighter deadline to the same HTTP loop.
+# Batch workers add accounting and a tighter deadline to the same HTTP loop.
 _retry_context: ContextVar[Optional[_RetryContext]] = ContextVar("system_zero_retry_context", default=None)
 
 
@@ -39,8 +39,10 @@ def _finite_nonnegative(value: Optional[str]) -> Optional[float]:
 
 def _retry_after_seconds(headers: Mapping[str, str], now: Callable[[], float] = time.time) -> Optional[float]:
     normalized = {key.lower(): value.strip() for key, value in headers.items()}
-    milliseconds = _finite_nonnegative(normalized.get("retry-after-ms"))
-    waits = [] if milliseconds is None else [milliseconds / 1000]
+    if "retry-after-ms" in normalized:
+        milliseconds = _finite_nonnegative(normalized["retry-after-ms"])
+        return None if milliseconds is None else milliseconds / 1000
+    waits = []
     raw = normalized.get("retry-after")
     seconds = _finite_nonnegative(raw)
     if seconds is not None:
@@ -62,22 +64,30 @@ def _retry_response(status: int, code: Optional[str], headers: Mapping[str, str]
     hint = normalized.get("x-should-retry")
     if retryable is False or hint == "false":
         return False
+    # A warm-up header cannot override an account or authentication refusal.
+    if code and any(token in code.lower() for token in ("spend", "budget", "auth", "api_key")):
+        return False
     if retryable is True or hint == "true":
-        if (status == 429 and code in {"capacity_exhausted", "rate_limit", "rate_limit_exceeded"} or
-                status == 503 and code == "service_unavailable"):
+        if (status == 429 and code in {"capacity_exhausted", "rate_limit", "rate_limit_exceeded", "concurrency_limit_exceeded", "workspace_limit_exceeded"} or
+                status == 503 and code in {"service_unavailable", "system_zero_unavailable"} or
+                status == 409 and code == "idempotency_conflict"):
             return True
-    return False
+    starting = code == "starting" or (
+        code in {None, "service_unavailable"} and normalized.get(("x-sz-" + "starting")) in {"true", "1"}
+    )
+    return status == 503 and starting and _retry_after_seconds(normalized) is not None
 
 
 def _recover_workflow(status: int, code: Optional[str], headers: Mapping[str, str],
                       retryable: Optional[bool] = None, details: Optional[Mapping[str, object]] = None) -> bool:
-    """Workflow recovery accepts explicit admission code/cause pairs."""
+    """System Zero SDK helper."""
     normalized = {key.lower(): value.strip() for key, value in headers.items()}
     hint = normalized.get("x-should-retry")
     if status != 429 or hint == "false" or retryable is False or not (hint == "true" or retryable is True):
         return False
     cause = details.get("cause") if isinstance(details, Mapping) else None
-    # Only these code and cause pairs establish refusal before work started.
+    # Structured node capacity shares cause capacity with gateway admission.
+    # Neither that pair, an invented dispatched marker nor starting/5xx proves no work.
     return isinstance(cause, str) and (code, cause) in {
         ("rate_limit_exceeded", "key_rate"), ("rate_limit_exceeded", "preauth"),
         ("concurrency_limit_exceeded", "account_concurrency"),

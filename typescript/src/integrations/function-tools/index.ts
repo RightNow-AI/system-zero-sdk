@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
-import { SystemZeroClient, checkedBaseURL, redactClientText, withRetryContext } from '../../client.js';
+import { checkedBaseURL, redactClientText, withRetryContext } from '../../client.js';
+import { SystemZeroClient } from '../../client.js';
 import { InvalidRequestError, SystemZeroError } from '../../errors.js';
 import type { DecideRequest, Question, StructuredJson } from '../../api-types.js';
 import { SYSTEM_ZERO_ERRORS as API_ERRORS } from '../error-catalog.js';
@@ -16,13 +17,12 @@ function gatewayErrorCatalog<T extends Record<string, { status: number; message:
   }
   return catalog;
 }
-
-// Fixed gateway messages are SDK summaries; HTTP messages are preserved below.
-const gatewayErrors = gatewayErrorCatalog(gatewayDefinitions);
-const SYSTEM_ZERO_ERRORS = { ...API_ERRORS, ...gatewayErrors };
+const SYSTEM_ZERO_ERRORS = { ...API_ERRORS, ...gatewayErrorCatalog(gatewayDefinitions) };
 type SystemZeroErrorCode = keyof typeof SYSTEM_ZERO_ERRORS;
-const definitions = structuredClone(sourceDefinitions);
 
+const definitions = structuredClone(sourceDefinitions);
+// Publication follows OpenAPI; retained raw argument acceptance is unchanged.
+const acceptedDefinitions = structuredClone(sourceDefinitions);
 type Schema = { type?: string | string[]; enum?: unknown[]; properties?: Record<string, Schema | undefined>; required?: string[]; additionalProperties?: boolean; items?: Schema; anyOf?: Schema[] };
 export interface ToolResult {
   status: 'ok' | 'held' | 'error';
@@ -31,7 +31,7 @@ export interface ToolResult {
   [key: string]: unknown;
 }
 export interface ToolHandlerOptions {
-  client?: SystemZeroClient;
+  client?: Pick<SystemZeroClient, 'decide' | 'models'>;
   baseURL?: string;
   namespace?: string;
   maxDecideCalls?: number;
@@ -106,7 +106,7 @@ function screenArguments(value: unknown, rawValues?: number): void {
   let values = rawValues ?? 0;
   const active = new Set<object>();
   const addBytes = (amount: number): void => { if ((bytes += amount) > argumentLimits.maxBytes) invalid(); };
-  // Raw input has already counted every outer token, including duplicate names.
+  // Raw input has already charged every outer token, including duplicate names.
   const addValue = (): void => { if (rawValues === undefined && ++values > argumentLimits.maxValues) invalid(); };
   const string = (text: string): void => {
     if (text.length > argumentLimits.maxBytes - bytes) invalid();
@@ -208,7 +208,7 @@ export function validateToolArguments(name: string, args: unknown): DecideReques
     let value: unknown = typeof args === 'string' ? JSON.parse(args) : args;
     if (!record(value)) invalid();
     screenArguments(value, rawValues);
-    const definition = definitions.find(tool => tool.name === name);
+    const definition = acceptedDefinitions.find(tool => tool.name === name);
     if (!definition) invalid();
     if (name === 'system_zero_list_models') {
       if (!matches(definition.inputSchema as Schema, value)) invalid();
@@ -259,7 +259,7 @@ export function deterministicKey(namespace: string, request: unknown): string {
   if (!validString(namespace) || !jsonValue(request)) invalid();
   return 'sz-tools-' + createHash('sha256').update(canonical([namespace, request]), 'utf8').digest('hex');
 }
-function cleanResult(value: ToolResult, client: SystemZeroClient | undefined): ToolResult {
+function cleanResult(value: ToolResult, client: ToolHandlerOptions['client']): ToolResult {
   const clean = (item: unknown): unknown => {
     if (typeof item === 'string') return redactClientText(client, item);
     if (Array.isArray(item)) return item.map(clean);
@@ -290,7 +290,7 @@ function success(data: Record<string, unknown>, requestId: string | null): ToolR
 export function createToolHandler(options: ToolHandlerOptions = {}): ToolHandler {
   const namespace = options.namespace ?? 'system-zero-tools-v1';
   const maxCalls = options.maxDecideCalls ?? 100;
-  if (typeof namespace !== 'string' || !namespace || !validString(namespace) || !Number.isSafeInteger(maxCalls) || maxCalls < 0) invalid();
+  if (typeof namespace !== 'string' || !namespace || !validString(namespace) || (!Number.isSafeInteger(maxCalls) || maxCalls < 0)) invalid();
   if (options.baseURL !== undefined) checkedBaseURL(options.baseURL);
   let client = options.client;
   let decideCalls = 0;
@@ -306,7 +306,7 @@ export function createToolHandler(options: ToolHandlerOptions = {}): ToolHandler
       if (decideCalls >= maxCalls) return { status: 'error', request_id: null, error: { code: 'call_limit_reached', message: 'The local call limit has been reached.' } };
       const key = deterministicKey(namespace, request);
       client ??= new SystemZeroClient({ baseURL: options.baseURL });
-      // Count admission before the first await so concurrent calls share the limit.
+      // Admit synchronously so parallel callers share the count cap.
       decideCalls++;
       const { data, metadata } = await client.decide(request as DecideRequest, withRetryContext({ idempotencyKey: key }, { workflowRecovery: true })).withResponse();
       if (!record(data)) return refusal('system_zero_unavailable');

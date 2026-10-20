@@ -15,7 +15,9 @@ def configured():
         return SimpleNamespace(data={"answers": {}}, metadata=SimpleNamespace(request_id="req_public"))
 
     client = SimpleNamespace(decide_with_response=decide)
-    return tools.create_tool_handler(client, max_decide_calls=10), calls
+    return tools.create_tool_handler(
+        client, max_decide_calls=10,
+    ), calls
 
 
 def test_provider_schema_normalization_and_invalid_argument_refusal():
@@ -48,7 +50,7 @@ def test_packaged_argument_limits_and_real_document_depth():
     assert len(calls) == 1
 
 
-def test_models_handler_uses_injected_client_without_consuming_a_decide_call():
+def test_models_handler_uses_injected_client_without_spending_a_decide_budget():
     calls = []
 
     def models():

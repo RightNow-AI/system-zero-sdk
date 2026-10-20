@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Refuse a release unless source and built package identities match its tag.
 
 Python 3.11+; standard library only. This command never contacts a registry.
@@ -28,15 +27,18 @@ from types import ModuleType
 from urllib.parse import unquote, urlsplit
 import zipfile
 import zlib
-NPM_NAME = '@rightnow/system-zero'
+NPM_NAME = '@rightnowai/system-zero'
 PYTHON_NAME = 'rightnow-system-zero'
 IMPORT_NAME = 'system_zero'
+DRAFT_IMPORT = '_'.join(('system', 'zero', 'draft'))
 MAX_MEMBER_BYTES = 16 * 1024 * 1024
 MAX_ARCHIVE_BYTES = 64 * 1024 * 1024
 MAX_MEMBERS = 10000
 MAX_CONTAINER_BYTES = MAX_ARCHIVE_BYTES + MAX_MEMBERS * 1024 + 65536
+URL = re.compile('(?:[a-z][a-z0-9+.-]*://|//(?=[a-z0-9_]|\\[))[^\\s<>\\"\'`\\\\]+', re.IGNORECASE)
+PRIVATE_REPOSITORY = re.compile('github\\.com/(?!RightNow\\-AI/system\\-zero\\-sdk(?:\\.git)?(?:[/\\s?#\\"\']|$))[^/\\s]+/[^/\\s]+', re.IGNORECASE)
 SEMVER = re.compile('sdk-v(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-((?:0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*)(?:\\.(?:0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*))*))?(?:\\+([0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*))?')
-STRUCTURAL_RULES = (('tag must', 'tag-format'), ('releases require', 'version-format'), ('version 0.0.0', 'reserved-version'), ('npm package name', 'npm-package-name'), ('Python package name', 'python-package-name'), ('package versions', 'source-version'), ('artifact import package', 'artifact-import'), ('npm artifact version', 'artifact-version'), ('Python artifact version', 'artifact-version'), ('npm artifact package name', 'npm-package-name'), ('Python artifact package name', 'python-package-name'), ('artifact filename', 'artifact-filename'), ('expected exactly', 'artifact-inventory'), ('artifact manifest is missing', 'manifest-missing'), ('artifact manifest differs', 'manifest-mismatch'), ('artifact content has duplicate JSON', 'invalid-metadata'))
+STRUCTURAL_RULES = (('tag must', 'tag-format'), ('releases require', 'version-format'), ('version 0.0.0', 'reserved-version'), ('npm package name', 'npm-package-name'), ('Python package name', 'python-package-name'), ('package versions', 'source-version'), ('rename must', 'rename-required'), ('artifact import package', 'artifact-import'), ('npm artifact version', 'artifact-version'), ('Python artifact version', 'artifact-version'), ('npm artifact package name', 'npm-package-name'), ('Python artifact package name', 'python-package-name'), ('artifact filename', 'artifact-filename'), ('expected exactly', 'artifact-inventory'), ('artifact manifest is missing', 'manifest-missing'), ('artifact manifest differs', 'manifest-mismatch'), ('artifact content contains an internal URL or private', 'private-repository'), ('artifact content contains an internal URL', 'internal-url'), ('artifact content has duplicate JSON', 'invalid-metadata'))
 
 class ReleaseError(Exception):
     """A refusal with only controlled rule IDs and hashed identities in diagnostics."""
@@ -64,6 +66,19 @@ def member_context(name: str):
         raise
 
 @cache
+def load_package_names() -> ModuleType:
+    """Use the same sibling normalizer from the CLI and importlib callers."""
+    try:
+        spec = importlib.util.spec_from_file_location('sdk_package_names', Path(__file__).with_name('package_names.py'))
+        if spec is None or spec.loader is None:
+            raise ImportError('missing name normalizer')
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+    except Exception:
+        raise ReleaseError('artifact scanner is unavailable', 'scanner-unavailable') from None
+    return module
+
+@cache
 def load_content_rules() -> ModuleType:
     try:
         spec = importlib.util.spec_from_file_location('sdk_content_rules', Path(__file__).with_name('content_rules.py'))
@@ -73,6 +88,19 @@ def load_content_rules() -> ModuleType:
         spec.loader.exec_module(module)
     except Exception:
         raise ReleaseError('artifact scanner is unavailable', 'scanner-unavailable') from None
+    return module
+
+@cache
+def load_public_content_rules() -> ModuleType:
+    """Load the reviewed generic public-source rules beside the repository rules."""
+    try:
+        spec = importlib.util.spec_from_file_location('sdk_public_content_rules', Path(__file__).with_name('public_content_rules.py'))
+        if spec is None or spec.loader is None:
+            raise ImportError('missing rule loader')
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+    except Exception:
+        raise ReleaseError('public artifact scanner is unavailable', 'scanner-unavailable') from None
     return module
 
 @cache
@@ -92,7 +120,7 @@ def check_source(root: Path, tag: str) -> str:
     require(SEMVER.fullmatch(tag) is not None, 'tag must be sdk-v<semver>')
     version = tag.removeprefix('sdk-v')
     require(re.fullmatch('(?:0|[1-9][0-9]*)\\.(?:0|[1-9][0-9]*)\\.(?:0|[1-9][0-9]*)', version) is not None, 'releases require stable MAJOR.MINOR.PATCH versions identical in both registries')
-    require(version != '0.0.0', 'version 0.0.0 is reserved for initial package registration')
+    require(version != '0.0.0', "version 0.0.0 is reserved for the bootstrap package")
     npm = json.loads((root / 'typescript/package.json').read_text(encoding='utf-8'))
     with (root / 'python/pyproject.toml').open('rb') as stream:
         python = tomllib.load(stream)['project']
@@ -100,7 +128,8 @@ def check_source(root: Path, tag: str) -> str:
     require(python.get('name') == PYTHON_NAME, f'Python package name must be {PYTHON_NAME}')
     require(npm.get('version') == python.get('version') == version, f'package versions must both equal tag {version}')
     packages = root / 'python/src'
-    require((packages / IMPORT_NAME / '__init__.py').is_file() and {path.name for path in packages.iterdir() if path.is_dir() and path.name != '__pycache__'} == {IMPORT_NAME}, 'Python import package inventory is invalid')
+    require((packages / IMPORT_NAME / '__init__.py').is_file() and (not (packages / DRAFT_IMPORT).exists()), 'rename must be complete before releasing the SDKs')
+    require({path.name for path in packages.iterdir() if path.is_dir() and path.name != '__pycache__'} == {IMPORT_NAME}, 'Python import package inventory is invalid')
     return version
 
 def archive_names(names: list[str], directories: set[str]) -> None:
@@ -111,6 +140,30 @@ def archive_names(names: list[str], directories: set[str]) -> None:
             check_member_name(name)
             path = PurePosixPath(name)
             require(bool(path.parts) and (not path.is_absolute()) and ('..' not in path.parts) and ('\\' not in name) and (':' not in name) and (name == path.as_posix() or (name in directories and name == path.as_posix() + '/')) and all((ord(character) >= 32 and ord(character) != 127 for character in name)), 'unsafe artifact archive member', 'unsafe-member-name')
+
+def check_internal_urls(value: str) -> None:
+    value = unquote(value.replace('\\/', '/'))
+    require(PRIVATE_REPOSITORY.search(value) is None, 'artifact content contains an internal URL or private repository identifier')
+    for match in URL.finditer(value):
+        candidate = match.group().rstrip('.,;!?)>}]')
+        if candidate.count('[') > candidate.count(']'):
+            candidate += ']'
+        if candidate.startswith('///') or candidate.startswith('//#'):
+            continue
+        require(PRIVATE_REPOSITORY.search(candidate) is None, 'artifact content contains an internal URL or private repository identifier')
+        try:
+            parsed = urlsplit(candidate)
+            host = (parsed.hostname or '').lower().rstrip('.')
+            internal = not host or parsed.scheme.lower() == 'file' or parsed.username is not None
+            if host:
+                try:
+                    address = ipaddress.ip_address(host)
+                    internal = internal or not address.is_global or address.is_multicast
+                except ValueError:
+                    internal = internal or '.' not in host or host.endswith(('.localhost', '.local', '.localdomain', '.internal', '.lan', '.home', '.corp', '.intranet', '.test', '.invalid')) or (re.fullmatch('(?:0x[0-9a-f]+|[0-9]+)(?:\\.(?:0x[0-9a-f]+|[0-9]+))*', host) is not None)
+        except ValueError:
+            internal = True
+        require(not internal, 'artifact content contains an internal URL')
 ESCAPE = re.compile('\\\\(?:u\\{([0-9a-fA-F]{1,6})\\}|u([0-9a-fA-F]{4})|x([0-9a-fA-F]{2})|([nrtbfv\\\\/\'\\"]))')
 ESCAPE_CHARS = {'n': '\n', 'r': '\r', 't': '\t', 'b': '\x08', 'f': '\x0c', 'v': '\x0b'}
 
@@ -152,10 +205,38 @@ def scan_text(value: str, path: str='') -> None:
     found = sorted({rule for form in forms for rule in scanner.public_rule_ids(form, path)} | set(scanner.compact_rule_ids(joined)))
     if found:
         raise ReleaseError('artifact content contains credential-shaped data', rules=found)
+    normalize_name = load_package_names().normalize_package_name
+    draft = normalize_name(DRAFT_IMPORT)
+    for form in (*forms, joined):
+        require(draft not in normalize_name(form), 'artifact content contains a draft name', 'draft-name')
+    repository_view = unquote(forms[-1])
+    if load_release_policy().SDK_SOURCE_PUBLIC and PurePosixPath(path).name in {'METADATA', 'PKG-INFO'}:
+        raw_metadata = value.encode('utf-8')
+        metadata = BytesParser(policy=policy.default).parsebytes(raw_metadata)
+        versions = metadata.get_all('Version', [])
+        require(len(versions) == 1, 'artifact content has invalid Python metadata', 'invalid-metadata')
+        check_public_python_identity(raw_metadata, str(versions[0]))
+        approved = load_release_policy().public_repository().removesuffix('.git')
+        headers = {'Project-URL: Source, ' + approved: 'Project-URL: Source, https://sdk.example.com', 'Project-URL: Issues, ' + approved + '/issues': 'Project-URL: Issues, https://sdk.example.com/issues'}
+        lines = repository_view.splitlines(keepends=True)
+        for index, line in enumerate(lines):
+            complete = line.rstrip('\r\n')
+            if not complete:
+                break
+            if index + 1 < len(lines) and lines[index + 1].startswith((' ', '\t')):
+                continue
+            if complete in headers:
+                lines[index] = headers[complete] + line[len(complete):]
+        repository_view = ''.join(lines)
+    for form in (*forms, ''.join(repository_view.split())):
+        require(PRIVATE_REPOSITORY.search(unquote(form)) is None, 'artifact content contains an internal URL or private repository identifier')
+    for form in forms:
+        check_internal_urls(form)
 
 def check_member_name(name: str) -> None:
     scan_text(name)
-    require(not load_content_rules().sensitive_path_rule_ids(name), 'artifact member has a credential-shaped name', 'forbidden-member-name')
+    if load_release_policy().SDK_SOURCE_PUBLIC:
+        require(not load_public_content_rules().sensitive_path_rule_ids(name), 'artifact member has a credential-shaped name', 'forbidden-member-name')
     lowered = name.lower()
     for part in PurePosixPath(lowered).parts:
         forbidden = re.search('(?:^|[._-])(?:tests?|specs?|fixtures?|snapshots?)(?:[._-]|$)', part) is not None or part.startswith('.env') or part.endswith('.env') or (part in {'conftest.py', '.npmrc', '.pypirc', '.netrc', '.ssh', '.aws'}) or (part in {'binding.gyp', '__pycache__'}) or ('secret' in part) or ('credential' in part) or part.endswith(('.pem', '.key', '.p12', '.pfx', '.keystore')) or part.endswith(('.map', '.pyc', '.pyo', '.tsbuildinfo', '.node', '.so', '.dll', '.dylib', '.pyd')) or (re.match('id_(?:rsa|dsa|ecdsa|ed25519)(?:\\.|$)', part) is not None) or (re.search('(?:^|[._-])(?:api[._-]?key|private[._-]?key|keys?|tokens?)(?:[._-]|$)', part) is not None)
@@ -194,6 +275,10 @@ def check_member_content(name: str, raw: bytes, *, npm_metadata: bool=False) -> 
         check_member_name(name)
         value = decode_text(raw)
         scan_text(value, name)
+        if PurePosixPath(name).name.casefold().partition('.')[0] == 'readme':
+            names = load_package_names()
+            draft = names.normalize_package_name(DRAFT_IMPORT)
+            require(all((draft not in names.normalize_package_name(form) for form in names.readme_visible_forms(value))), 'artifact content contains a draft name', 'draft-name')
         if npm_metadata and name == 'package/package.json':
             check_npm_metadata(raw)
 
@@ -334,6 +419,15 @@ def check_npm(path: Path, version: str) -> list[str]:
 
 def python_identity(raw: bytes, version: str) -> None:
     metadata = BytesParser(policy=policy.default).parsebytes(raw)
+    names = metadata.get_all('Name', [])
+    versions = metadata.get_all('Version', [])
+    require(names == [PYTHON_NAME], f'Python artifact package name must be {PYTHON_NAME}')
+    require(versions == [version], f'Python artifact version must equal tag {version}')
+    if load_release_policy().SDK_SOURCE_PUBLIC:
+        check_public_python_identity(raw, version)
+
+def check_public_python_identity(raw: bytes, version: str) -> None:
+    metadata = BytesParser(policy=policy.default).parsebytes(raw)
     require(not metadata.defects, 'artifact content has invalid Python metadata', 'invalid-metadata')
     names = metadata.get_all('Name', [])
     versions = metadata.get_all('Version', [])
@@ -404,7 +498,7 @@ def check_payload_inventory(kind: str, contents: dict[str, bytes], expected: dic
             python_identity(regular[name], version)
 
 def python_import(names: list[str], prefix: str) -> None:
-    require(f'{prefix}{IMPORT_NAME}/__init__.py' in names, f'artifact import package must be {IMPORT_NAME}')
+    require(f'{prefix}{IMPORT_NAME}/__init__.py' in names and (not any((DRAFT_IMPORT in PurePosixPath(name).parts for name in names))), f'artifact import package must be {IMPORT_NAME}')
 
 def zip_records(data: bytes, archive: zipfile.ZipFile) -> list[bytes]:
     """Validate an exact, single-disk, non-ZIP64 stored/deflated wheel layout."""

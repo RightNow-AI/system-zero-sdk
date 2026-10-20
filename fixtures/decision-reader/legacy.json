@@ -5,7 +5,7 @@
       "type": "boolean",
       "probability": 0.06,
       "confidence": 0.88,
-      "calibration_version": "synthetic/reader-parity"
+      "calibration_version": "unpublished"
     },
     "accepts": true,
     "kind": "legacy"
@@ -20,7 +20,7 @@
         "b": 0.25
       },
       "confidence": 0.5,
-      "calibration_version": "synthetic/reader-parity"
+      "calibration_version": "unpublished"
     },
     "accepts": true,
     "kind": "legacy"
@@ -39,7 +39,7 @@
         "1": 0.25
       },
       "confidence": 0.5,
-      "calibration_version": "synthetic/reader-parity"
+      "calibration_version": "unpublished"
     },
     "accepts": true,
     "kind": "legacy"

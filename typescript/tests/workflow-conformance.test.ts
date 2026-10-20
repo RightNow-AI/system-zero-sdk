@@ -58,16 +58,31 @@ describe('shared decision-reader behavior', () => {
 
 interface FlowCase {
   name: string; definition: FlowDefinition; validate_only?: boolean; client_timeout_ms?: number;
-  options?: { max_decide_calls?: number; deadline_ms?: number };
+  options?: {  max_decide_calls?: number; deadline_ms?: number };
   responses?: Array<{ status: number; body: unknown; headers?: Record<string, string> }>;
   expect: { status: string; step_indexes: number[]; error_code?: string; requests?: unknown[];
     decide_calls?: number; step_statuses?: string[]; branch_rule_indexes?: Array<number | null> };
 }
 const flowCases = fixture<{ cases: FlowCase[] }>('flows/conformance.json').cases;
 const flowVectors = fixture<{ hash_vectors: Array<{ value: unknown; sha256: string; idempotency_key: string }> }>('flows/boundaries.json').hash_vectors;
+const privateFlowCounts: Record<string, number> = {
+  sequential: 2, dependency_false_skips: 2, call_cap_before_second_call: 1,
+  deadline_before_first_call: 0, request_refusal_mid_run: 2,
+};
+function countedCase(row: FlowCase): FlowCase & { countBound: boolean } {
+  const countStop = row.name === 'call_cap_before_second_call';
+  const expectedCalls = privateFlowCounts[row.name];
+  return { ...row, name: row.name + ' with call bound', countBound: true,
+    options: { ...row.options, max_decide_calls: countStop ? 1 : 32 },
+    expect: { ...row.expect, ...(expectedCalls === undefined ? {} : { decide_calls: expectedCalls }),
+      ...(countStop ? { error_code: 'call_limit_reached' } : {}) } };
+}
 
 describe('shared flow behavior', () => {
-  it.each(flowCases)('$name', async row => {
+  it.each(flowCases.flatMap(row => [
+    { ...row, countBound: false },
+    countedCase(row),
+  ]))('$name', async row => {
     if (row.validate_only) {
       expect(() => validateFlow(row.definition)).toThrowError(expect.objectContaining({ code: row.expect.error_code }));
       return;
@@ -84,7 +99,7 @@ describe('shared flow behavior', () => {
       } });
     let trace: FlowTrace;
     try {
-      trace = await runFlow(sdk, row.definition, { run_id: 'fixture-run', max_decide_calls: 32,
+      trace = await runFlow(sdk, row.definition, { run_id: 'fixture-run',
         deadline_ms: 10000, include_content: true, now: () => 0, ...row.options });
       expect(row.expect.error_code).toBeUndefined();
     } catch (error) {
@@ -98,6 +113,15 @@ describe('shared flow behavior', () => {
     if (row.expect.branch_rule_indexes) expect(trace.steps.map(step => step.branch?.rule_index ?? null)).toEqual(row.expect.branch_rule_indexes);
     if (row.expect.requests) expect(requests).toEqual(row.expect.requests);
     if (row.expect.decide_calls !== undefined) expect(trace.decide_calls).toBe(row.expect.decide_calls);
+    if (row.countBound) {
+      // The SDK's shared harness counted admissions independently of cost.
+      expect(trace.decide_calls).toBe(requests.length);
+      if (row.expect.decide_calls !== undefined) expect(trace.decide_calls).toBe(row.expect.decide_calls);
+      expect(trace.steps.reduce((sum, step) => sum + (step.decide_calls ?? 0), 0)).toBe(requests.length);
+    } else {
+      expect(trace.decide_calls).toBe(requests.length);
+      expect(trace.steps.reduce((sum, step) => sum + step.decide_calls, 0)).toBe(requests.length);
+    }
     expect(responses).toHaveLength(0);
   });
 
@@ -109,6 +133,7 @@ describe('shared flow behavior', () => {
 
 interface EvaluationCase {
   id: string; request: DecideRequest; expected: ExpectedAnswers; reply?: SystemZeroReply;
+  cost_nanocents: number | null; accounted_nanocents: number;
   outcome: EvaluationRecord['outcome']; code: string | null; latency_ms: number;
 }
 const evaluation = fixture<{ cases: EvaluationCase[]; bins: number; expected: EvaluationReport }>('batch/evaluation.json');
@@ -121,6 +146,8 @@ describe('shared batch and evaluation behavior', () => {
   it('matches hand-computed metrics, latency, usage and calibration', () => {
     const report = evaluate(evaluationRecords(), { bins: evaluation.bins });
     for (const key of ['items', 'metrics', 'by_type', 'latency_ms', 'usage'] as const) expect(report[key]).toEqual(evaluation.expected[key]);
+    expect(report).not.toHaveProperty('cost');
+    expect(report).not.toHaveProperty('cost');
     const calibration = report.calibration!;
     const expected = evaluation.expected.calibration!;
     expect(calibration.count).toBe(expected.count);
@@ -154,7 +181,7 @@ describe('shared batch and evaluation behavior', () => {
         return Response.json(row.reply);
       } });
     const items: BatchItem[] = rows.map(row => ({ id: row.id, request: row.request, expected: row.expected }));
-    const options = { runId: 'fixture-run', resultsPath, maxDecideCalls: rows.length, deadlineMs: 10000, concurrency: 1 };
+    const options = { runId: 'fixture-run', resultsPath,  deadlineMs: 10000, concurrency: 1 };
     try {
       const result = await runBatch(sdk, items, options);
       expect(result.stopped).toBeNull();

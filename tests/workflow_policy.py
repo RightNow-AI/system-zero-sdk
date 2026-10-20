@@ -13,13 +13,17 @@ import re
 
 ROOT = Path(__file__).resolve().parents[1]
 WORKFLOW_SHA256 = {
+    "hosted": {
+        "ci.yml": "d3a814f036468f0a12df89d7394d21efaba1fbd2b0021d5cd6ab7c49deae5d1e",
+        "sdk-release.yml": "9f1070f343c0dca4fb2beacaacf8eb34d938ba8612809cf6c0757092f0f7a781"
+    },
     "continuous": {
-        "ci.yml": "4742b01d2e879cf5d5e7c206a66313155dbc5a652ff6dd7a9cb4b946777d7e89",
-        "sdk-release.yml": "235622f9d48815708d21c52b6ed603b936ef83b0d2613a8483fe0a4c75d1bbf8"
+        "ci.yml": "d3a814f036468f0a12df89d7394d21efaba1fbd2b0021d5cd6ab7c49deae5d1e",
+        "sdk-release.yml": "9f1070f343c0dca4fb2beacaacf8eb34d938ba8612809cf6c0757092f0f7a781"
     },
     "manual": {
-        "ci.yml": "a8fa638d31935647416e1f426aa73e75f913da6a888b7db6af9f0e964ea3fb5f",
-        "sdk-release.yml": "0aa2a878aa8131d7239d20f609fd757438d4b20a2bc8d90ffb6088827b600b40"
+        "ci.yml": "b330904ca1936ec47d7bc6ecbd695c479f38c47cbf873c7c4c3f065e15e2ecaf",
+        "sdk-release.yml": "9f1070f343c0dca4fb2beacaacf8eb34d938ba8612809cf6c0757092f0f7a781"
     }
 }
 ACTIONS = {
@@ -130,17 +134,20 @@ def check():
         text = raw.decode("ascii")
         workflows[name] = text
         trigger = text.split("\non:\n", 1)[1].split("\npermissions:\n", 1)[0]
-        expected = ("  workflow_dispatch:\n" if ci_mode == "manual" else
+        expected = ("  workflow_dispatch:\n" if ci_mode == "manual" and name == "ci.yml" else
                     "  pull_request:\n  push:\n    branches: [main]\n" if name == "ci.yml" else
-                    "  push:\n    tags: ['sdk-v*']\n")
+                    "  workflow_dispatch:\n  push:\n    tags: ['sdk-v*']\n")
         require(trigger == expected, 'Workflow invariant failed')
         require(text.split('\npermissions:\n', 1)[1].split('\nconcurrency:\n', 1)[0] == '  contents: read\n', 'Workflow invariant failed')
         jobs = text.split("\njobs:\n", 1)[1]
         names = re.findall(r"^  ([a-z_]+):$", jobs, re.MULTILINE)
         require(len(names) == len(set(names)), 'Workflow invariant failed')
-        require(set(names) == ({'typescript', 'python', 'policy'} if name == 'ci.yml' else {'build', 'typescript', 'python', 'publication_gate', 'publish_npm', 'publish_pypi'}), 'Workflow invariant failed')
+        require(set(names) == ({'typescript', 'python', 'policy'} if name == 'ci.yml' else {'build', 'typescript', 'python', 'publication_gate', 'publish_npm', 'publish_pypi', 'rehearsal'}), 'Workflow invariant failed')
         runners = re.findall(r"^    runs-on: (.+)$", jobs, re.MULTILINE)
-        require(len(runners) == len(names) and set(runners) == {'ubuntu-24.04'}, 'Workflow invariant failed')
+        require(len(runners) == len(names), 'Workflow invariant failed')
+        for job_name, runner in zip(names, runners):
+            expected_runner = "ubuntu-24.04"
+            require(runner == expected_runner, "Workflow runner differs from the approved execution environment")
         require(len(re.findall('^    timeout-minutes: [1-9][0-9]*$', jobs, re.MULTILINE)) == len(names), 'Workflow invariant failed')
         require('\npermissions:\n  contents: read\n' in text, 'Workflow invariant failed')
         require(not re.search('(?:container|services|continue-on-error):|secrets\\s*(?:[.]|\\[)|github[.]token', text), 'Workflow invariant failed')
@@ -150,6 +157,7 @@ def check():
             require(ACTIONS.get(action_name) == revision, 'Workflow invariant failed')
         require(text.count('persist-credentials: false') == sum((action.startswith('actions/checkout@') for action in uses)), 'Workflow invariant failed')
         require('node: [22, 24]' in text and "python: ['3.10', '3.11', '3.12', '3.13', '3.14']" in text, 'Workflow invariant failed')
+        require("node-version: ${{ matrix.node == 24 && '24.21.0' || matrix.node }}" in text, "Node 24 matrix jobs must use the reviewed runtime")
         require('npm ci --prefix typescript --ignore-scripts --no-audit --no-fund' in text, 'Workflow invariant failed')
         require('--require-hashes --only-binary :all:' in text, 'Workflow invariant failed')
         require("PYTEST_DISABLE_PLUGIN_AUTOLOAD: '1'" in text, 'Workflow invariant failed')
@@ -169,15 +177,24 @@ def check():
     require('python -I -B -X utf8 tests/release_artifacts.py' in ci and 'python -I -B -X utf8 tools/sdk/scan_tree.py --root .' in ci, 'Workflow invariant failed')
     check_source_content_steps(ci, "policy")
     release = workflows['sdk-release.yml']
-    require('\n  group: sdk-release\n  cancel-in-progress: false\n' in release, 'Workflow invariant failed')
-    for name in ('build', 'publication_gate'):
-        require("    if: ${{ github.ref_type == 'tag' }}\n" in job_text(release, name), 'Workflow invariant failed')
+    require('\n  group: sdk-release-${{ github.ref }}\n  cancel-in-progress: true\n' in release, 'Workflow invariant failed')
+    require("if: ${{ github.event_name == 'workflow_dispatch' || github.ref_type == 'tag' }}" in job_text(release, 'build'), 'Build trigger invariant failed')
+    require("if: ${{ github.event_name == 'push' && github.ref_type == 'tag' }}" in job_text(release, 'publication_gate'), 'Publication trigger invariant failed')
+    rehearsal = job_text(release, 'rehearsal')
+    require("if: ${{ github.event_name == 'workflow_dispatch' }}" in rehearsal, 'Rehearsal trigger invariant failed')
+    dry_run = 'npm publish ./sdk-release-dist/npm/*.tgz --access public --ignore-scripts --dry-run'
+    rehearsal_runs = [step_run(step) or '' for step in job_steps(release, 'rehearsal')]
+    require([run for run in rehearsal_runs if 'npm publish ' in run] == [dry_run], 'Rehearsal must contain exactly the non-publishing npm command')
+    require('pypa/gh-action-pypi-publish' not in rehearsal and 'environment:' not in rehearsal and re.search(r'id-token\s*:', rehearsal) is None, 'Rehearsal cannot publish')
+    require('node-version: 24.21.0' in rehearsal and 'SDK_RELEASE_NPM_VERSION' in rehearsal, 'Rehearsal must verify the publication runtime')
     for name in ('publish_npm', 'publish_pypi'):
         job = job_text(release, name)
         require('needs: [build, typescript, python, publication_gate]' in job, 'Workflow invariant failed')
-        require("if: ${{ github.ref_type == 'tag' && needs.build.outputs.source_public == 'true' }}" in job, 'Workflow invariant failed')
+        require("if: ${{ github.event_name == 'push' && github.ref_type == 'tag' && needs.build.outputs.source_public == 'true' }}" in job, 'Workflow invariant failed')
         require('SDK_MANIFEST_SHA256: ${{ needs.build.outputs.manifest_sha256 }}' in job, 'Workflow invariant failed')
         require('environment: sdk-release-' + ('npm' if name == 'publish_npm' else 'pypi') + '\n' in job, 'Workflow invariant failed')
+    require('node-version: 24.21.0' in job_text(release, 'publish_npm'), 'Exact npm runtime pin required')
+    require('--repository-url)' in release and 'git fetch --no-tags "$SDK_PUBLIC_REPOSITORY" main' in release, 'Publication must use the repository constant')
     require(release.count('id-token: write') == 2, 'Workflow invariant failed')
     require("github.event.repository.visibility != 'public'" in release, 'Workflow invariant failed')
     require('--require-public --repository "$GITHUB_REPOSITORY"' in release, 'Workflow invariant failed')
@@ -190,7 +207,7 @@ def check():
     policy.check_npm_repository(package)
     policy.require_public(policy.public_repository().removeprefix('https://github.com/').removesuffix('.git'))
     load('check_release').check_source(ROOT, 'sdk-v' + package['version'])
-    print('Hosted workflow and public SDK release policy passed.')
+    print('Hosted CI and public SDK release policy passed.')
 
 
 if __name__ == '__main__':

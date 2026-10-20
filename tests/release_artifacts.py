@@ -38,7 +38,7 @@ def fixture_entries(check):
     license_body = b"Apache License\nVersion 2.0, January 2004\n"
     notice = b"System Zero SDKs\nSynthetic package notice.\n"
     package = json.dumps({
-        "name": "@rightnow/system-zero", "version": VERSION,
+        "name": "@rightnowai/system-zero", "version": VERSION,
         "repository": {"type": "git", "url": check.load_release_policy().public_repository()},
     }).encode("utf-8")
     prefix = "rightnow_system_zero-0.1.0/"
@@ -107,13 +107,9 @@ def opaque_units(kind, data):
 def run_controls():
     check = checker()
     entries = fixture_entries(check)
-    counts = {"compressionCases": 0, "credentialCases": 0, "encodedControls": 0, "opaqueScans": 0,
+    counts = {"compressionCases": 0, "draftCases": 0, "credentialCases": 0, "encodedControls": 0, "opaqueScans": 0,
               "metadataCases": 0, "inventoryCases": 0, "manifestCases": 0, "contentCases": 0}
-    base = ROOT / "tmp"
-    base.mkdir(exist_ok=True)
-    assert base.resolve().parent == ROOT and not base.is_symlink()
-    assert not getattr(base, "is_junction", lambda: False)()
-    with tempfile.TemporaryDirectory(prefix="artifact-controls-", dir=base) as directory:
+    with tempfile.TemporaryDirectory(prefix="sdk-artifact-controls-") as directory:
         path = Path(directory) / "sample"
         for kind, values in entries.items():
             for level in [*range(10), *(["stored"] if kind == "wheel" else [])]:
@@ -139,7 +135,7 @@ def run_controls():
         controls = (("Authorization: " + "Bearer " + token, "credential-header"),
                     ("Authorization: " + "Basic " + token, "credential-header"),
                     ("password" + chr(61) + chr(34) + token + chr(34), "generic-secret-assignment"))
-        final_names = "@rightnow/system-zero rightnow-system-zero system_zero"
+        final_names = "@rightnowai/system-zero rightnow-system-zero system_zero"
         for kind, values in entries.items():
             prefix = {"npm": "package/", "wheel": "system_zero/", "sdist": "rightnow_system_zero-0.1.0/"}[kind]
             for encoding in ("utf-8", "utf-16", "utf-16-be"):
@@ -164,8 +160,44 @@ def run_controls():
                 refuses(lambda: getattr(check, "check_" + kind)(path, VERSION), check.ReleaseError)
                 counts["credentialCases"] += 1
         counts.update(metadata_controls(check, entries))
+        counts["repositoryCases"] = repository_controls(check, entries)
         counts["inventoryCases"] = inventory_controls(check, entries)
         counts["manifestCases"] = manifest_controls(Path(directory))
+        draft_import = "_".join(("system", "zero", "draft"))
+        drafts = (draft_import, draft_import.replace("_", "-"), "@rightnow/" + draft_import.replace("_", "-"))
+        final_names = "@rightnowai/system-zero rightnow-system-zero system_zero"
+        for kind, values in entries.items():
+            prefix = {"npm": "package/", "wheel": "system_zero/", "sdist": "rightnow_system_zero-0.1.0/"}[kind]
+            for encoding in ("utf-8", "utf-16", "utf-16-be"):
+                def encoded(value):
+                    raw = value.encode(encoding)
+                    return b"\xfe\xff" + raw if encoding == "utf-16-be" else raw
+                positive = dict(values)
+                positive[prefix + "README.md"] = encoded(final_names)
+                path.write_bytes(packed(kind, positive))
+                getattr(check, "check_" + kind)(path, VERSION)
+                for draft in drafts:
+                    negative = dict(values)
+                    negative[prefix + "README.md"] = encoded("Use " + draft + " for this SDK.")
+                    path.write_bytes(packed(kind, negative))
+                    try:
+                        getattr(check, "check_" + kind)(path, VERSION)
+                    except check.ReleaseError as error:
+                        assert error.rules == ["draft-name"]
+                    else:
+                        raise AssertionError("Artifact draft-name content was accepted")
+                    counts["draftCases"] += 1
+            for draft in drafts:
+                negative = dict(values)
+                negative[prefix + "docs/" + draft + ".md"] = b"Public SDK documentation.\n"
+                path.write_bytes(packed(kind, negative))
+                try:
+                    getattr(check, "check_" + kind)(path, VERSION)
+                except check.ReleaseError as error:
+                    assert error.rules == ["draft-name"]
+                else:
+                    raise AssertionError("Artifact draft-name path was accepted")
+                counts["draftCases"] += 1
     return counts
 
 
@@ -205,8 +237,33 @@ def content_controls(check, entries, path):
             path.write_bytes(packed(kind, neutral))
             getattr(check, "check_" + kind)(path, VERSION)
             if rule == "generic-secret-assignment":
-                with mock.patch.object(check.load_content_rules(), "credential_name", return_value=False):
+                with mock.patch.object(check.load_public_content_rules(), "credential_name", return_value=False), \
+                     mock.patch.object(check.load_content_rules(), "archive_rule_ids", return_value=[]):
                     check.scan_text(value, "README.md")
+            count += 1
+    return count
+
+
+def repository_controls(check, entries):
+    repository = check.load_release_policy().public_repository().removesuffix(".git")
+    count = 0
+    for path in ("README.md", "system_zero/module.py", "metadata.txt"):
+        check.scan_text(repository, path)
+        for prefix in (repository, repository + ".git"):
+            for whitespace in (" ", "\t", "\n", "\r\n"):
+                refuses(lambda: check.scan_text(prefix + whitespace + "-other", path), check.ReleaseError)
+                count += 1
+    original = entries["wheel"]["rightnow_system_zero-0.1.0.dist-info/METADATA"].decode("ascii")
+    for path in ("rightnow_system_zero-0.1.0.dist-info/METADATA", "rightnow_system_zero-0.1.0/PKG-INFO"):
+        check.scan_text(original, path)
+        for suffix in (" -other", ".git -other", "\n -other", "\n\t-other", "\n-other"):
+            changed = original.replace("Project-URL: Source, " + repository + "\n",
+                                       "Project-URL: Source, " + repository + suffix + "\n")
+            refuses(lambda: check.scan_text(changed, path), check.ReleaseError)
+            count += 1
+        for body in (repository + " -other", repository + ".git -other",
+                     "Project-URL: Source, " + repository + "\n-other"):
+            refuses(lambda: check.scan_text(original + "\n" + body, path), check.ReleaseError)
             count += 1
     return count
 
@@ -214,11 +271,15 @@ def content_controls(check, entries, path):
 def metadata_controls(check, entries):
     count = 0
     repository = check.load_release_policy().public_repository().removesuffix(".git")
-    check.scan_text("Project-URL: Source, " + repository + "\nProject-URL: Issues, " + repository + "/issues\n",
-                    "METADATA")
+    check.scan_text(entries["wheel"]["rightnow_system_zero-0.1.0.dist-info/METADATA"].decode("ascii"),
+                    "rightnow_system_zero-0.1.0.dist-info/METADATA")
     count += 1
+    for suffix in ("-other", ".git-other"):
+        refuses(lambda: check.scan_text("Project-URL: Source, " + repository + suffix + "\n", "METADATA"),
+                check.ReleaseError)
+        count += 1
     for url in (repository + "-other", repository + ".git-other", "https://example.com/repository"):
-        raw = json.dumps({"name": "@rightnow/system-zero",
+        raw = json.dumps({"name": "@rightnowai/system-zero",
                           "repository": {"type": "git", "url": url}}).encode("ascii")
         refuses(lambda: check.check_npm_metadata(raw), check.ReleaseError)
         count += 1

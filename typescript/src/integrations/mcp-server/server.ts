@@ -66,7 +66,7 @@ function toolResult(id: RequestId, value: ToolResult, modern: boolean): RpcReply
 }
 
 /**
- * See https://modelcontextprotocol.io/specification/2026-07-28/basic/versioning
+ * VENDOR: https://modelcontextprotocol.io/specification/2026-07-28/basic/versioning
  * Modern requests carry their own version and capabilities. The legacy
  * handshake remains available for clients using the previous published era.
  */
@@ -137,7 +137,7 @@ export function createMcpServer(options: McpServerOptions = {}): McpServer {
     active.set(id, operation);
     try {
       // The common handler owns validation, ordinary decide, typed refusals,
-      // idempotency and the host's local call limit in both provider integrations.
+      // idempotency and the host's hard cost cap in both provider integrations.
       const value = await handleToolCall(params.name, params.arguments ?? {});
       return operation.cancelled ? null : toolResult(id, value, modern);
     } catch {

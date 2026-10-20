@@ -1,4 +1,4 @@
-"""Counted decide calls with durable, content-free batch receipts and stable replay keys."""
+"""Bounded ordinary decide calls with durable, content-free batch receipts."""
 from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
 import hashlib
 import json
@@ -77,15 +77,11 @@ def idempotency_key(run_id: str, item_id: str, request_hash: str) -> str:
 def _json_bytes(value: Any) -> bytes:
     return json.dumps(value, ensure_ascii=False, separators=(',', ':'), allow_nan=False).encode('utf-8')
 
-def _reply_usage(reply: Any) -> Optional[dict[str, int]]:
+def _reported_usage(reply: Any) -> Optional[dict[str, int]]:
     raw = reply.get('usage') if isinstance(reply, dict) else None
     if not isinstance(raw, dict) or any((not _integer(raw.get(key)) for key in _USAGE_KEYS)):
         return None
     usage = {key: int(raw[key]) for key in _USAGE_KEYS}
-    uncached = usage['input_tokens'] - usage['cached_input_tokens'] - usage['media_tokens']
-    long = usage['long_input_tokens']
-    if uncached < long:
-        return None
     return usage
 
 def _append(path: Path, row: dict[str, Any]) -> None:
@@ -114,7 +110,7 @@ def _read(path: Path) -> list[dict[str, Any]]:
         rows.append(row)
     return rows
 
-def run_batch(client: SystemZero, items: Sequence[Mapping[str, Any]], *, run_id: str, results_path: str | Path, max_decide_calls: int, deadline_ms: float, concurrency: int=2, max_retries: Optional[int]=None, now_ms: Callable[[], float]=lambda: time.time() * 1000, sleep_ms: Optional[Callable[[float], None]]=None, random: Optional[Callable[[], float]]=None) -> BatchResult:
+def run_batch(client: SystemZero, items: Sequence[Mapping[str, Any]], *, run_id: str, results_path: str | Path, deadline_ms: float, concurrency: int=2, max_retries: Optional[int]=None, max_decide_calls: Optional[int]=None, now_ms: Callable[[], float]=lambda: time.time() * 1000, sleep_ms: Optional[Callable[[float], None]]=None, random: Optional[Callable[[], float]]=None) -> BatchResult:
     """Run or resume a batch, returning records and a nullable stopped reason.
 
     Each item uses the client's bounded HTTP loop with before-work recovery. max_retries
@@ -124,6 +120,9 @@ def run_batch(client: SystemZero, items: Sequence[Mapping[str, Any]], *, run_id:
     admissions cannot replay after the server's 24-hour idempotency lifetime.
     """
     started = time.monotonic() * 1000
+    max_calls = 1000 if max_decide_calls is None else max_decide_calls
+    if not _integer(max_calls):
+        raise _invalid(param='max_decide_calls')
     if type(concurrency) is not int or not 1 <= concurrency <= 2 or (max_retries is not None and (type(max_retries) is not int or not 0 <= max_retries <= MAX_SAFE_INTEGER)) or (type(deadline_ms) not in (int, float)) or (not math.isfinite(deadline_ms)) or (not 0 < deadline_ms <= 2147483647):
         raise _invalid('Use concurrency 1 or 2, a finite positive deadline, and a nonnegative retry cap.')
     timeout_ms = client.timeout * 1000
@@ -134,8 +133,6 @@ def run_batch(client: SystemZero, items: Sequence[Mapping[str, Any]], *, run_id:
     except ValueError as error:
         raise _invalid('The batch target URL is invalid.') from error
     target = hashlib.sha256(target.encode('utf-8')).hexdigest()
-    if not _integer(max_decide_calls):
-        raise _invalid(param='max_decide_calls')
     wall_started = now_ms()
     if not math.isfinite(wall_started) or wall_started < 0 or wall_started > MAX_SAFE_INTEGER - deadline_ms:
         raise _invalid()
@@ -176,7 +173,10 @@ def run_batch(client: SystemZero, items: Sequence[Mapping[str, Any]], *, run_id:
             os.fsync(stream.fileno())
         admissions: dict[str, dict[str, Any]] = {}
         finished: dict[str, dict[str, Any]] = {}
-        for row in _read(journal):
+        journal_rows, result_rows = (_read(journal), _read(path))
+        if any(('reserved_nanocents' in row or 'rate_card' in row for row in journal_rows + result_rows)):
+            raise _invalid('Legacy cost-based batch receipts cannot be resumed; use a new results path.', param='results_path')
+        for row in journal_rows:
             identifier = row.get('id')
             planned = prepared.get(identifier)
             if planned is None or identifier in admissions or (not _integer(row.get('admitted_at_ms'))):
@@ -185,7 +185,7 @@ def run_batch(client: SystemZero, items: Sequence[Mapping[str, Any]], *, run_id:
             if header != planned['admission']:
                 raise _invalid('Resume requires the original run, target, items and expected answers.')
             admissions[identifier] = row
-        for row in _read(path):
+        for row in result_rows:
             identifier = row.get('id')
             admission = admissions.get(identifier)
             if admission is None or identifier in finished or any((row.get(key) != value for key, value in admission.items())):
@@ -195,14 +195,12 @@ def run_batch(client: SystemZero, items: Sequence[Mapping[str, Any]], *, run_id:
                 raise _invalid()
             if row.get('outcome') not in ('completed', 'held', 'error', 'refused') or (row.get('code') is not None and row['code'] not in _KNOWN_CODES) or (not _integer(row.get('attempts'))) or (type(row.get('latency_ms')) not in (int, float)) or (not math.isfinite(row['latency_ms'])) or (row['latency_ms'] < 0) or (not isinstance(row.get('questions'), list)):
                 raise _invalid()
-            usage = _reply_usage({'usage': row.get('usage')})
             if row['outcome'] == 'held' and row.get('code') not in _HELD:
                 raise _invalid()
-            if row['outcome'] == 'completed':
-                if row.get('code') is not None or row.get('usage') != usage:
-                    raise _invalid()
-            elif row.get('usage') is not None:
+            if row['outcome'] != 'completed' and row['usage'] is not None:
                 raise _invalid()
+            if row['outcome'] == 'completed' and (row['code'] is not None or (row['usage'] is not None and _reported_usage({'usage': row['usage']}) != row['usage'])):
+                raise _invalid('The saved usage is invalid.')
             if row['outcome'] in ('error', 'held'):
                 if row['questions']:
                     raise _invalid()
@@ -210,7 +208,7 @@ def run_batch(client: SystemZero, items: Sequence[Mapping[str, Any]], *, run_id:
                 raise _invalid()
             _evaluate([row])
             finished[identifier] = row
-        if len(admissions) > max_decide_calls:
+        if len(admissions) > max_calls:
             raise _invalid('The local call limit is below the existing admissions.', param='max_decide_calls')
         for identifier, admission in admissions.items():
             if identifier not in finished and (not admission['admitted_at_ms'] <= now_ms() < admission['admitted_at_ms'] + REPLAY_TTL_MS - timeout_ms):
@@ -275,7 +273,7 @@ def run_batch(client: SystemZero, items: Sequence[Mapping[str, Any]], *, run_id:
             else:
                 try:
                     questions = score_reply(plan['request'], plan['expected'], response)
-                    usage = _reply_usage(response)
+                    usage = _reported_usage(response)
                 except SystemZeroError:
                     outcome, code = ('error', 'service_unavailable')
             return ({**admission, 'outcome': outcome, 'code': code, 'attempts': attempts, 'latency_ms': max(0.0, time.monotonic() * 1000 - begin), 'usage': usage, 'questions': questions}, deadline_stop)
@@ -284,7 +282,7 @@ def run_batch(client: SystemZero, items: Sequence[Mapping[str, Any]], *, run_id:
             while pending or running:
                 while pending and len(running) < concurrency and (stopped not in ('deadline', 'call_limit')):
                     identifier = pending[0]
-                    if identifier not in admissions and len(admissions) >= max_decide_calls:
+                    if identifier not in admissions and len(admissions) >= max_calls:
                         stopped = 'call_limit'
                         break
                     if time.monotonic() * 1000 + timeout_ms > deadline:
@@ -307,7 +305,7 @@ def run_batch(client: SystemZero, items: Sequence[Mapping[str, Any]], *, run_id:
                     finished[identifier] = record
                     if deadline_stop:
                         stopped = 'deadline'
-        return {'records': [finished[identifier] for identifier in prepared if identifier in finished], 'stopped': stopped}
+        return {'records': [finished[identifier] for identifier in prepared if identifier in finished], 'stopped': stopped, 'decide_calls': len(admissions)}
     except (OSError, ValueError, TypeError, KeyError, UnicodeError, OverflowError) as error:
         raise _invalid('The batch receipt files could not be safely read or written.') from error
     finally:

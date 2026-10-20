@@ -1,5 +1,5 @@
 {
-  "description": "Synthetic hand-computed evaluator fixture. Requests contain text only. Selected-outcome Brier = (0.04+0.36+0.09+0.81+0+0.25)/6. No model-quality claim.",
+  "description": "Synthetic hand-computed evaluator fixture. Selected-outcome Brier = (0.04+0.36+0.09+0.81+0+0.25)/6. No model-quality claim.",
   "boundary_case": {
     "bins": 100,
     "expected_bin": 29,
@@ -48,7 +48,7 @@
             "3": 0.29
           },
           "confidence": 0.29,
-          "calibration_version": "synthetic",
+          "calibration_version": "unpublished",
           "decision": "3",
           "alternatives": [
             {
@@ -132,7 +132,7 @@
             "type": "boolean",
             "probability": 0.8,
             "confidence": 0.8,
-            "calibration_version": "synthetic",
+            "calibration_version": "unpublished",
             "decision": true,
             "alternatives": [
               {
@@ -150,7 +150,7 @@
               "PRIVATE_B": 0.6
             },
             "confidence": 0.6,
-            "calibration_version": "synthetic",
+            "calibration_version": "unpublished",
             "decision": "PRIVATE_B",
             "alternatives": [
               {
@@ -172,7 +172,7 @@
               "1": 0.7
             },
             "confidence": 0.7,
-            "calibration_version": "synthetic",
+            "calibration_version": "unpublished",
             "decision": "1",
             "alternatives": [
               {
@@ -254,7 +254,7 @@
             "type": "boolean",
             "probability": 0.1,
             "confidence": 0.9,
-            "calibration_version": "synthetic",
+            "calibration_version": "unpublished",
             "decision": false,
             "alternatives": [
               {
@@ -272,7 +272,7 @@
               "PRIVATE_B": 0
             },
             "confidence": 1,
-            "calibration_version": "synthetic",
+            "calibration_version": "unpublished",
             "decision": "PRIVATE_A",
             "alternatives": [
               {
@@ -294,7 +294,7 @@
               "1": 0.5
             },
             "confidence": 0.5,
-            "calibration_version": "synthetic",
+            "calibration_version": "unpublished",
             "decision": "0",
             "alternatives": [
               {
@@ -353,7 +353,7 @@
             "type": "boolean",
             "probability": 0.9,
             "confidence": 0.01,
-            "calibration_version": "legacy-margin"
+            "calibration_version": "unpublished"
           }
         },
         "usage": {
@@ -407,7 +407,7 @@
       "code": "injection_suspected"
     },
     {
-      "id": "held-input",
+      "id": "held-capability",
       "outcome": "held",
       "latency_ms": 9000,
       "code": "video_not_available"

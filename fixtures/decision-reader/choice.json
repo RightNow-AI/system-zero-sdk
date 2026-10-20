@@ -9,7 +9,7 @@
         "b": 0.25
       },
       "confidence": 0.75,
-      "calibration_version": "synthetic/reader-parity",
+      "calibration_version": "unpublished",
       "calibrated": false,
       "decision": "a",
       "alternatives": [
@@ -44,7 +44,7 @@
         "b": 0.249999
       },
       "confidence": 0.75,
-      "calibration_version": "synthetic/reader-parity",
+      "calibration_version": "unpublished",
       "calibrated": false,
       "decision": "a",
       "alternatives": [
@@ -79,7 +79,7 @@
         "b": 0.250001
       },
       "confidence": 0.75,
-      "calibration_version": "synthetic/reader-parity",
+      "calibration_version": "unpublished",
       "calibrated": false,
       "decision": "a",
       "alternatives": [
@@ -114,7 +114,7 @@
         "b": 0.249998
       },
       "confidence": 0.75,
-      "calibration_version": "synthetic/reader-parity",
+      "calibration_version": "unpublished",
       "calibrated": false,
       "decision": "a",
       "alternatives": [
@@ -149,7 +149,7 @@
         "b": 0.250002
       },
       "confidence": 0.75,
-      "calibration_version": "synthetic/reader-parity",
+      "calibration_version": "unpublished",
       "calibrated": false,
       "decision": "a",
       "alternatives": [
@@ -183,7 +183,7 @@
         "only": 1
       },
       "confidence": 1,
-      "calibration_version": "synthetic/reader-parity",
+      "calibration_version": "unpublished",
       "calibrated": false,
       "decision": "only",
       "alternatives": []
@@ -211,7 +211,7 @@
         "only": 0.999999
       },
       "confidence": 0.999999,
-      "calibration_version": "synthetic/reader-parity",
+      "calibration_version": "unpublished",
       "calibrated": false,
       "decision": "only",
       "alternatives": []
@@ -241,7 +241,7 @@
         "zero": 0
       },
       "confidence": 0.5,
-      "calibration_version": "synthetic/reader-parity",
+      "calibration_version": "unpublished",
       "calibrated": false,
       "decision": "b",
       "alternatives": [
@@ -281,7 +281,7 @@
         "b": 0.2499999999995
       },
       "confidence": 0.75,
-      "calibration_version": "synthetic/reader-parity",
+      "calibration_version": "unpublished",
       "calibrated": false,
       "decision": "a",
       "alternatives": [

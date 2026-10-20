@@ -19,7 +19,7 @@ MAX_FILE_BYTES = 16 * 1024 * 1024
 
 
 def load_rules():
-    spec = importlib.util.spec_from_file_location("public_tree_rules", ROOT / "tools/sdk/content_rules.py")
+    spec = importlib.util.spec_from_file_location("public_tree_rules", ROOT / "tools/sdk/public_content_rules.py")
     if spec is None or spec.loader is None:
         raise ValueError("Content rules are unavailable.")
     module = importlib.util.module_from_spec(spec)

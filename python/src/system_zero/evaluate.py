@@ -1,4 +1,4 @@
-"""Content-free evaluation of caller-labelled decisions; makes no network calls."""
+"""Content-free evaluation of caller-labelled decisions; no network or billing side effects."""
 import hashlib
 import json
 import math
@@ -235,7 +235,7 @@ def _markdown(value: Any) -> str:
 
 def report_markdown(report: Mapping[str, Any]) -> str:
     items, metrics, latency, usage = (report[key] for key in ('items', 'metrics', 'latency_ms', 'usage'))
-    lines = ['# Batch evaluation', '', '| Items | Completed | Refused | Held | Errors |', '| --- | --- | --- | --- | --- |', f"| {items['total']} | {items['completed']} | {items['refused']} | {items['held']} | {items['error']} |", '', '| Type | Questions | Correct | Accuracy | False-refusal rate |', '| --- | --- | --- | --- | --- |']
+    lines = ['# Batch evaluation ', '', '| Items | Completed | Refused | Held | Errors |', '| --- | --- | --- | --- | --- |', f"| {items['total']} | {items['completed']} | {items['refused']} | {items['held']} | {items['error']} |", '', '| Type | Questions | Correct | Accuracy | False-refusal rate |', '| --- | --- | --- | --- | --- |']
     for kind in _TYPES:
         row = report['by_type'][kind]
         lines.append(f"| {kind} | {row['questions']} | {row['correct']} | {_markdown(row['accuracy'])} | {_markdown(row['false_refusal_rate'])} |")

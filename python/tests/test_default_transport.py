@@ -163,7 +163,7 @@ def test_mutated_base_url_is_refused_before_dispatch_or_receipt_creation(method)
             sdk.base_url = "http://sdk.example.com/v1"
             with pytest.raises((ValueError, InvalidRequestError)):
                 if method == "batch":
-                    run_batch(sdk, [], run_id="synthetic", results_path=results_path, max_decide_calls=1, deadline_ms=1000)
+                    run_batch(sdk, [], run_id="synthetic", results_path=results_path,  deadline_ms=1000)
                 else:
                     call(sdk, method)
         assert not seen

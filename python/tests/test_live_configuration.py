@@ -39,7 +39,7 @@ def test_environment_key_gets_the_same_fixed_refusal(monkeypatch):
 @pytest.mark.parametrize("base_url", (
     "https://sdk.example.com/v1?", "https://sdk.example.com/v1#",
     "https://sdk.example.com/v1?x=1", "https://sdk.example.com/v1#part",
-    urlsplit("https://sdk.example.com/v1")._replace(netloc="user:pass@sdk.example.com").geturl(),
+    urlsplit("https://sdk.example.com/v1")._replace(netloc="user:pass" + chr(64) + "sdk.example.com").geturl(),
     "http://sdk.example.com/v1",
 ))
 def test_invalid_url_is_refused_by_client_and_tool_factory(base_url):

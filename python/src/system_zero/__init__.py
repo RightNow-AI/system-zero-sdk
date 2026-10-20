@@ -1,8 +1,11 @@
 """System Zero API client and client-side helpers."""
 
 from .client import (
-    SystemZero,
     VERSION,
+)
+
+from .client import (
+    SystemZero,
 )
 
 from .decisions import (

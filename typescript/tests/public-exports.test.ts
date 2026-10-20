@@ -23,15 +23,18 @@ describe('public workflow entrypoints', () => {
       sdk.flowIdempotencyKey('public-flow', 'review', structuredClone(request)),
     );
     expect(sdk.flowRequestHash(request)).toMatch(/^[a-f0-9]{64}$/u);
+    expect(sdk).not.toHaveProperty('STEP_COST_MICROCENTS');
   });
 
-  it('exposes batch execution and deterministic identity helpers', () => {
+  it('exposes batch execution and deterministic identity without cost helpers', () => {
     const item: BatchItem = { id: 'review', request, expected: { ready: true } };
     expect(sdk.runBatch).toBe(runBatch);
+    expect(sdk).not.toHaveProperty('parseBudgetUsd');
     const hash = sdk.requestHash(item.request);
     expect(sdk.idempotencyKey('public-batch', item.id, hash)).toBe(
       sdk.idempotencyKey('public-batch', item.id, sdk.requestHash(structuredClone(item.request))),
     );
+    expect(sdk).not.toHaveProperty('reserveNanocents');
   });
 
   it('exposes evaluation and report helpers without a client or a network call', () => {

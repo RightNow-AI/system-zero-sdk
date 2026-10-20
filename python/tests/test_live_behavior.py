@@ -72,11 +72,11 @@ class LiveBehaviorTests(unittest.TestCase):
                                                "expected": {"zebra": True, "alpha": True}}],
                                        run_id="synthetic-count", results_path=Path(directory) / "results.jsonl",
                                        max_decide_calls=0, deadline_ms=1000, concurrency=1)
-            self.assertEqual(result, {"records": [], "stopped": "call_limit"})
+            self.assertEqual(result, {"records": [], "stopped": "call_limit", "decide_calls": 0})
 
     def test_local_call_admission_refuses_before_transport(self):
         catalog = json.loads(Path(tools.__file__).with_name("error-catalog.json").read_text(encoding="utf-8"))
-        self.assertEqual(len(catalog), 45)
+        self.assertEqual(len(catalog), 46)
         self.assertNotIn("call_limit_reached", catalog)
         seen = []
         with sdk.SystemZero(api_key="SYNTHETIC", max_retries=0, transport=httpx.MockTransport(

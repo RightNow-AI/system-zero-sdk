@@ -1,4 +1,4 @@
-"""Ordinary HTTP retry behavior, paired with the TypeScript tests."""
+"""System Zero SDK helper."""
 
 import json
 
@@ -132,7 +132,8 @@ def test_complete_refusal_close_fault_keeps_base_terminal_policy(method):
 
     attempts, failure = observe(method, lambda _: httpx.Response(
         503, headers={"retry-after": "0"}, stream=CloseFailure()))
-    # A cleanup failure ends retries while preserving the complete refusal.
+    # 41c89a69 made one attempt with retryable=False. Preserve that boundary
+    # while retaining the complete refusal instead of losing it during cleanup.
     assert_attempts(attempts, method, 1)
     assert failure.retryable is False
     assert type(failure) is ServiceUnavailableError
@@ -147,6 +148,6 @@ def test_explicitly_unkeyed_request_is_terminal_before_response():
         raise httpx.ReadError("SYNTHETIC before-response reset")
 
     attempts, failure = observe("POST", fail, keyed=False)
-    assert attempts == [{"method": "POST", "key": ""}]
+    assert attempts == [{"method": "POST", "key": None}]
     assert type(failure) is APIConnectionError
     assert failure.retryable is False

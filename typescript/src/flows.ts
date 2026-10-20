@@ -1,8 +1,9 @@
 import { createHash, type Hash } from 'node:crypto';
 import type { DecideRequest, JsonValue, Question } from './api-types.js';
-import { withRetryContext, type SystemZeroClient } from './client.js';
+import { withRetryContext } from './client.js';
+import type { SystemZeroClient } from './client.js';
 import { decisionsFor, type Alternative, type DecisionResult, type SystemZeroReply } from './decisions.js';
-import { SYSTEM_ZERO_ERROR_CODES } from './public-error-codes.js';
+import { SYSTEM_ZERO_ERROR_CODES, GATEWAY_ERROR_CODES } from './public-error-codes.js';
 import { APIConnectionError, APIError, APITimeoutError, InvalidRequestError, responseError, SystemZeroError } from './errors.js';
 
 export type FlowCondition = { step: string; question: string } & (
@@ -27,7 +28,8 @@ export interface FlowDefinition {
 }
 export interface FlowOptions {
   run_id: string;
-  max_decide_calls: number;
+  /** Call count cap, defaulting to MAX_STEPS (32). Larger caps are refused. */
+  max_decide_calls?: number;
   /** Duration in milliseconds. The existing client's entire retry bound must fit. */
   deadline_ms: number;
   include_content?: boolean;
@@ -57,6 +59,7 @@ export interface FlowStepTrace {
   question_count: number;
   started_ms: number;
   elapsed_ms: number;
+  /** Number of admitted decide calls, including failed calls. */
   decide_calls: number;
   replayed: boolean;
   usage: Record<string, number> | null;
@@ -73,6 +76,7 @@ export interface FlowTrace {
   status: 'completed' | 'refused' | 'held' | 'failed';
   started_ms: number;
   elapsed_ms: number;
+  /** Number of admitted decide calls, including failed calls. */
   decide_calls: number;
   steps: FlowStepTrace[];
 }
@@ -80,7 +84,7 @@ export type FlowError = SystemZeroError & { trace: FlowTrace };
 
 const MAX_STEPS = 32;
 const idPattern = /^[A-Za-z][A-Za-z0-9_-]{0,63}$/u;
-const knownCodes = new Set<string>([...SYSTEM_ZERO_ERROR_CODES, 'call_limit_reached']);
+const knownCodes = new Set<string>([...SYSTEM_ZERO_ERROR_CODES, ...GATEWAY_ERROR_CODES, 'call_limit_reached']);
 const heldCodes = new Set([
   'long_context_not_available', 'long_recording_not_available', 'video_not_available', 'image_not_available',
   'audio_not_available', 'document_not_available', 'committee_not_available', 'deliberate_not_available',
@@ -95,9 +99,9 @@ const questionRefusals: Record<string, string> = {
 const heldMessages: Record<string, string> = {
   long_context_not_available: 'This route is not available.', long_recording_not_available: 'This input type is not supported.',
   video_not_available: 'This input type is not supported.',
-  image_not_available: 'Images are not available. Send the request without the image attachment.',
-  audio_not_available: 'Audio is not available. Send the request without the audio attachment.',
-  document_not_available: 'Documents are not available. Send the request without the document attachment.',
+  image_not_available: 'Images are unavailable. Send the request without the image attachment.',
+  audio_not_available: 'Audio is unavailable. Send the request without the audio attachment.',
+  document_not_available: 'Documents are unavailable. Send the request without the document attachment.',
   committee_not_available: 'This route is not available.', deliberate_not_available: 'This mode is not available.',
 };
 function invalid(): InvalidRequestError {
@@ -326,7 +330,7 @@ function errorTrace(error: SystemZeroError): FlowErrorTrace {
 }
 
 /** Execute ordinary counted decide calls. All returned diagnostics omit content by default. */
-export async function runFlow(client: SystemZeroClient, input: unknown, options: FlowOptions): Promise<FlowTrace> {
+export async function runFlow(client: Pick<SystemZeroClient, 'decide' | 'options'>, input: unknown, options: FlowOptions): Promise<FlowTrace> {
   if (!record(options)) throw invalid();
   let settings: FlowOptions;
   try { settings = { ...options }; } catch { throw invalid(); }
@@ -342,13 +346,16 @@ export async function runFlow(client: SystemZeroClient, input: unknown, options:
   const started = time();
   const definition = validateFlow(input);
   const trace: FlowTrace = { version: 1, run_hash: '', status: 'completed', started_ms: started, elapsed_ms: 0, decide_calls: 0, steps: [] };
+  const maxDecideCalls = settings.max_decide_calls === undefined ? MAX_STEPS : settings.max_decide_calls;
   let current: FlowStepTrace | undefined;
   let phase: 'local' | 'transport' | 'reply' | 'refusal' = 'local';
   try {
     checkRunId(settings.run_id);
     trace.run_hash = digest(settings.run_id);
-    if (!Number.isSafeInteger(settings.max_decide_calls) || settings.max_decide_calls < 0
-      || !Number.isInteger(settings.deadline_ms) || settings.deadline_ms < 1 || settings.deadline_ms > 2_147_483_647
+    if (!Number.isSafeInteger(maxDecideCalls) || maxDecideCalls < 0 || maxDecideCalls > MAX_STEPS) {
+      throw new InvalidRequestError('max_decide_calls must be a nonnegative safe integer at most 32.', { code: 'invalid_request', type: 'invalid_request_error', status: 400 });
+    }
+    if ( !Number.isInteger(settings.deadline_ms) || settings.deadline_ms < 1 || settings.deadline_ms > 2_147_483_647
       || (settings.include_content !== undefined && typeof settings.include_content !== 'boolean')) throw invalid();
     const includeContent = settings.include_content === true;
     const countBound = client.options.timeout * (client.options.maxRetries + 1) + client.options.maxRetryWait * client.options.maxRetries;
@@ -389,7 +396,7 @@ export async function runFlow(client: SystemZeroClient, input: unknown, options:
       current.request_hash = requestHash; current.idempotency_key = idempotencyKey;
       if (includeContent) current.request = request;
       if (remaining() < callBound) throw timeout();
-      if (trace.decide_calls >= settings.max_decide_calls) {
+      if (trace.decide_calls >= maxDecideCalls) {
         throw new SystemZeroError('The local call limit has been reached.', { code: 'call_limit_reached', retryable: false });
       }
       trace.decide_calls++;

@@ -1,4 +1,8 @@
-"""Declarative decision flows with local call limits and content-free traces."""
+"""Declarative decision flows over the existing, synchronous decide client.
+
+The default trace omits caller content. Each admitted dispatch consumes one
+call from a finite local count cap, and every trace records that count.
+"""
 import hashlib
 import math
 import re
@@ -8,18 +12,18 @@ from typing import Any, Callable, Dict, Mapping, Optional, cast
 from .client import SystemZero
 from ._retry import _retry_context
 from .decisions import decisions_for
-from .public_error_codes import SYSTEM_ZERO_ERROR_CODES
+from .public_error_codes import KNOWN_ERROR_CODES
 from .errors import APIConnectionError, APIError, APITimeoutError, InvalidRequestError, SystemZeroError, error_class
 from .workflow_types import FlowDefinition, FlowTrace
 MAX_FLOW_STEPS = 32
 _MAX_SAFE_INTEGER = 9007199254740991
 _STEP_ID = re.compile('[A-Za-z][A-Za-z0-9_-]{0,63}\\Z')
 _HELD_CODES = frozenset({'long_context_not_available', 'long_recording_not_available', 'video_not_available', 'image_not_available', 'audio_not_available', 'document_not_available', 'committee_not_available', 'deliberate_not_available'})
-_KNOWN_CODES = frozenset(SYSTEM_ZERO_ERROR_CODES) | {'call_limit_reached'}
+_KNOWN_CODES = KNOWN_ERROR_CODES | {'call_limit_reached'}
 _ERROR_TYPES = frozenset({'invalid_request_error', 'authentication_error', 'permission_error', 'not_found_error', 'rate_limit_error', 'overloaded_error', 'api_error', 'server_error'})
 _USAGE_FIELDS = ('input_tokens', 'cached_input_tokens', 'media_tokens', 'long_input_tokens', 'media_items', 'thought_tokens')
 _QUESTION_REFUSALS = {'injection_suspected': 'The request was refused because its content reads as instructions to the model. Remove the embedded instructions and send it again.', 'question_not_grounded': 'The question cannot be answered from this state.'}
-_HELD_MESSAGES = {'long_context_not_available': 'This route is not available.', 'long_recording_not_available': 'This input type is not supported.', 'video_not_available': 'This input type is not supported.', 'image_not_available': 'Images are not available. Send the request without the image attachment.', 'audio_not_available': 'Audio is not available. Send the request without the audio attachment.', 'document_not_available': 'Documents are not available. Send the request without the document attachment.', 'committee_not_available': 'This route is not available.', 'deliberate_not_available': 'This mode is not available.'}
+_HELD_MESSAGES = {'long_context_not_available': 'This route is not available.', 'long_recording_not_available': 'This input type is not supported.', 'video_not_available': 'This input type is not supported.', 'image_not_available': 'Images are unavailable. Send the request without the image attachment.', 'audio_not_available': 'Audio is unavailable. Send the request without the audio attachment.', 'document_not_available': 'Documents are unavailable. Send the request without the document attachment.', 'committee_not_available': 'This route is not available.', 'deliberate_not_available': 'This mode is not available.'}
 
 def _invalid() -> InvalidRequestError:
     return InvalidRequestError('The RightNow System Zero request is invalid.', status=400, type='invalid_request_error', code='invalid_request')
@@ -304,7 +308,7 @@ def _client_call_bound(client: SystemZero) -> float:
         raise _invalid()
     return bound
 
-def run_flow(client: SystemZero, definition: Mapping[str, Any], *, run_id: str, max_decide_calls: int, deadline_ms: float, include_content: bool=False, now: Optional[Callable[[], float]]=None) -> FlowTrace:
+def run_flow(client: SystemZero, definition: Mapping[str, Any], *, run_id: str, deadline_ms: float, include_content: bool=False, max_decide_calls: Optional[int]=None, now: Optional[Callable[[], float]]=None) -> FlowTrace:
     """Run ordered, bounded decisions and return a content-free trace by default.
 
     Errors retain their SDK class and carry the partial trace on ``error.trace``.
@@ -323,6 +327,7 @@ def run_flow(client: SystemZero, definition: Mapping[str, Any], *, run_id: str, 
         raise _invalid()
     flow = validate_flow(definition)
     trace: Dict[str, Any] = {'version': 1, 'run_hash': '', 'status': 'failed', 'started_ms': started, 'elapsed_ms': 0, 'decide_calls': 0, 'steps': []}
+    max_calls = MAX_FLOW_STEPS if max_decide_calls is None else max_decide_calls
     active_step: Optional[Dict[str, Any]] = None
     origin = 'local'
     last_now = started
@@ -343,7 +348,9 @@ def run_flow(client: SystemZero, definition: Mapping[str, Any], *, run_id: str, 
         if remaining <= 0 or remaining < call_bound:
             raise _timeout()
     try:
-        if not _run_id_valid(run_id) or not _safe_integer(max_decide_calls) or max_decide_calls < 0 or (not _safe_integer(deadline_ms)) or (not 1 <= deadline_ms <= 2147483647) or (type(include_content) is not bool):
+        if not _safe_integer(max_calls) or not 0 <= max_calls <= MAX_FLOW_STEPS:
+            raise InvalidRequestError('max_decide_calls must be a nonnegative safe integer at most 32.', status=400, type='invalid_request_error', code='invalid_request')
+        if not _run_id_valid(run_id) or not _safe_integer(deadline_ms) or (not 1 <= deadline_ms <= 2147483647) or (type(include_content) is not bool):
             raise _invalid()
         trace['run_hash'] = _digest(run_id)
         _client_call_bound(client)
@@ -378,7 +385,7 @@ def run_flow(client: SystemZero, definition: Mapping[str, Any], *, run_id: str, 
                 if include_content:
                     active_step['request'] = _snapshot(request)
                 check_deadline(_client_call_bound(client))
-                if trace['decide_calls'] >= max_decide_calls:
+                if trace['decide_calls'] >= max_calls:
                     raise SystemZeroError('The local call limit has been reached.', code='call_limit_reached')
                 trace['decide_calls'] += 1
                 active_step['decide_calls'] = 1

@@ -26,14 +26,17 @@ def test_public_flow_entrypoints():
         "public-flow", "review", json.loads(json.dumps(REQUEST)),
     )
     assert len(sdk.flow_request_hash(REQUEST)) == 64
+    assert not hasattr(sdk, "STEP_COST_BOUND_MICROCENTS")
 
 
 def test_public_batch_entrypoints():
     assert sdk.run_batch is importlib.import_module("system_zero.batch").run_batch
+    assert not hasattr(sdk, "parse_budget")
     digest = sdk.request_fingerprint(REQUEST)
     assert sdk.idempotency_key("public-batch", "review", digest) == sdk.idempotency_key(
         "public-batch", "review", sdk.request_fingerprint(json.loads(json.dumps(REQUEST))),
     )
+    assert not hasattr(sdk, "estimate_reserve")
 
 
 def test_public_evaluation_entrypoints():

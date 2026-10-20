@@ -1,5 +1,5 @@
 {
-  "name": "@rightnow/system-zero",
+  "name": "@rightnowai/system-zero",
   "version": "0.1.0",
   "license": "Apache-2.0",
   "homepage": "https://github.com/RightNow-AI/system-zero-sdk",
@@ -13,16 +13,20 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
     },
     "./integrations/function-tools": {
       "types": "./dist/integrations/function-tools/index.d.ts",
-      "import": "./dist/integrations/function-tools/index.js"
+      "import": "./dist/integrations/function-tools/index.js",
+      "default": "./dist/integrations/function-tools/index.js"
     },
     "./integrations/mcp-server": {
       "types": "./dist/integrations/mcp-server/server.d.ts",
-      "import": "./dist/integrations/mcp-server/server.js"
-    }
+      "import": "./dist/integrations/mcp-server/server.js",
+      "default": "./dist/integrations/mcp-server/server.js"
+    },
+    "./package.json": "./package.json"
   },
   "files": [
     "dist",
@@ -45,9 +49,17 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/RightNow-AI/system-zero-sdk.git"
+    "url": "https://github.com/RightNow-AI/system-zero-sdk.git",
+    "directory": "typescript"
   },
   "bugs": {
     "url": "https://github.com/RightNow-AI/system-zero-sdk/issues"
-  }
+  },
+  "author": "RightNow AI, Inc.",
+  "keywords": [
+    "system-zero",
+    "api",
+    "typescript",
+    "decisions"
+  ]
 }

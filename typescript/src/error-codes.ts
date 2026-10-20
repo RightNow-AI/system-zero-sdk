@@ -37,6 +37,7 @@ export const GATEWAY_ERROR_CODES = [
   "concurrency_limit_exceeded",
   "idempotency_conflict",
   "idempotency_replay_unavailable",
+  "idempotency_replayed_error",
   "idempotency_unavailable",
   "internal_error",
   "invalid_api_key",

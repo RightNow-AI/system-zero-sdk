@@ -76,9 +76,9 @@ def prepare(root: Path, output: Path) -> None:
     staged["python/pyproject.toml"] = read(root / "python/pyproject.toml")
     npm = json.loads(staged["npm/package.json"])
     python = tomllib.loads(staged["python/pyproject.toml"])["project"]
-    if (npm.get("name") != "@rightnow/system-zero" or python.get("name") != "rightnow-system-zero"
+    if (npm.get("name") != "@rightnowai/system-zero" or python.get("name") != "rightnow-system-zero"
             or npm.get("version") != python.get("version")):
-        raise ValueError("SDK package identities must agree before package preparation")
+        raise ValueError("SDK package identities must agree before staging")
     config = json.loads(read(root / "typescript/tsconfig.json"))
     config["compilerOptions"]["typeRoots"] = [(root / "typescript/node_modules/@types").as_posix()]
     staged["npm/tsconfig.json"] = json.dumps(config, indent=2) + "\n"
@@ -105,7 +105,7 @@ def main() -> int:
     try:
         prepare(Path(os.path.abspath(args.root)), Path(os.path.abspath(args.output)))
     except (OSError, ValueError, KeyError, TypeError):
-        print("Package preparation refused invalid or incomplete inputs.", file=sys.stderr)
+        print("Package staging refused invalid or incomplete inputs.", file=sys.stderr)
         return 1
     return 0
 

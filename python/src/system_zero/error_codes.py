@@ -15,6 +15,7 @@ class ErrorCode(str, Enum):
     IDEMPOTENCY_CONFLICT = 'idempotency_conflict'
     IDEMPOTENCY_KEY_REUSE = 'idempotency_key_reuse'
     IDEMPOTENCY_REPLAY_UNAVAILABLE = 'idempotency_replay_unavailable'
+    IDEMPOTENCY_REPLAYED_ERROR = 'idempotency_replayed_error'
     IDEMPOTENCY_UNAVAILABLE = 'idempotency_unavailable'
     IMAGE_NOT_AVAILABLE = 'image_not_available'
     INJECTION_SUSPECTED = 'injection_suspected'
@@ -86,6 +87,7 @@ GATEWAY_ERROR_CODES = (
     'concurrency_limit_exceeded',
     'idempotency_conflict',
     'idempotency_replay_unavailable',
+    'idempotency_replayed_error',
     'idempotency_unavailable',
     'internal_error',
     'invalid_api_key',
