@@ -46,6 +46,8 @@ EXPECTED = set("""
 """.split())
 
 
+EXPECTED.update(['Attachment', 'ByteData', 'MAX_ATTACHMENTS', 'MAX_INLINE_BYTES', 'MEDIA_LIMITS', 'MIMES', 'attachment_magic_matches', 'inline_attachment', 'validate_attachments'])
+
 class PublicSurfaceTests(unittest.TestCase):
     def test_error_conveniences_equal_the_api_catalog(self):
         self.assertEqual(len(API_CODES), 54)

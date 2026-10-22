@@ -8,7 +8,7 @@ export const SUPPORTED_PROTOCOL_VERSIONS = [CURRENT_PROTOCOL_VERSION, LEGACY_PRO
 // The HTTP caller cap is 3,665,920 bytes. JSON tool wrapping can escape that
 // content again; this transport bound leaves room for the complete caller body.
 export const MAX_FRAME_BYTES = 24 * 1024 * 1024;
-const SERVER_INFO = { name: 'system-zero', version: '0.1.1' } as const;
+const SERVER_INFO = { name: 'system-zero', version: '0.2.0' } as const;
 const CAPABILITIES = { tools: { listChanged: false } } as const;
 const CACHE = { ttlMs: 3_600_000, cacheScope: 'public' } as const;
 const VERSION_FIELD = 'io.modelcontextprotocol/protocolVersion';

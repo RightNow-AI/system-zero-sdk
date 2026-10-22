@@ -34,8 +34,14 @@ class ScoreQuestion(TypedDict):
 Question: TypeAlias = Union[BooleanQuestion, ChoiceQuestion, ScoreQuestion]
 
 
+class Attachment(TypedDict):
+    name: str
+    type: Literal['image', 'audio']
+    data: str
+
+
 class _DecideRequestOptional(TypedDict, total=False):
-    attachments: None
+    attachments: Union[List[Attachment], None]
     session_id: str
     prompt_cache_key: str
     route: Literal["standard"]
@@ -192,7 +198,8 @@ class TextMediaRange(TypedDict):
 
 
 class _ModelLimitsOptional(TypedDict, total=False):
-    pass
+    images: int
+    audio: int
 
 
 class ModelLimits(_ModelLimitsOptional):

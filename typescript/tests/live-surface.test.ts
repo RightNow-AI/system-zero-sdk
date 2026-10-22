@@ -26,7 +26,7 @@ const gatewayCodes = names(`
   idempotency_conflict idempotency_replay_unavailable idempotency_replayed_error idempotency_unavailable limiter_unavailable
   maintenance internal_error concurrency_limit_exceeded monthly_cap_reached
 `);
-const rootNames = names(`
+const rootNames = names(`Attachment InlineAttachment MEDIA_LIMITS MEDIA_MIMES MediaInput MediaKind attachmentMagicMatches inlineAttachment validateAttachments 
   JsonValue DecideRequest Question StructuredJson V1DecideReply
   BooleanAnswer ChoiceAnswer ScoreAnswer AuthoritativeAnswer LegacyReplayReply
   LegacyBooleanAnswer LegacyChoiceAnswer LegacyScoreAnswer LegacyAnswer QuestionRefusalData

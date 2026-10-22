@@ -3,7 +3,7 @@
 from pathlib import Path
 from typing import Callable, Dict, List, Literal, Optional, TypeAlias, TypedDict, Union
 
-from .types import DecideRequest, DecisionAlternative, DecisionValue, JsonValue, Question, StructuredJson, Usage
+from .types import Attachment, DecideRequest, DecisionAlternative, DecisionValue, JsonValue, Question, StructuredJson, Usage
 
 
 class _FlowReference(TypedDict):
@@ -69,7 +69,7 @@ class FlowNext(TypedDict):
 class _FlowStepOptional(TypedDict, total=False):
     depends_on: List[FlowCondition]
     state_template: FlowTemplate
-    attachments: None
+    attachments: Union[List[Attachment], None]
 
 
 class FlowStep(_FlowStepOptional):
@@ -79,7 +79,7 @@ class FlowStep(_FlowStepOptional):
 
 
 class _FlowRequestOptional(TypedDict, total=False):
-    attachments: None
+    attachments: Union[List[Attachment], None]
     session_id: str
     prompt_cache_key: str
     route: Literal["standard"]

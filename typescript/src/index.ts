@@ -10,3 +10,4 @@ export * from './batch.js';
 export * from './evaluate.js';
 export * from './errors.js';
 export * from './public-error-codes.js';
+export * from './media.js';

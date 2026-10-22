@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.0
+
+Images and 16,000 Hz integer PCM or IEEE float WAV audio attachments on decide, including function tools and the MCP adapter. Attachments remain optional and null remains valid. Static PNG and JPEG only; at most 4 images and 1 audio, 2,621,440 decoded bytes total and 3,665,920 bytes for the entire request. Images are limited to 16,777,216 pixels and 50:1 aspect ratio. Audio allows 1-64 channels and at most 300 seconds; the byte limit can be reached earlier. GIF, WebP, animated PNG, documents, video, other audio formats/rates and upload references remain refused. Explicit media helpers use the API refusal codes. The 71-code catalog and ordinary HTTP retry and call-count behavior are unchanged.
+
 ## 0.1.1
 
 Exact retry and call-count rules, installation commands and runtime requirements, and the CHANGELOG link; the error catalogs now list every refusal code the API can return on these routes. Request, response and retry behavior are unchanged.

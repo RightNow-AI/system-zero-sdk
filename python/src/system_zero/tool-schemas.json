@@ -220,7 +220,42 @@
           "description": "Null uses system-zero."
         },
         "attachments": {
-          "type": "null"
+          "anyOf": [
+            {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$"
+                  },
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "image",
+                      "audio"
+                    ]
+                  },
+                  "data": {
+                    "type": "string",
+                    "description": "Served MIME types: image/png, image/jpeg, audio/wav. Aggregate decoded bytes at most 2,621,440."
+                  }
+                },
+                "required": [
+                  "name",
+                  "type",
+                  "data"
+                ],
+                "additionalProperties": false,
+                "description": "Inline media as a canonical base64 data URL: static PNG or JPEG images and 16,000 Hz PCM or float WAV audio."
+              },
+              "maxItems": 16
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       },
       "required": [

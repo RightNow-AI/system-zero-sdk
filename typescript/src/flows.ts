@@ -1,5 +1,5 @@
 import { createHash, type Hash } from 'node:crypto';
-import type { DecideRequest, JsonValue, Question } from './api-types.js';
+import type { Attachment, DecideRequest, JsonValue, Question } from './api-types.js';
 import { withRetryContext } from './client.js';
 import type { SystemZeroClient } from './client.js';
 import { decisionsFor, type Alternative, type DecisionResult, type SystemZeroReply } from './decisions.js';
@@ -18,7 +18,7 @@ export interface FlowStep {
   questions: Record<string, Question>;
   depends_on?: FlowCondition[];
   state_template?: FlowTemplate;
-  attachments?: null;
+  attachments?: Attachment[] | null;
   next: { rules: Array<{ when: FlowCondition; next: string | null }>; default: string | null };
 }
 export interface FlowDefinition {

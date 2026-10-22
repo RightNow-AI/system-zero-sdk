@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "rightnow-system-zero"
-version = "0.1.1"
+version = "0.2.0"
 description = "System Zero API client with typed decisions and client-side workflows."
 license = "Apache-2.0"
 license-files = ["LICENSE", "NOTICE"]

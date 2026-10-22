@@ -119,12 +119,16 @@ from .workflow_types import (
 
 __version__ = VERSION
 
+from .types import Attachment
+from .media import (ByteData, MAX_ATTACHMENTS, MAX_INLINE_BYTES, MEDIA_LIMITS, MIMES, attachment_magic_matches, inline_attachment, validate_attachments)
+
 __all__ = [
   "APIConnectionError",
   "APIError",
   "APITimeoutError",
   "AccuracyMetrics",
   "Alternative",
+  "Attachment",
   "AudioNotAvailableError",
   "AuthenticationError",
   "BatchItem",
@@ -132,6 +136,7 @@ __all__ = [
   "BatchRecord",
   "BatchResult",
   "BatchUsage",
+  "ByteData",
   "CapabilityNotAvailableError",
   "CommitteeNotAvailableError",
   "DecideReply",
@@ -164,7 +169,11 @@ __all__ = [
   "LegacyDecision",
   "LongContextNotAvailableError",
   "LongRecordingNotAvailableError",
+  "MAX_ATTACHMENTS",
   "MAX_FLOW_STEPS",
+  "MAX_INLINE_BYTES",
+  "MEDIA_LIMITS",
+  "MIMES",
   "Model",
   "ModelList",
   "NotFoundError",
@@ -190,12 +199,14 @@ __all__ = [
   "VERSION",
   "VideoNotAvailableError",
   "__version__",
+  "attachment_magic_matches",
   "decision_for",
   "decisions_for",
   "evaluate",
   "flow_idempotency_key",
   "flow_request_hash",
   "idempotency_key",
+  "inline_attachment",
   "report_json",
   "report_markdown",
   "request_fingerprint",
@@ -203,6 +214,7 @@ __all__ = [
   "run_flow",
   "score_refusal",
   "score_reply",
+  "validate_attachments",
   "validate_expected",
   "validate_flow"
 ]

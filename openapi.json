@@ -58,7 +58,7 @@
         },
         "responses": {
           "200": {
-            "description": "Fresh successful answers use structured confidence v1. A stored reply from before the change may use the deprecated legacy branch for its 24 hours of retention, only with X-RightNow-Idempotent-Replay: true. Replay preserves the original body and calibration flags byte for byte. A reply never mixes legacy and v1 successful answers; refusals are unchanged.",
+            "description": "Fresh successful answers use structured confidence v1. A stored reply from before the change may use the deprecated legacy branch for its 24 hours of retention, only with X-RightNow-Idempotent-Replay: true. Replay preserves answer shape and calibration flags; calibration identifiers use opaque public names or unpublished. A reply never mixes legacy and v1 successful answers; refusals are unchanged.",
             "headers": {
               "X-Request-Id": {
                 "$ref": "#/components/headers/X-Request-Id"
@@ -119,7 +119,7 @@
                             }
                           ],
                           "calibrated": false,
-                          "calibration_version": "example-not-attested/text/direct/boolean"
+                          "calibration_version": "unpublished"
                         }
                       },
                       "usage": {
@@ -165,7 +165,7 @@
                             }
                           ],
                           "calibrated": false,
-                          "calibration_version": "example-not-attested/text/direct/choice"
+                          "calibration_version": "unpublished"
                         }
                       },
                       "usage": {
@@ -216,7 +216,7 @@
                             }
                           ],
                           "calibrated": false,
-                          "calibration_version": "example-not-attested/text/direct/score"
+                          "calibration_version": "unpublished"
                         }
                       },
                       "usage": {
@@ -454,7 +454,19 @@
             "$ref": "#/components/schemas/StructuredJson"
           },
           "attachments": {
-            "type": "null"
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Attachment"
+                },
+                "maxItems": 16
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Optional; null means no attachments. At most 4 images and 1 audio. The API validates complete files and availability."
           },
           "questions": {
             "type": "object",
@@ -590,6 +602,33 @@
             "additionalProperties": false
           }
         ]
+      },
+      "Attachment": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "image",
+              "audio"
+            ]
+          },
+          "data": {
+            "type": "string",
+            "description": "Served MIME types: image/png, image/jpeg, audio/wav. Aggregate decoded bytes at most 2,621,440."
+          }
+        },
+        "required": [
+          "name",
+          "type",
+          "data"
+        ],
+        "additionalProperties": false,
+        "description": "Inline media as a canonical base64 data URL: static PNG or JPEG images and 16,000 Hz PCM or float WAV audio."
       },
       "StructuredJson": {
         "description": "Text, or a JSON object or array; every number finite (an integer past 2^53 - 1 reaches the node digit for digit).",
@@ -740,7 +779,7 @@
                 "type": "string",
                 "minLength": 1,
                 "maxLength": 200,
-                "description": "The node's exact calibration version, preserved unchanged. A nonempty version does not prove calibration."
+                "description": "Opaque public calibration identifier, or unpublished when no public identifier is assigned. The same registered calibration keeps the same identifier. An identifier does not prove calibration."
               },
               "preview": {
                 "type": "boolean",
@@ -821,7 +860,7 @@
                 "type": "string",
                 "minLength": 1,
                 "maxLength": 200,
-                "description": "The node's exact calibration version, preserved unchanged. A nonempty version does not prove calibration."
+                "description": "Opaque public calibration identifier, or unpublished when no public identifier is assigned. The same registered calibration keeps the same identifier. An identifier does not prove calibration."
               },
               "preview": {
                 "type": "boolean",
@@ -909,7 +948,7 @@
                 "type": "string",
                 "minLength": 1,
                 "maxLength": 200,
-                "description": "The node's exact calibration version, preserved unchanged. A nonempty version does not prove calibration."
+                "description": "Opaque public calibration identifier, or unpublished when no public identifier is assigned. The same registered calibration keeps the same identifier. An identifier does not prove calibration."
               },
               "preview": {
                 "type": "boolean",
@@ -1075,7 +1114,7 @@
         ],
         "additionalProperties": false,
         "deprecated": true,
-        "description": "Stored pre-v1 reply, returned unchanged only on an idempotent replay within its 24-hour retention. Its confidence is a legacy margin and must not be used as decision probability."
+        "description": "Stored pre-v1 reply, with public calibration identifiers, available only on an idempotent replay within its 24-hour retention. Its confidence is a legacy margin and must not be used as decision probability."
       },
       "LegacyAnswer": {
         "anyOf": [
@@ -1100,7 +1139,8 @@
               "calibration_version": {
                 "type": "string",
                 "minLength": 1,
-                "maxLength": 200
+                "maxLength": 200,
+                "description": "Opaque public calibration identifier, or unpublished when no public identifier is assigned. The same registered calibration keeps the same identifier. An identifier does not prove calibration."
               },
               "preview": {
                 "type": "boolean",
@@ -1142,7 +1182,8 @@
               "calibration_version": {
                 "type": "string",
                 "minLength": 1,
-                "maxLength": 200
+                "maxLength": 200,
+                "description": "Opaque public calibration identifier, or unpublished when no public identifier is assigned. The same registered calibration keeps the same identifier. An identifier does not prove calibration."
               },
               "preview": {
                 "type": "boolean",
@@ -1191,7 +1232,8 @@
               "calibration_version": {
                 "type": "string",
                 "minLength": 1,
-                "maxLength": 200
+                "maxLength": 200,
+                "description": "Opaque public calibration identifier, or unpublished when no public identifier is assigned. The same registered calibration keeps the same identifier. An identifier does not prove calibration."
               },
               "preview": {
                 "type": "boolean",
@@ -1301,7 +1343,7 @@
             "items": {
               "type": "string"
             },
-            "description": "Approved release versions for discovery; null when none are attested. A listed version is not a per-answer calibrated flag: answer type, route, serving identity and input coverage must also match."
+            "description": "Opaque public calibration identifiers for discovery; null when none are attested. Unregistered calibrations appear as unpublished. A listed identifier is not a per-answer calibrated flag: answer type, route and input coverage must also match."
           },
           "limits": {
             "type": "object",
@@ -1422,6 +1464,12 @@
                 "additionalProperties": false
               },
               "attachments": {
+                "type": "integer"
+              },
+              "images": {
+                "type": "integer"
+              },
+              "audio": {
                 "type": "integer"
               },
               "body_bytes": {
