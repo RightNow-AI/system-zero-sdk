@@ -21,7 +21,7 @@ from .response import ResponseResult, response_metadata
 from .types import DecideReply, DecideRequest, ModelList
 
 
-VERSION = "0.2.0"
+VERSION = "0.3.0"
 DEFAULT_BASE_URL = "https://api.rightnowai.co/v1"
 _MAX_TIMEOUT_SECONDS = 2_147_483_647 / 1000
 

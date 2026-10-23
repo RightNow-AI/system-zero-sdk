@@ -46,6 +46,7 @@ export const SYSTEM_ZERO_ERROR_CODES = [
   "staging_attempt_ceiling",
   "state_too_large",
   "state_too_large_unguarded",
+  "stream_limit_exceeded",
   "system_zero_timeout",
   "system_zero_unavailable",
   "upload_in_use",

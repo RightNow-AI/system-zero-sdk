@@ -17,6 +17,7 @@ if root is not None:
 import httpx  # noqa: E402
 import system_zero  # noqa: E402
 import system_zero.tools  # noqa: E402
+from system_zero.stream import SystemZeroStreamClient  # noqa: E402
 
 
 expected_python = os.environ.get("SDK_EXPECTED_PYTHON")
@@ -50,6 +51,7 @@ def send(request):
 with system_zero.SystemZero(api_key="public-smoke", max_retries=0, transport=httpx.MockTransport(send)) as client:
     assert client.decide(request_body, idempotency_key="smoke-request") == reply_body
 assert len(calls) == 1
+assert callable(SystemZeroStreamClient)
 assert callable(system_zero.tools.create_tool_handler)
 assert system_zero.evaluate([])["items"]["total"] == 0
 print("Python SDK public entrypoints and injected transport passed.")

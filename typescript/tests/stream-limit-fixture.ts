@@ -1,0 +1,26 @@
+// Explicit synthetic limits for tests that isolate lifecycle behavior.
+export const TEST_STREAM_LIMITS = {
+  "max_duration_ms": 3600000,
+  "idle_timeout_ms": 120000,
+  "start_timeout_ms": 10000,
+  "heartbeat_interval_ms": 30000,
+  "native_heartbeat_interval_ms": 1000000000,
+  "max_control_queue_frames": 2,
+  "pong_timeout_ms": 10000,
+  "max_message_bytes": 4194304,
+  "max_decide_body_bytes": 3665920,
+  "max_pending_events": 4096,
+  "max_events": 100000,
+  "max_events_per_second": 1000000,
+  "event_burst": 1000000,
+  "max_messages_per_second": 1000000,
+  "message_burst": 1000000,
+  "max_streams_per_process": 4,
+  "max_send_queue_bytes": 4194304,
+  "max_send_queue_frames": 64,
+  "min_interval_ms": 0,
+  "max_native_control_frames_per_second": 8,
+  "native_control_frame_burst": 16,
+  "max_native_control_bytes_per_second": 512,
+  "native_control_byte_burst": 1024
+};

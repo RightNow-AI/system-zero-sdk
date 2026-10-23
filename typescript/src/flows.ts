@@ -105,14 +105,14 @@ const heldMessages: Record<string, string> = {
   committee_not_available: 'This route is not available.', deliberate_not_available: 'This mode is not available.',
 };
 function invalid(): InvalidRequestError {
-  return new InvalidRequestError('The RightNow System Zero request is invalid.', { status: 400, type: 'invalid_request_error', code: 'invalid_request', retryable: false });
+  return new InvalidRequestError('The System Zero request is invalid.', { status: 400, type: 'invalid_request_error', code: 'invalid_request', retryable: false });
 }
 function unavailable(requestId: string | null = null): APIError {
-  return new APIError('RightNow System Zero cannot serve this request right now. Retry after the Retry-After delay.',
+  return new APIError('System Zero cannot serve this request right now. Retry after the Retry-After delay.',
     { status: 503, type: 'api_error', code: 'service_unavailable', retryable: true, request_id: requestId });
 }
 function timeout(requestId: string | null = null): APITimeoutError {
-  return new APITimeoutError('RightNow System Zero exceeded the response deadline.',
+  return new APITimeoutError('System Zero exceeded the response deadline.',
     { status: 504, type: 'api_error', code: 'system_zero_timeout', retryable: false, request_id: requestId });
 }
 function record(value: unknown): value is Record<string, unknown> {

@@ -41,9 +41,9 @@ export interface ToolHandler {
   readonly budget: Readonly<{ decideCalls: number }>;
 }
 
-export const OPENAI_TOOLS = structuredClone(definitions).map(({ name, description, inputSchema }) => ({ type: 'function' as const, function: { name, description, parameters: inputSchema, strict: true as const } }));
-export const OPENAI_RESPONSES_TOOLS = structuredClone(OPENAI_TOOLS).map(({ function: tool }) => ({ type: 'function' as const, ...tool }));
-export const ANTHROPIC_TOOLS = structuredClone(definitions).map(({ name, description, inputSchema }) => ({ name, description, input_schema: inputSchema }));
+export const NESTED_FUNCTION_TOOLS = structuredClone(definitions).map(({ name, description, inputSchema }) => ({ type: 'function' as const, function: { name, description, parameters: inputSchema, strict: true as const } }));
+export const FLAT_FUNCTION_TOOLS = structuredClone(NESTED_FUNCTION_TOOLS).map(({ function: tool }) => ({ type: 'function' as const, ...tool }));
+export const INPUT_SCHEMA_TOOLS = structuredClone(definitions).map(({ name, description, inputSchema }) => ({ name, description, input_schema: inputSchema }));
 export const TOOL_DEFINITIONS = structuredClone(definitions).map(tool => {
   tool.inputSchema.required = tool.name === 'system_zero_decide' ? ['state', 'questions'] : [];
   const question = (tool.inputSchema as Schema).properties?.questions?.items;

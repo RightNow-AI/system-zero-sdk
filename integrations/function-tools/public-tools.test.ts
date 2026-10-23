@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it, vi } from 'vitest';
 import { SystemZeroClient } from '../../typescript/src/client.js';
 import {
-  createToolHandler, OPENAI_TOOLS, TOOL_DEFINITIONS, validateToolArguments,
+  createToolHandler, NESTED_FUNCTION_TOOLS, TOOL_DEFINITIONS, validateToolArguments,
 } from '../../typescript/src/integrations/function-tools/index.js';
 import limits from '../../typescript/src/integrations/function-tools/argument-limits.js';
 import { createMcpServer, LEGACY_PROTOCOL_VERSION } from '../../typescript/src/integrations/mcp-server/server.js';
@@ -21,8 +21,8 @@ describe('public function integrations', () => {
     expect(validateToolArguments('system_zero_list_models', '{}')).toEqual({});
     expect(() => validateToolArguments('system_zero_list_models', { extra: true })).toThrow();
     expect(() => validateToolArguments('unknown_tool', {})).toThrow();
-    expect(OPENAI_TOOLS.map(tool => tool.function.name)).toEqual(TOOL_DEFINITIONS.map(tool => tool.name));
-    expect(OPENAI_TOOLS.every(tool => tool.function.strict)).toBe(true);
+    expect(NESTED_FUNCTION_TOOLS.map(tool => tool.function.name)).toEqual(TOOL_DEFINITIONS.map(tool => tool.name));
+    expect(NESTED_FUNCTION_TOOLS.every(tool => tool.function.strict)).toBe(true);
   });
 
   it('shares packaged argument limits and enforces the embedded document depth', () => {

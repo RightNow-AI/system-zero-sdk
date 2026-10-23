@@ -64,6 +64,7 @@ class ErrorCode(str, Enum):
     STAGING_ATTEMPT_CEILING = 'staging_attempt_ceiling'
     STATE_TOO_LARGE = 'state_too_large'
     STATE_TOO_LARGE_UNGUARDED = 'state_too_large_unguarded'
+    STREAM_LIMIT_EXCEEDED = 'stream_limit_exceeded'
     SYSTEM_ZERO_TIMEOUT = 'system_zero_timeout'
     SYSTEM_ZERO_UNAVAILABLE = 'system_zero_unavailable'
     UNKNOWN_ENDPOINT = 'unknown_endpoint'
@@ -121,6 +122,7 @@ SYSTEM_ZERO_ERROR_CODES = (
     'staging_attempt_ceiling',
     'state_too_large',
     'state_too_large_unguarded',
+    'stream_limit_exceeded',
     'system_zero_timeout',
     'system_zero_unavailable',
     'upload_in_use',

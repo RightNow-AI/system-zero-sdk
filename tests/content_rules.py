@@ -49,6 +49,12 @@ def expressions(left, right):
 
 
 class PublicContentControls(unittest.TestCase):
+    def test_public_wording_controls(self):
+        tests = load("public_wording_controls", "tools/sdk/test_public_wording.py")
+        result = unittest.TestResult()
+        unittest.defaultTestLoader.loadTestsFromModule(tests).run(result)
+        self.assertTrue(result.wasSuccessful(), result.errors + result.failures)
+
     def checked(self, callback, value):
         output = io.StringIO()
         with contextlib.redirect_stdout(output), contextlib.redirect_stderr(output):

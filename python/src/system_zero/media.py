@@ -14,7 +14,7 @@ MAX_ATTACHMENTS = 16
 MIMES = MappingProxyType({'image': ('image/png', 'image/jpeg'), 'audio': ('audio/wav',)})
 MEDIA_LIMITS = MappingProxyType({'max_attachments': 16, 'max_images': 4, 'max_audio': 1, 'max_inline_bytes': 2621440, 'max_body_bytes': 3665920, 'audio_sample_rate': 16000, 'max_audio_duration_ms': 300000, 'max_audio_channels': 64, 'max_image_pixels': 16777216, 'max_image_aspect_ratio': 50})
 ByteData = Union[bytes, bytearray, memoryview]
-_ERRORS = {'invalid_request': [400, 'The RightNow System Zero request is invalid.'], 'media_unsupported': [400, 'The media kind or count is not supported. At most 4 images and 1 audio are allowed.'], 'media_too_large': [413, 'The media exceeds the decoded byte limit.'], 'media_decode_failed': [422, 'The media bytes do not match the declared format.'], 'media_unpriced': [403, 'This input type is not supported.']}
+_ERRORS = {'invalid_request': [400, 'The System Zero request is invalid.'], 'media_unsupported': [400, 'The media kind or count is not supported. At most 4 images and 1 audio are allowed.'], 'media_too_large': [413, 'The media exceeds the decoded byte limit.'], 'media_decode_failed': [422, 'The media bytes do not match the declared format.'], 'media_unpriced': [403, 'This input type is not supported.']}
 _NAME = re.compile(r"[A-Za-z][A-Za-z0-9_-]{0,63}\Z")
 _DATA_HEADER = re.compile(r"data:[a-z0-9.+/-]+;base64\Z")
 

@@ -48,6 +48,29 @@ export class NotFoundError extends SystemZeroError {}
 export class RateLimitError extends SystemZeroError {
   get retryAfterMs(): number | null { return retryAfterMs(this.headers); }
 }
+export class StreamLimitError extends RateLimitError {
+  readonly limit: number | null;
+  readonly retry_after: string | null;
+  readonly retry_after_ms: number | null;
+  readonly should_retry: boolean;
+
+  constructor(message: string, fields: ErrorFields = {}) {
+    super(message, fields);
+    const limit = this.details?.limit;
+    this.limit = typeof limit === 'number' && Number.isSafeInteger(limit) && limit >= 0 ? limit : null;
+    this.retry_after = this.headers.get('retry-after');
+    const milliseconds = this.headers.get('retry-after-ms');
+    const numeric = (value: string | null): number | null => {
+      if (value === null || !value.trim()) return null;
+      const number = Number(value); return Number.isFinite(number) && number >= 0 ? number : null;
+    };
+    const seconds = numeric(this.retry_after);
+    const date = this.retry_after === null ? NaN : Date.parse(this.retry_after);
+    this.retry_after_ms = numeric(milliseconds) ?? (seconds === null ? (Number.isFinite(date) ? Math.max(0, date - Date.now()) : null) : seconds * 1000);
+    const hint = this.headers.get('x-should-retry');
+    this.should_retry = hint === 'true' || (hint !== 'false' && this.retryable);
+  }
+}
 export class OverloadedError extends SystemZeroError {
   get retryAfterMs(): number | null { return retryAfterMs(this.headers); }
 }
@@ -137,7 +160,7 @@ export function responseError(status: number, headers: Headers, body: unknown, f
   const error = envelope?.error as Partial<ErrorEnvelope['error']> | undefined;
   const type = typeof error?.type === 'string' ? error.type : 'api_error';
   const ErrorClass = typeof error?.code === 'string' && Object.hasOwn(codeClasses, error.code) ? codeClasses[error.code as keyof typeof codeClasses]
-    : Object.hasOwn(classes, type) ? classes[type as keyof typeof classes] : APIError;
+    : status === 429 && error?.code === 'stream_limit_exceeded' ? StreamLimitError : Object.hasOwn(classes, type) ? classes[type as keyof typeof classes] : APIError;
   const fields: ErrorFields = {
     status, headers, type,
     code: typeof error?.code === 'string' ? error.code : null,

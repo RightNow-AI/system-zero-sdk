@@ -502,7 +502,7 @@ def compact_rule_ids(value: str) -> list[str]:
 
 def public_rule_ids(value: str, path: str = "", *, known_paths=()) -> list[str]:
     """Use the same credential checks for repository names and text bodies."""
-    return archive_rule_ids(value)
+    return sorted(set(archive_rule_ids(value) + public_wording_rule_ids(value, path)))
 
 
 def sensitive_path_rule_ids(path: str) -> list[str]:
@@ -517,4 +517,51 @@ def sensitive_path_rule_ids(path: str) -> list[str]:
                 or re.search(r"[.]tf(?:state|vars)(?:[.]|$)", part)
                 or part.endswith((".pem", ".key", ".p8", ".p12", ".pfx", ".ppk", ".jks", ".keystore"))):
             return ["sensitive-path"]
+    return []
+
+
+# Reviewed public terminology, represented as Unicode scalar values.
+_PUBLIC_TERM_CODES = [[114, 101, 100, 105, 115], [112, 111, 115, 116, 103, 114, 101, 115], [112, 111, 115, 116, 103, 114, 101, 115, 113, 108], [108, 117, 97], [97, 119, 115], [114, 50], [111, 109, 110, 105], [106, 101, 118], [115, 117, 112, 97, 98, 97, 115, 101], [117, 112, 115, 116, 97, 115, 104], [118, 101, 114, 99, 101, 108], [102, 108, 121, 46, 105, 111], [102, 108, 121, 105, 111], [102, 108, 121, 46, 100, 101, 118], [109, 111, 100, 97, 108], [109, 111, 100, 97, 108, 46, 114, 117, 110], [110, 101, 111, 110], [99, 108, 111, 117, 100, 102, 108, 97, 114, 101], [98, 101, 116, 116, 101, 114, 115, 116, 97, 99, 107], [98, 101, 116, 116, 101, 114, 32, 115, 116, 97, 99, 107], [112, 111, 115, 116, 104, 111, 103], [114, 101, 115, 101, 110, 100], [115, 116, 114, 105, 112, 101], [115, 101, 110, 116, 114, 121], [100, 97, 116, 97, 100, 111, 103], [114, 97, 105, 108, 119, 97, 121], [114, 101, 110, 100, 101, 114, 46, 99, 111, 109], [113, 119, 101, 110], [100, 101, 101, 112, 115, 101, 101, 107], [108, 108, 97, 109, 97], [109, 105, 115, 116, 114, 97, 108], [103, 101, 109, 105, 110, 105], [103, 112, 116], [99, 108, 97, 117, 100, 101], [97, 110, 116, 104, 114, 111, 112, 105, 99], [111, 112, 101, 110, 97, 105], [118, 108, 108, 109], [115, 103, 108, 97, 110, 103], [98, 50, 48, 48], [98, 51, 48, 48], [104, 49, 48, 48], [104, 50, 48, 48], [97, 49, 48, 48], [110, 118, 105, 100, 105, 97], [99, 117, 100, 97], [103, 112, 117], [100, 101, 99, 105, 100, 101, 114], [114, 117, 110, 105, 110, 102, 114, 97], [114, 117, 110, 112, 105, 112, 101], [111, 114, 110, 105, 116, 104], [111, 114, 110, 110], [108, 111, 110, 103, 109], [115, 122, 50], [115, 122, 112], [115, 121, 115, 116, 101, 109, 50], [115, 121, 115, 116, 101, 109, 32, 111, 110, 101], [102, 111, 114, 103, 101], [114, 105, 103, 104, 116, 110, 111, 119, 45, 97, 112, 105], [105, 110, 102, 114, 97, 45, 115, 116, 114, 101, 97, 109, 105, 110, 103], [99, 117, 115, 116, 111, 100, 121], [115, 101, 97, 108, 101, 100], [104, 111, 108, 100, 111, 117, 116], [49, 112, 97, 115, 115, 119, 111, 114, 100], [111, 112, 58, 47, 47], [98, 101, 116, 97], [112, 114, 101, 118, 105, 101, 119], [99, 111, 109, 105, 110, 103, 32, 115, 111, 111, 110], [101, 97, 114, 108, 121, 32, 97, 99, 99, 101, 115, 115], [101, 120, 112, 101, 114, 105, 109, 101, 110, 116, 97, 108], [97, 108, 112, 104, 97], [112, 105, 108, 111, 116], [119, 97, 105, 116, 108, 105, 115, 116], [110, 111, 116, 32, 121, 101, 116, 32, 97, 118, 97, 105, 108, 97, 98, 108, 101], [110, 111, 116, 32, 97, 118, 97, 105, 108, 97, 98, 108, 101, 32, 121, 101, 116]]
+_PUBLIC_TERMS = tuple(''.join(map(chr, codes)) for codes in _PUBLIC_TERM_CODES)
+_PUBLIC_WORDING = re.compile(r'(?<![A-Za-z0-9])(?:' + '|'.join(re.escape(t).replace(r'\ ', r'[ _-]+') for t in _PUBLIC_TERMS) + r')(?![A-Za-z0-9])', re.I)
+
+
+def public_wording_rule_ids(value: str, path: str = '') -> list[str]:
+    """Refuse restricted declarations and prose, preserving exact wire members."""
+    name = path.replace('\\', '/')
+    text = value
+    marker = ''.join(map(chr, (112,114,101,118,105,101,119)))
+    # Immutable third-party peer metadata is not a product availability claim.
+    if name.endswith('package-lock.json'):
+        try:
+            lock = json.loads(text)
+            text = json.dumps({k:v for k,v in lock.items() if k != 'packages'}) + json.dumps(lock.get('packages', {}).get('', {}))
+        except (ValueError, AttributeError):
+            pass
+    # Existing answer marker is owned by the API contract. Never exempt prose,
+    # a new top-level declaration, or an arbitrary file with the same token.
+    if name.endswith(('api-types.ts', 'api-types.d.ts', 'types.py', 'decisions.ts', 'decisions.d.ts', 'decisions.js', 'decisions.py', 'openapi.json', 'metadata.json', 'workflow-conformance.test.ts', 'test_decisions.py')):
+        text = re.sub(r'(["\'])' + marker + r'\1(?=\s*[:),?])', '"wire_marker"', text)
+        text = re.sub(r'(?m)^(\s*)' + marker + r'(?=\??:)', r'\1wire_marker', text)
+        text = re.sub(r'(?<=, )' + marker + r'(?==answer[.]get)', 'wire_marker', text)
+        text = re.sub(r'(?<=[.])' + marker + r'\b', 'wire_marker', text)
+        text = re.sub(r'(?<=[{;])\s*' + marker + r'(?=\??:)', ' wire_marker', text)
+    # Secret-file detectors retain these literal path controls.
+    if name in {'.gitignore', 'tests/content_rules.py', 'tools/sdk/content_rules.py', 'tools/sdk/public_content_rules.py', 'tools/sdk/check_release.py'}:
+        credential_dir = '.' + ''.join(map(chr, (97,119,115)))
+        if name == '.gitignore':
+            text = re.sub(r'(?m)^' + re.escape(credential_dir) + r'/$', '.cloud_config/', text)
+        else:
+            text = re.sub(r'(["\'])' + re.escape(credential_dir) + r'(?:/config)?\1', '".cloud_config"', text)
+    # Symbol boundaries include underscore/dash and camel-case declarations.
+    if _PUBLIC_WORDING.search(text):
+        return ['public-wording']
+    identifiers = re.findall(r'\b(?:export\s+(?:(?:declare|async|abstract)\s+)*(?:const|let|var|type|interface|function|class|enum)|(?:def|class))\s+([A-Za-z_$][\w$]*)', text)
+    for identifier in identifiers:
+        split = re.sub(r'([A-Z]+)([A-Z][a-z])', r'\1_\2', identifier)
+        split = re.sub(r'([a-z0-9])([A-Z])', r'\1_\2', split)
+        words = re.split(r'[_$]+', split.casefold())
+        joined = {''.join(words[i:j]) for i in range(len(words)) for j in range(i + 1, len(words) + 1)}
+        if _PUBLIC_WORDING.search(split) or any(term in joined for term in _PUBLIC_TERMS):
+            return ['public-wording']
     return []

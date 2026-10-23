@@ -26,13 +26,13 @@ _QUESTION_REFUSALS = {'injection_suspected': 'The request was refused because it
 _HELD_MESSAGES = {'long_context_not_available': 'This route is not available.', 'long_recording_not_available': 'This input type is not supported.', 'video_not_available': 'This input type is not supported.', 'image_not_available': 'Images are unavailable. Send the request without the image attachment.', 'audio_not_available': 'Audio is unavailable. Send the request without the audio attachment.', 'document_not_available': 'Documents are unavailable. Send the request without the document attachment.', 'committee_not_available': 'This route is not available.', 'deliberate_not_available': 'This mode is not available.'}
 
 def _invalid() -> InvalidRequestError:
-    return InvalidRequestError('The RightNow System Zero request is invalid.', status=400, type='invalid_request_error', code='invalid_request')
+    return InvalidRequestError('The System Zero request is invalid.', status=400, type='invalid_request_error', code='invalid_request')
 
 def _unavailable(request_id: Optional[str]=None) -> APIError:
-    return APIError('RightNow System Zero cannot serve this request right now. Retry after the Retry-After delay.', status=503, type='api_error', code='service_unavailable', retryable=True, request_id=request_id)
+    return APIError('System Zero cannot serve this request right now. Retry after the Retry-After delay.', status=503, type='api_error', code='service_unavailable', retryable=True, request_id=request_id)
 
 def _timeout(request_id: Optional[str]=None) -> APITimeoutError:
-    return APITimeoutError('RightNow System Zero exceeded the response deadline.', status=504, type='api_error', code='system_zero_timeout', request_id=request_id)
+    return APITimeoutError('System Zero exceeded the response deadline.', status=504, type='api_error', code='system_zero_timeout', request_id=request_id)
 
 def _safe_integer(value: Any) -> bool:
     if type(value) is int:

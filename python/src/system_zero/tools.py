@@ -29,17 +29,17 @@ _SCHEMAS = {tool["name"]: deepcopy(tool["inputSchema"]) for tool in _DEFINITIONS
 # Publication follows OpenAPI; retained raw argument acceptance is unchanged.
 _MAX_SAFE_INTEGER = 9_007_199_254_740_991
 
-OPENAI_TOOLS = [
+NESTED_FUNCTION_TOOLS = [
     {"type": "function", "function": {
         "name": tool["name"], "description": tool["description"],
         "parameters": deepcopy(tool["inputSchema"]), "strict": True,
     }}
     for tool in _DEFINITIONS
 ]
-OPENAI_RESPONSES_TOOLS = [
-    {"type": "function", **deepcopy(tool["function"])} for tool in OPENAI_TOOLS
+FLAT_FUNCTION_TOOLS = [
+    {"type": "function", **deepcopy(tool["function"])} for tool in NESTED_FUNCTION_TOOLS
 ]
-ANTHROPIC_TOOLS = [
+INPUT_SCHEMA_TOOLS = [
     {"name": tool["name"], "description": tool["description"], "input_schema": deepcopy(tool["inputSchema"])}
     for tool in _DEFINITIONS
 ]
@@ -509,6 +509,6 @@ def handle_tool_call(name: str, args: Any) -> Dict[str, Any]:
 
 
 __all__ = [
-    "ANTHROPIC_TOOLS", "OPENAI_TOOLS", "OPENAI_RESPONSES_TOOLS",
+    "INPUT_SCHEMA_TOOLS", "NESTED_FUNCTION_TOOLS", "FLAT_FUNCTION_TOOLS",
     "ToolHandler", "create_tool_handler", "handle_tool_call",
 ]

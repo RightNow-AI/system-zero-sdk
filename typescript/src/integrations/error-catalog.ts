@@ -17,7 +17,7 @@ export const SYSTEM_ZERO_ERRORS = {
   ],
   "capacity_exhausted": [
     429,
-    "RightNow System Zero is at capacity. Retry after the Retry-After delay."
+    "System Zero is at capacity. Retry after the Retry-After delay."
   ],
   "committee_not_available": [
     404,
@@ -117,7 +117,7 @@ export const SYSTEM_ZERO_ERRORS = {
   ],
   "invalid_request": [
     400,
-    "The RightNow System Zero request is invalid."
+    "The System Zero request is invalid."
   ],
   "invalid_trace_header": [
     400,
@@ -233,11 +233,11 @@ export const SYSTEM_ZERO_ERRORS = {
   ],
   "service_unavailable": [
     503,
-    "RightNow System Zero cannot serve this request right now. Retry after the Retry-After delay."
+    "System Zero cannot serve this request right now. Retry after the Retry-After delay."
   ],
   "staging_attempt_ceiling": [
     429,
-    "The staging request ceiling is reached. Retry after the Retry-After delay."
+    "The request ceiling is reached. Retry after the Retry-After delay."
   ],
   "state_too_large": [
     413,
@@ -247,13 +247,17 @@ export const SYSTEM_ZERO_ERRORS = {
     413,
     "This release does not answer states of this length. Shorten or split the state."
   ],
+  "stream_limit_exceeded": [
+    429,
+    "This account has reached its stream limit. Retry after the Retry-After delay."
+  ],
   "system_zero_timeout": [
     504,
-    "RightNow System Zero exceeded the response deadline."
+    "System Zero exceeded the response deadline."
   ],
   "system_zero_unavailable": [
     503,
-    "RightNow System Zero is temporarily unavailable."
+    "System Zero is temporarily unavailable."
   ],
   "unknown_endpoint": [
     404,

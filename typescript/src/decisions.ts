@@ -13,7 +13,7 @@ export interface DecisionSummary {
   probability: number;
   alternatives: Alternative[];
   calibrated: boolean;
-  /** Gateway metadata is copied verbatim; preview is absent unless supplied. */
+  /** Gateway metadata is copied verbatim; optional fields stay absent unless supplied. */
   calibration_version: string;
   preview?: true;
 }

@@ -12,7 +12,7 @@ import zipfile
 
 
 PACKAGE = Path(__file__).resolve().parents[1] / "src/system_zero"
-RUNTIME_ROOTS = {"httpx", "httpcore", "anyio", "certifi", "h11", "idna",
+RUNTIME_ROOTS = {"httpx", "httpcore", "websockets", "anyio", "certifi", "h11", "idna",
                  "typing_extensions", "exceptiongroup"}
 
 
@@ -26,13 +26,13 @@ class LiveImportTests(unittest.TestCase):
                 for path in PACKAGE.iterdir():
                     if path.suffix in {".py", ".json"} or path.name == "py.typed":
                         output.writestr("system_zero/" + path.name, path.read_bytes())
-            script = "import sys; sys.path.insert(0, sys.argv[1]); import system_zero.tools as tools; assert len(tools.OPENAI_TOOLS) == len(tools.ANTHROPIC_TOOLS) == 2"
+            script = "import sys; sys.path.insert(0, sys.argv[1]); import system_zero.tools as tools; assert len(tools.NESTED_FUNCTION_TOOLS) == len(tools.INPUT_SCHEMA_TOOLS) == 2"
             result = subprocess.run([sys.executable, "-I", "-B", "-c", script, str(archive)],
                                     capture_output=True, text=True, timeout=30, check=False)
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
     def test_absolute_sdk_imports_are_standard_library_or_declared_dependencies(self):
-        allowed = set(sys.stdlib_module_names) | {"httpx", "httpcore", "system_zero"}
+        allowed = set(sys.stdlib_module_names) | {"httpx", "httpcore", "websockets", "system_zero"}
         unexpected = set()
         for path in PACKAGE.rglob("*.py"):
             for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):

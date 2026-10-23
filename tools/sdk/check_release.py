@@ -451,7 +451,7 @@ def check_public_python_identity(raw: bytes, version: str) -> None:
     require(versions == [version], f'Python artifact version must equal tag {version}')
     require(metadata.get_all('Requires-Python', []) == ['>=3.10'], 'invalid Python version requirement', 'python-runtime-metadata')
     requirements = metadata.get_all('Requires-Dist', [])
-    expected = {'httpx': {'>=0.28.1', '<0.29'}, 'httpcore': {'>=1.0.9', '<2'}}
+    expected = {'httpx': {'>=0.28.1', '<0.29'}, 'httpcore': {'>=1.0.9', '<2'}, 'websockets': {'>=15.0.1', '<16'}}
     found = {}
     for value in requirements:
         match = re.fullmatch('([a-zA-Z0-9_-]+)\\s*(\\([^()]+\\)|[^()]+)', str(value).strip())

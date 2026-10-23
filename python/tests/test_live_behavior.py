@@ -14,7 +14,7 @@ REQUEST = {
     "model": "system-zero", "state": "SYNTHETIC state",
     "questions": {
         "zebra": {"type": "boolean", "instructions": "Is this synthetic?"},
-        "alpha": {"type": "boolean", "instructions": "Is this a test?"},
+        "first": {"type": "boolean", "instructions": "Is this a test?"},
     },
 }
 TOOL_ARGUMENTS = {
@@ -49,7 +49,7 @@ class LiveBehaviorTests(unittest.TestCase):
         request = seen[0]
         self.assertEqual((request.method, request.url.path), ("POST", "/v1/system-zero/decide"))
         self.assertEqual(json.loads(request.content), REQUEST)
-        self.assertEqual(list(json.loads(request.content)["questions"]), ["zebra", "alpha"])
+        self.assertEqual(list(json.loads(request.content)["questions"]), ["zebra", "first"])
         self.assertEqual(request.headers["authorization"], "Bearer SYNTHETIC")
         self.assertEqual(request.headers["idempotency-key"], "stable-synthetic-key")
         self.assertEqual(request.headers["x-client-request-id"], "client-synthetic")
@@ -69,14 +69,14 @@ class LiveBehaviorTests(unittest.TestCase):
             with sdk.SystemZero(api_key="SYNTHETIC", max_retries=0, transport=httpx.MockTransport(
                     lambda _request: self.fail("unexpected transport"))) as client:
                 result = sdk.run_batch(client, [{"id": "one", "request": REQUEST,
-                                               "expected": {"zebra": True, "alpha": True}}],
+                                               "expected": {"zebra": True, "first": True}}],
                                        run_id="synthetic-count", results_path=Path(directory) / "results.jsonl",
                                        max_decide_calls=0, deadline_ms=1000, concurrency=1)
             self.assertEqual(result, {"records": [], "stopped": "call_limit", "decide_calls": 0})
 
     def test_local_call_admission_refuses_before_transport(self):
         catalog = json.loads(Path(tools.__file__).with_name("error-catalog.json").read_text(encoding="utf-8"))
-        self.assertEqual(len(catalog), 71)
+        self.assertEqual(len(catalog), 72)
         self.assertNotIn("call_limit_reached", catalog)
         seen = []
         with sdk.SystemZero(api_key="SYNTHETIC", max_retries=0, transport=httpx.MockTransport(

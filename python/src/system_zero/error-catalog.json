@@ -16,7 +16,7 @@
     "message": "API key is revoked"
   },
   "capacity_exhausted": {
-    "message": "RightNow System Zero is at capacity. Retry after the Retry-After delay.",
+    "message": "System Zero is at capacity. Retry after the Retry-After delay.",
     "status": 429
   },
   "committee_not_available": {
@@ -116,7 +116,7 @@
     "message": "Idempotency-Key must be nonblank ASCII and 255 characters or less."
   },
   "invalid_request": {
-    "message": "The RightNow System Zero request is invalid.",
+    "message": "The System Zero request is invalid.",
     "status": 400
   },
   "invalid_trace_header": {
@@ -232,11 +232,11 @@
     "status": 422
   },
   "service_unavailable": {
-    "message": "RightNow System Zero cannot serve this request right now. Retry after the Retry-After delay.",
+    "message": "System Zero cannot serve this request right now. Retry after the Retry-After delay.",
     "status": 503
   },
   "staging_attempt_ceiling": {
-    "message": "The staging request ceiling is reached. Retry after the Retry-After delay.",
+    "message": "The request ceiling is reached. Retry after the Retry-After delay.",
     "status": 429
   },
   "state_too_large": {
@@ -247,12 +247,16 @@
     "message": "This release does not answer states of this length. Shorten or split the state.",
     "status": 413
   },
+  "stream_limit_exceeded": {
+    "message": "This account has reached its stream limit. Retry after the Retry-After delay.",
+    "status": 429
+  },
   "system_zero_timeout": {
-    "message": "RightNow System Zero exceeded the response deadline.",
+    "message": "System Zero exceeded the response deadline.",
     "status": 504
   },
   "system_zero_unavailable": {
-    "message": "RightNow System Zero is temporarily unavailable.",
+    "message": "System Zero is temporarily unavailable.",
     "status": 503
   },
   "unknown_endpoint": {

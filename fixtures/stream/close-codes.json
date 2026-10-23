@@ -1,0 +1,257 @@
+[
+  {
+    "code": 1000,
+    "reconnect": "lazy",
+    "goodbye": {
+      "type": "goodbye",
+      "stream_id": "szws_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "seq": 3,
+      "reason": "idle",
+      "state_version": 1,
+      "last_decision_state_version": 0,
+      "resume": {
+        "supported": false,
+        "action": "reconnect_and_replay",
+        "retry_after_ms": 0
+      }
+    }
+  },
+  {
+    "code": 1001,
+    "reconnect": "immediate",
+    "goodbye": {
+      "type": "goodbye",
+      "stream_id": "szws_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "seq": 3,
+      "reason": "max_lifetime",
+      "state_version": 1,
+      "last_decision_state_version": 0,
+      "resume": {
+        "supported": false,
+        "action": "reconnect_and_replay",
+        "retry_after_ms": 0
+      }
+    }
+  },
+  {
+    "code": 1002,
+    "reconnect": "never",
+    "goodbye": {
+      "type": "goodbye",
+      "stream_id": "szws_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "seq": 3,
+      "reason": null,
+      "state_version": 1,
+      "last_decision_state_version": 0,
+      "resume": {
+        "supported": false,
+        "action": "reconnect_and_replay",
+        "retry_after_ms": 0
+      }
+    }
+  },
+  {
+    "code": 1003,
+    "reconnect": "never",
+    "goodbye": {
+      "type": "goodbye",
+      "stream_id": "szws_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "seq": 3,
+      "reason": null,
+      "state_version": 1,
+      "last_decision_state_version": 0,
+      "resume": {
+        "supported": false,
+        "action": "reconnect_and_replay",
+        "retry_after_ms": 0
+      }
+    }
+  },
+  {
+    "code": 1007,
+    "reconnect": "never",
+    "goodbye": {
+      "type": "goodbye",
+      "stream_id": "szws_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "seq": 3,
+      "reason": null,
+      "state_version": 1,
+      "last_decision_state_version": 0,
+      "resume": {
+        "supported": false,
+        "action": "reconnect_and_replay",
+        "retry_after_ms": 0
+      }
+    }
+  },
+  {
+    "code": 1008,
+    "reconnect": "never",
+    "goodbye": {
+      "type": "goodbye",
+      "stream_id": "szws_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "seq": 3,
+      "reason": "auth",
+      "state_version": 1,
+      "last_decision_state_version": 0,
+      "resume": {
+        "supported": false,
+        "action": "reconnect_and_replay",
+        "retry_after_ms": 0
+      }
+    }
+  },
+  {
+    "code": 1008,
+    "reconnect": "never",
+    "goodbye": {
+      "type": "goodbye",
+      "stream_id": "szws_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "seq": 3,
+      "reason": "policy",
+      "state_version": 1,
+      "last_decision_state_version": 0,
+      "resume": {
+        "supported": false,
+        "action": "reconnect_and_replay",
+        "retry_after_ms": 0
+      }
+    }
+  },
+  {
+    "code": 1009,
+    "reconnect": "never",
+    "goodbye": {
+      "type": "goodbye",
+      "stream_id": "szws_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "seq": 3,
+      "reason": null,
+      "state_version": 1,
+      "last_decision_state_version": 0,
+      "resume": {
+        "supported": false,
+        "action": "reconnect_and_replay",
+        "retry_after_ms": 0
+      }
+    }
+  },
+  {
+    "code": 1011,
+    "reconnect": "backoff",
+    "goodbye": {
+      "type": "goodbye",
+      "stream_id": "szws_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "seq": 3,
+      "reason": null,
+      "state_version": 1,
+      "last_decision_state_version": 0,
+      "resume": {
+        "supported": false,
+        "action": "reconnect_and_replay",
+        "retry_after_ms": 0
+      }
+    }
+  },
+  {
+    "code": 1012,
+    "reconnect": "after_hint",
+    "goodbye": {
+      "type": "goodbye",
+      "stream_id": "szws_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "seq": 3,
+      "reason": "shutdown",
+      "state_version": 1,
+      "last_decision_state_version": 0,
+      "resume": {
+        "supported": false,
+        "action": "reconnect_and_replay",
+        "retry_after_ms": 500
+      }
+    }
+  },
+  {
+    "code": 1013,
+    "reconnect": "after_hint_or_backoff",
+    "goodbye": {
+      "type": "goodbye",
+      "stream_id": "szws_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "seq": 3,
+      "reason": "maintenance",
+      "state_version": 1,
+      "last_decision_state_version": 0,
+      "resume": {
+        "supported": false,
+        "action": "reconnect_and_replay",
+        "retry_after_ms": 300000
+      }
+    }
+  },
+  {
+    "code": 1013,
+    "reconnect": "after_hint_or_backoff",
+    "goodbye": {
+      "type": "goodbye",
+      "stream_id": "szws_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "seq": 3,
+      "reason": "overload",
+      "state_version": 1,
+      "last_decision_state_version": 0,
+      "resume": {
+        "supported": false,
+        "action": "reconnect_and_replay",
+        "retry_after_ms": 250
+      }
+    }
+  },
+  {
+    "code": 1013,
+    "reconnect": "after_hint_or_backoff",
+    "goodbye": {
+      "type": "goodbye",
+      "stream_id": "szws_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "seq": 3,
+      "reason": "slow_reader",
+      "state_version": 1,
+      "last_decision_state_version": 0,
+      "resume": {
+        "supported": false,
+        "action": "reconnect_and_replay",
+        "retry_after_ms": 1000
+      }
+    }
+  },
+  {
+    "code": 1013,
+    "reconnect": "after_hint_or_backoff",
+    "goodbye": {
+      "type": "goodbye",
+      "stream_id": "szws_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "seq": 3,
+      "reason": "lease_lost",
+      "state_version": 1,
+      "last_decision_state_version": 0,
+      "resume": {
+        "supported": false,
+        "action": "reconnect_and_replay",
+        "retry_after_ms": 1000
+      }
+    }
+  },
+  {
+    "code": 1013,
+    "reconnect": "after_hint_or_backoff",
+    "goodbye": {
+      "type": "goodbye",
+      "stream_id": "szws_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "seq": 3,
+      "reason": "store_unavailable",
+      "state_version": 1,
+      "last_decision_state_version": 0,
+      "resume": {
+        "supported": false,
+        "action": "reconnect_and_replay",
+        "retry_after_ms": 1000
+      }
+    }
+  }
+]

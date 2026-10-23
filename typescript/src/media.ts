@@ -25,7 +25,7 @@ export const MEDIA_MIMES = Object.freeze({
 const errors = {
   "invalid_request": [
     400,
-    "The RightNow System Zero request is invalid."
+    "The System Zero request is invalid."
   ],
   "media_unsupported": [
     400,

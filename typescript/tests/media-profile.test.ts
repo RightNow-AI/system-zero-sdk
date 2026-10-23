@@ -19,8 +19,8 @@ const image = { name: 'picture', type: 'image' as const, data: dataUrl('image/pn
 const audio = { name: 'recording', type: 'audio' as const, data: dataUrl('audio/wav', wav()) };
 
 describe('served media profile', () => {
-  it('exposes only the served MIME and byte limits at version 0.2.0', () => {
-    expect(sdk.VERSION).toBe('0.2.0');
+  it('exposes only the served MIME and byte limits at version 0.3.0', () => {
+    expect(sdk.VERSION).toBe('0.3.0');
     expect(sdk.MEDIA_MIMES).toEqual({ image: ['image/png', 'image/jpeg'], audio: ['audio/wav'] });
     expect(sdk.MEDIA_LIMITS).toEqual({ maxAttachments: 16, maxImages: 4, maxAudio: 1, maxInlineBytes: 2621440, maxBodyBytes: 3665920, audioSampleRate: 16000, maxAudioDurationMs: 300000, maxAudioChannels: 64, maxImagePixels: 16777216, maxImageAspectRatio: 50 });
     const spec = JSON.parse(readFileSync(new URL('../../openapi.json', import.meta.url), 'utf8'));

@@ -19,7 +19,7 @@ API_CODES = set("""
   media_decode_failed media_too_large media_unpriced media_unsupported
   payload_too_large question_not_grounded question_too_large questions_too_large
   rate_limit_exceeded request_refused service_unavailable staging_attempt_ceiling
-  state_too_large state_too_large_unguarded system_zero_timeout system_zero_unavailable
+  stream_limit_exceeded state_too_large state_too_large_unguarded system_zero_timeout system_zero_unavailable
   upload_in_use upload_not_found upload_not_ready video_not_available
   workspace_limit_exceeded workspace_quarantined
 """.split())
@@ -39,6 +39,7 @@ EXPECTED = set("""
     BatchUsage EvaluationRecord EvaluationReport ExpectedAnswers FlowAnswerTrace FlowBranchTrace
     FlowCondition FlowDefinition FlowErrorTrace FlowNext FlowOptions FlowRequest FlowRule FlowStep
     FlowStepTrace FlowTemplate FlowTrace QuestionScore QuestionType ReliabilityBin Usage
+    NESTED_FUNCTION_TOOLS FLAT_FUNCTION_TOOLS INPUT_SCHEMA_TOOLS ToolHandler create_tool_handler handle_tool_call
     DecideRequest DecideReply Model ModelList Question
     SystemZeroError InvalidRequestError AuthenticationError PermissionError NotFoundError RateLimitError
     OverloadedError APIError ServerError APIConnectionError APITimeoutError PayloadTooLargeError InvalidCriteriaError ServiceUnavailableError CapabilityNotAvailableError RouteNotAvailableError ImageNotAvailableError AudioNotAvailableError
@@ -46,11 +47,13 @@ EXPECTED = set("""
 """.split())
 
 
+EXPECTED.update(['STREAM_PROTOCOL', 'StreamDisconnectedError', 'StreamProtocolError', 'SystemZeroStreamClient', 'stream_client', 'stream_error', 'DecisionMode', 'EventLatency', 'PossiblyDecided', 'ReconnectPolicy', 'StreamAck', 'StreamClient', 'StreamDecision', 'StreamError', 'StreamEvent', 'StreamEvents', 'StreamGoodbye', 'StreamHello', 'StreamScheduled', 'StreamLimitError'])
+
 EXPECTED.update(['Attachment', 'ByteData', 'MAX_ATTACHMENTS', 'MAX_INLINE_BYTES', 'MEDIA_LIMITS', 'MIMES', 'attachment_magic_matches', 'inline_attachment', 'validate_attachments'])
 
 class PublicSurfaceTests(unittest.TestCase):
     def test_error_conveniences_equal_the_api_catalog(self):
-        self.assertEqual(len(API_CODES), 54)
+        self.assertEqual(len(API_CODES), 55)
         self.assertEqual(len(GATEWAY_CODES), 17)
         self.assertEqual(set(system_zero.SYSTEM_ZERO_ERROR_CODES), API_CODES)
         self.assertEqual(len(system_zero.SYSTEM_ZERO_ERROR_CODES), len(API_CODES))

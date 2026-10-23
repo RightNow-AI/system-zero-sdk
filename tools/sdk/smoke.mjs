@@ -7,10 +7,12 @@ const root = resolve(process.argv[2] ?? fileURLToPath(new URL('../../typescript/
 const pkg = JSON.parse(await readFile(resolve(root, 'package.json'), 'utf8'));
 const load = file => import(pathToFileURL(resolve(root, 'dist', file)).href);
 const core = await load('index.js');
+const stream = await load('stream.js');
 const tools = await load('integrations/function-tools/index.js');
 const mcp = await load('integrations/mcp-server/server.js');
 
 assert.equal(core.VERSION, pkg.version);
+assert.equal(stream.STREAM_PROTOCOL, 'system-zero.stream.v1');
 assert.deepEqual(tools.validateToolArguments('system_zero_list_models', {}), {});
 const request = {
   model: 'system-zero', state: 'SYNTHETIC package smoke.',

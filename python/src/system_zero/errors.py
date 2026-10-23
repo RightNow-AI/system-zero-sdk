@@ -38,6 +38,17 @@ class RateLimitError(SystemZeroError):
         seconds = _retry_after_seconds(self.headers)
         self.retry_after_ms = None if seconds is None else seconds * 1000
 
+class StreamLimitError(RateLimitError):
+    """An account stream refusal; automatic recovery may retry a stale lease."""
+
+    def __init__(self, message: str, *, retry_after_ms: Optional[float]=None, retry_after: Optional[str]=None, should_retry: Optional[bool]=None, **fields: Any):
+        super().__init__(message, **fields)
+        limit = self.details.get('limit') if self.details is not None else None
+        self.limit = limit if type(limit) is int and 0 <= limit <= 9007199254740991 else None
+        self.retry_after_ms = retry_after_ms
+        self.retry_after = retry_after
+        self.should_retry = self.retryable if should_retry is None else should_retry
+
 class OverloadedError(SystemZeroError):
     """The platform has no available capacity."""
 

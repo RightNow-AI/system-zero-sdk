@@ -1,6 +1,6 @@
 [
   {
-    "name": "metadata-text-without-preview",
+    "name": "metadata-text-without-optional-marker",
     "accepts": true,
     "metadata": {
       "calibration_version": "unpublished"

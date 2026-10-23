@@ -10,4 +10,6 @@ export * from './batch.js';
 export * from './evaluate.js';
 export * from './errors.js';
 export * from './public-error-codes.js';
+export * from './stream.js';
+export * from './stream-interface.js';
 export * from './media.js';

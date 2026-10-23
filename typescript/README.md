@@ -190,3 +190,81 @@ A blank or whitespace-only `clientRequestId` omits the
 
 Keep API keys on trusted servers. See [the security policy](https://github.com/RightNow-AI/system-zero-sdk/blob/main/SECURITY.md)
 for private vulnerability reporting.
+
+## Function tool formats
+
+Breaking: the three function-tool lists were renamed by their JSON shape: NESTED_FUNCTION_TOOLS (nested function objects), FLAT_FUNCTION_TOOLS (flat function objects), INPUT_SCHEMA_TOOLS (input_schema objects). Update imports; the payloads are unchanged.
+
+The three lists describe the same functions. Choose the shape your tool runner accepts:
+
+- `NESTED_FUNCTION_TOOLS`: `{"type":"function","function":{"name":"...","description":"...","parameters":{},"strict":true}}`.
+- `FLAT_FUNCTION_TOOLS`: `{"type":"function","name":"...","description":"...","parameters":{},"strict":true}`.
+- `INPUT_SCHEMA_TOOLS`: `{"name":"...","description":"...","input_schema":{}}`.
+
+Each list owns its schema objects. Pass the function name and its JSON arguments to the tool handler.
+
+## Streaming decisions
+
+Supply `SYSTEM_ZERO_API_KEY` in the server environment before running this example.
+
+The root package and `@rightnowai/system-zero/stream` export
+`SystemZeroStreamClient` and its frame and configuration types. The platform
+WebSocket supports the required headers on Node 22.23.3 and 24.21.0. No additional
+runtime package is needed. An older runtime must supply a compatible server-side
+constructor through the `WebSocket` option; unsupported native implementations
+fail before sending the key.
+
+```typescript
+import { SystemZeroStreamClient } from '@rightnowai/system-zero';
+
+const stream = new SystemZeroStreamClient();
+stream.on('decision', event => console.log(event.reply, event.request_id));
+stream.on('error', event => console.error(event.envelope));
+try {
+  await stream.connect();
+  await stream.start({
+    model: 'system-zero', state: 'Order received.',
+    questions: { ready: { type: 'boolean', instructions: 'Is the order ready?' } },
+  }, { decisionMode: 'on_request', minIntervalMs: 100 });
+  const ack = await stream.appendText(' Payment received.');
+  await stream.decide();
+  const measured = await stream.waitForDecision(ack);
+  console.log(measured.decision.reply);
+} finally {
+  await stream.close();
+}
+```
+
+The client sends `Authorization: Bearer <key>` during the RFC 6455 version 13
+handshake and selects only `system-zero.stream.v1`. Keep the key on a trusted
+server. The connection uses `wss://api.rightnowai.co/v1/system-zero/stream`.
+
+Start with state and questions, then append text, append JSON items, append
+attachments, or replace the state. A mutation resolves when its acknowledgement
+arrives. In `on_change` mode, accepted mutations schedule decisions; in
+`on_request` mode, call `decide` to schedule one explicitly and read its decision
+event. One decision can cover several accepted mutations.
+
+Reconnect restores the latest accepted state using stable idempotency keys;
+it never resends old wire frames. The default `latest` policy resumes the selected
+decision mode. The `never` policy restores state in `on_request` mode, leaving
+the next decision to the caller. Neither policy retries authentication or protocol
+failures. Idle closure reopens lazily when new work arrives. Listen for
+`possibly_decided`: a lost connection can leave accepted work whose outcome is
+unknown, and reopening does not prove that it was uncounted. Opening attempts
+are bounded by the retry count and elapsed-time options.
+
+Limits are server-advertised in the hello frame. The SDK paces outgoing state
+events using `max_events_per_second` and the advertised `event_burst` (or `burst`)
+capacity; when no burst is supplied it conservatively allows one event at a time.
+Await each mutation to observe queue backpressure. Waiting for a token does not
+start its receipt timeout or block heartbeat replies. The SDK rejects messages
+above `max_message_bytes` before sending. Read hello for session lifetime, idle,
+heartbeat, accumulated request and decision interval limits; these can change.
+The SDK answers heartbeats automatically. A `stream_limit_exceeded` refusal
+supplies the effective account limit in its details. Respect retry hints.
+
+Billing is per decision, not per connection, heartbeat, acknowledgement, or
+mutation. Several mutations can be covered by one decision. A decision may be
+counted even if the connection closes before its event arrives; use the event's
+usage and request identifier when reconciling completed work.

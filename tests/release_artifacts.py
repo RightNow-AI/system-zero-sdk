@@ -34,7 +34,7 @@ def fixture_entries(check):
     metadata = ("Metadata-Version: 2.4\nName: rightnow-system-zero\nVersion: 0.1.0\n"
                 "License-Expression: Apache-2.0\nLicense-File: LICENSE\nLicense-File: NOTICE\n"
                 "Requires-Python: >=3.10\nRequires-Dist: httpx<0.29,>=0.28.1\n"
-                "Requires-Dist: httpcore<2,>=1.0.9\n"
+                "Requires-Dist: httpcore<2,>=1.0.9\nRequires-Dist: websockets<16,>=15.0.1\n"
                 f"Project-URL: Changelog, {repository}/blob/main/CHANGELOG.md\nProject-URL: Source, {repository}\n"
                 f"Project-URL: Issues, {repository}/issues\nProject-URL: Homepage, {repository}\n"
                 f"Project-URL: Documentation, {repository}\n").encode("ascii")

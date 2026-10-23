@@ -34,9 +34,9 @@ def test_provider_schema_normalization_and_invalid_argument_refusal():
     assert handler("system_zero_list_models", {"extra": True})["error"]["code"] == "invalid_request"
     assert handler("unknown_tool", {})["error"]["code"] == "invalid_request"
     assert len(calls) == 1
-    names = [tool["function"]["name"] for tool in tools.OPENAI_TOOLS]
-    assert names == [tool["name"] for tool in tools.ANTHROPIC_TOOLS]
-    assert all(tool["function"]["strict"] for tool in tools.OPENAI_TOOLS)
+    names = [tool["function"]["name"] for tool in tools.NESTED_FUNCTION_TOOLS]
+    assert names == [tool["name"] for tool in tools.INPUT_SCHEMA_TOOLS]
+    assert all(tool["function"]["strict"] for tool in tools.NESTED_FUNCTION_TOOLS)
 
 
 def test_packaged_argument_limits_and_real_document_depth():

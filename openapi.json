@@ -1,7 +1,7 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "RightNow System Zero API",
+    "title": "System Zero API",
     "version": "1",
     "description": "Decisions over a state, with each selected outcome's estimated probability, every alternative and evidence-backed calibration status. Every answer and refusal carries X-Request-Id."
   },
@@ -16,6 +16,95 @@
     }
   ],
   "paths": {
+    "/system-zero/stream": {
+      "get": {
+        "operationId": "openStream",
+        "summary": "Open an incremental decision stream.",
+        "description": "Use an authenticated HTTP/1.1 WebSocket handshake with subprotocol system-zero.stream.v1. Each dispatched update is an ordinary decide charged at the active rate card; accepted updates may coalesce. See docs/system-zero/stream-v1.md and docs/system-zero/stream-v1.schema.json for messages, limits and reconnect rules.",
+        "security": [
+          {
+            "apiKey": []
+          }
+        ],
+        "responses": {
+          "101": {
+            "description": "WebSocket handshake accepted; the first application message is hello."
+          },
+          "426": {
+            "description": "An ordinary GET requires a WebSocket handshake.",
+            "headers": {
+              "X-Request-Id": {
+                "$ref": "#/components/headers/X-Request-Id"
+              },
+              "Retry-After": {
+                "$ref": "#/components/headers/Retry-After"
+              },
+              "Retry-After-Ms": {
+                "$ref": "#/components/headers/Retry-After-Ms"
+              },
+              "x-should-retry": {
+                "$ref": "#/components/headers/x-should-retry"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "rate_limit_exceeded or stream_limit_exceeded; honor Retry-After-Ms.",
+            "headers": {
+              "X-Request-Id": {
+                "$ref": "#/components/headers/X-Request-Id"
+              },
+              "Retry-After": {
+                "$ref": "#/components/headers/Retry-After"
+              },
+              "Retry-After-Ms": {
+                "$ref": "#/components/headers/Retry-After-Ms"
+              },
+              "x-should-retry": {
+                "$ref": "#/components/headers/x-should-retry"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "service_unavailable; retry after the advertised delay.",
+            "headers": {
+              "X-Request-Id": {
+                "$ref": "#/components/headers/X-Request-Id"
+              },
+              "Retry-After": {
+                "$ref": "#/components/headers/Retry-After"
+              },
+              "Retry-After-Ms": {
+                "$ref": "#/components/headers/Retry-After-Ms"
+              },
+              "x-should-retry": {
+                "$ref": "#/components/headers/x-should-retry"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/system-zero/decide": {
       "post": {
         "operationId": "decide",
@@ -783,7 +872,8 @@
               },
               "preview": {
                 "type": "boolean",
-                "const": true
+                "const": true,
+                "description": "Compatibility marker for an answer without attested calibration; preserved on stored replies."
               },
               "decision": {
                 "type": "boolean",
@@ -817,7 +907,7 @@
               },
               "calibrated": {
                 "type": "boolean",
-                "description": "True only for an exact evidence-backed gateway release attestation matching the concrete model, calibration version, answer type, context route, serving identity, input attachment-type set and outcome count. Preview, fallback, identity and unattested calibration are false; true does not guarantee future accuracy."
+                "description": "True only for an exact evidence-backed gateway release attestation matching the concrete model, calibration version, answer type, context route, serving identity, input attachment-type set and outcome count. Answers without attested calibration, including fallback and identity calibration, are false; true does not guarantee future accuracy."
               }
             },
             "required": [
@@ -864,7 +954,8 @@
               },
               "preview": {
                 "type": "boolean",
-                "const": true
+                "const": true,
+                "description": "Compatibility marker for an answer without attested calibration; preserved on stored replies."
               },
               "decision": {
                 "type": "string",
@@ -897,7 +988,7 @@
               },
               "calibrated": {
                 "type": "boolean",
-                "description": "True only for an exact evidence-backed gateway release attestation matching the concrete model, calibration version, answer type, context route, serving identity, input attachment-type set and outcome count. Preview, fallback, identity and unattested calibration are false; true does not guarantee future accuracy."
+                "description": "True only for an exact evidence-backed gateway release attestation matching the concrete model, calibration version, answer type, context route, serving identity, input attachment-type set and outcome count. Answers without attested calibration, including fallback and identity calibration, are false; true does not guarantee future accuracy."
               }
             },
             "required": [
@@ -952,7 +1043,8 @@
               },
               "preview": {
                 "type": "boolean",
-                "const": true
+                "const": true,
+                "description": "Compatibility marker for an answer without attested calibration; preserved on stored replies."
               },
               "decision": {
                 "type": "string",
@@ -987,7 +1079,7 @@
               },
               "calibrated": {
                 "type": "boolean",
-                "description": "True only for an exact evidence-backed gateway release attestation matching the concrete model, calibration version, answer type, context route, serving identity, input attachment-type set and outcome count. Preview, fallback, identity and unattested calibration are false; true does not guarantee future accuracy."
+                "description": "True only for an exact evidence-backed gateway release attestation matching the concrete model, calibration version, answer type, context route, serving identity, input attachment-type set and outcome count. Answers without attested calibration, including fallback and identity calibration, are false; true does not guarantee future accuracy."
               }
             },
             "required": [
@@ -1144,7 +1236,8 @@
               },
               "preview": {
                 "type": "boolean",
-                "const": true
+                "const": true,
+                "description": "Compatibility marker for an answer without attested calibration; preserved on stored replies."
               }
             },
             "required": [
@@ -1187,7 +1280,8 @@
               },
               "preview": {
                 "type": "boolean",
-                "const": true
+                "const": true,
+                "description": "Compatibility marker for an answer without attested calibration; preserved on stored replies."
               }
             },
             "required": [
@@ -1237,7 +1331,8 @@
               },
               "preview": {
                 "type": "boolean",
-                "const": true
+                "const": true,
+                "description": "Compatibility marker for an answer without attested calibration; preserved on stored replies."
               }
             },
             "required": [

@@ -17,7 +17,7 @@ const apiCodes = names(`
   media_decode_failed media_too_large media_unpriced media_unsupported
   payload_too_large question_not_grounded question_too_large questions_too_large
   rate_limit_exceeded request_refused service_unavailable staging_attempt_ceiling
-  state_too_large state_too_large_unguarded system_zero_timeout system_zero_unavailable
+  stream_limit_exceeded state_too_large state_too_large_unguarded system_zero_timeout system_zero_unavailable
   upload_in_use upload_not_found upload_not_ready video_not_available
   workspace_limit_exceeded workspace_quarantined
 `);
@@ -27,6 +27,7 @@ const gatewayCodes = names(`
   maintenance internal_error concurrency_limit_exceeded monthly_cap_reached
 `);
 const rootNames = names(`Attachment InlineAttachment MEDIA_LIMITS MEDIA_MIMES MediaInput MediaKind attachmentMagicMatches inlineAttachment validateAttachments 
+  STREAM_PROTOCOL STREAM_CLIENT_IMPLEMENTED STREAM_RECEIPT_TIMEOUT_MS StreamProtocolError StreamDisconnectedError SystemZeroStreamClient DecisionMode ReconnectPolicy StreamRequest StreamStartOptions StreamRateLimit StreamBase StreamHello StreamAck StreamScheduled StreamDecision StreamError StreamGoodbye PossiblyDecided StreamEvent EventLatency StreamWebSocket StreamWebSocketConstructor StreamClientOptions ClientMutation StreamLimitError
   JsonValue DecideRequest Question StructuredJson V1DecideReply
   BooleanAnswer ChoiceAnswer ScoreAnswer AuthoritativeAnswer LegacyReplayReply
   LegacyBooleanAnswer LegacyChoiceAnswer LegacyScoreAnswer LegacyAnswer QuestionRefusalData
@@ -45,9 +46,10 @@ const rootNames = names(`Attachment InlineAttachment MEDIA_LIMITS MEDIA_MIMES Me
   ErrorFields ConnectionErrorFields responseError
 `);
 const entries = {
+  './stream': ['stream.ts', names(`STREAM_PROTOCOL STREAM_CLIENT_IMPLEMENTED STREAM_RECEIPT_TIMEOUT_MS StreamProtocolError StreamDisconnectedError SystemZeroStreamClient DecisionMode ReconnectPolicy StreamRequest StreamStartOptions StreamRateLimit StreamBase StreamHello StreamAck StreamScheduled StreamDecision StreamError StreamGoodbye PossiblyDecided StreamEvent EventLatency StreamWebSocket StreamWebSocketConstructor StreamClientOptions ClientMutation`)],
   '.': ['index.ts', rootNames],
   './integrations/function-tools': ['integrations/function-tools/index.ts', names(`
-    ToolResult ToolHandlerOptions ToolHandler OPENAI_TOOLS OPENAI_RESPONSES_TOOLS ANTHROPIC_TOOLS
+    ToolResult ToolHandlerOptions ToolHandler NESTED_FUNCTION_TOOLS FLAT_FUNCTION_TOOLS INPUT_SCHEMA_TOOLS
     TOOL_DEFINITIONS ToolArgumentError validateToolArguments deterministicKey createToolHandler handleToolCall
   `)],
   './integrations/mcp-server': ['integrations/mcp-server/server.ts', names(`
@@ -58,7 +60,7 @@ const entries = {
 
 describe('public package surface', () => {
   it('publishes exactly the API error conveniences', () => {
-    expect(apiCodes).toHaveLength(54);
+    expect(apiCodes).toHaveLength(55);
     expect(gatewayCodes).toHaveLength(17);
     expect([...sdk.SYSTEM_ZERO_ERROR_CODES].sort()).toEqual(apiCodes);
     expect([...sdk.GATEWAY_ERROR_CODES].sort()).toEqual(gatewayCodes);

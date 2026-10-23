@@ -88,7 +88,7 @@ sys.addaudithook(offline)
 directory = pathlib.Path(sys.argv[1]).resolve(strict=True)
 sys.path.insert(0, str(directory))
 module = importlib.import_module('system_zero.tools')
-assert isinstance(module.OPENAI_TOOLS, list) and module.OPENAI_TOOLS
+assert isinstance(module.NESTED_FUNCTION_TOOLS, list) and module.NESTED_FUNCTION_TOOLS
 assert pathlib.Path(module.__file__).resolve().is_relative_to(directory)
 '''
 
@@ -98,7 +98,7 @@ import { Socket } from 'node:net';
 Socket.prototype.connect = function () { throw new Error('offline import'); };
 globalThis.fetch = async function () { throw new Error('offline import'); };
 const tools = await import(pathToFileURL(process.argv[1]).href);
-if (!Array.isArray(tools.OPENAI_TOOLS) || tools.OPENAI_TOOLS.length === 0) throw new Error('missing tool resources');
+if (!Array.isArray(tools.NESTED_FUNCTION_TOOLS) || tools.NESTED_FUNCTION_TOOLS.length === 0) throw new Error('missing tool resources');
 '''
 
 

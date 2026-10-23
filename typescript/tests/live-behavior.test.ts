@@ -9,7 +9,7 @@ const request = {
   model: 'system-zero', state: 'SYNTHETIC state',
   questions: {
     zebra: { type: 'boolean' as const, instructions: 'Is this synthetic?' },
-    alpha: { type: 'boolean' as const, instructions: 'Is this a test?' },
+    first: { type: 'boolean' as const, instructions: 'Is this a test?' },
   },
 };
 const toolArguments = {
@@ -64,7 +64,7 @@ describe('live HTTP and local helper behavior', () => {
     try {
       const transport = vi.fn(async () => Response.json({ answers: {} }));
       const client = new sdk.SystemZeroClient({ apiKey: 'SYNTHETIC', fetch: transport, maxRetries: 0 });
-      const result = await sdk.runBatch(client, [{ id: 'one', request, expected: { zebra: true, alpha: true } }], {
+      const result = await sdk.runBatch(client, [{ id: 'one', request, expected: { zebra: true, first: true } }], {
         runId: 'synthetic-count', resultsPath: join(directory, 'results.jsonl'), maxDecideCalls: 0,
         deadlineMs: 1000, concurrency: 1,
       });
@@ -77,7 +77,7 @@ describe('live HTTP and local helper behavior', () => {
   });
 
   it('refuses local call admission before transport without an API error code', async () => {
-    expect(Object.keys(SYSTEM_ZERO_ERRORS)).toHaveLength(71);
+    expect(Object.keys(SYSTEM_ZERO_ERRORS)).toHaveLength(72);
     expect(Object.hasOwn(SYSTEM_ZERO_ERRORS, 'call_limit_reached')).toBe(false);
     const transport = vi.fn(async () => Response.json({ answers: {} }));
     const client = new sdk.SystemZeroClient({ apiKey: 'SYNTHETIC', fetch: transport, maxRetries: 0 });
