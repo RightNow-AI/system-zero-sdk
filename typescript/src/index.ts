@@ -1,5 +1,6 @@
-// System Zero API client and client-side helpers.
+// RightNow System Zero API client and client-side helpers.
 export * from './api-types.js';
+export * from './enabled-types.js';
 export { VERSION, DEFAULT_BASE_URL, APIPromise, SystemZeroClient, withRetryContext } from './client.js';
 export type { Fetch, ClientOptions, RequestOptions, ResponseMetadata, ResponseResult } from './client.js';
 export * from './decisions.js';

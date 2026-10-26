@@ -27,6 +27,8 @@ export interface FlowDefinition {
   steps: FlowStep[];
 }
 export interface FlowOptions {
+  /** Explicit long-context request option; workspace opt-in is also required. */
+  dangerZone?: 'accept';
   run_id: string;
   /** Call count cap, defaulting to MAX_STEPS (32). Larger caps are refused. */
   max_decide_calls?: number;
@@ -105,14 +107,14 @@ const heldMessages: Record<string, string> = {
   committee_not_available: 'This route is not available.', deliberate_not_available: 'This mode is not available.',
 };
 function invalid(): InvalidRequestError {
-  return new InvalidRequestError('The System Zero request is invalid.', { status: 400, type: 'invalid_request_error', code: 'invalid_request', retryable: false });
+  return new InvalidRequestError('The request is invalid.', { status: 400, type: 'invalid_request_error', code: 'invalid_request', retryable: false });
 }
 function unavailable(requestId: string | null = null): APIError {
-  return new APIError('System Zero cannot serve this request right now. Retry after the Retry-After delay.',
+  return new APIError('RightNow cannot serve this request right now. Retry after the Retry-After delay.',
     { status: 503, type: 'api_error', code: 'service_unavailable', retryable: true, request_id: requestId });
 }
 function timeout(requestId: string | null = null): APITimeoutError {
-  return new APITimeoutError('System Zero exceeded the response deadline.',
+  return new APITimeoutError('RightNow exceeded the response deadline.',
     { status: 504, type: 'api_error', code: 'system_zero_timeout', retryable: false, request_id: requestId });
 }
 function record(value: unknown): value is Record<string, unknown> {
@@ -322,7 +324,8 @@ function normalizeError(error: unknown, requestId: string | null): SystemZeroErr
 }
 function errorTrace(error: SystemZeroError): FlowErrorTrace {
   return {
-    code: error.code !== null && knownCodes.has(error.code) ? error.code : 'service_unavailable',
+    code: typeof error.code === 'string' && (knownCodes.has(error.code) || /^[a-z][a-z0-9_]{0,63}$/u.test(error.code))
+      ? error.code : 'service_unavailable',
     type: error.type !== null && errorTypes.has(error.type) ? error.type : 'api_error',
     status: typeof error.status === 'number' && Number.isInteger(error.status) ? error.status : null,
     retryable: error.retryable === true,
@@ -332,6 +335,7 @@ function errorTrace(error: SystemZeroError): FlowErrorTrace {
 /** Execute ordinary counted decide calls. All returned diagnostics omit content by default. */
 export async function runFlow(client: Pick<SystemZeroClient, 'decide' | 'options'>, input: unknown, options: FlowOptions): Promise<FlowTrace> {
   if (!record(options)) throw invalid();
+  if (options.dangerZone !== undefined && options.dangerZone !== 'accept') throw new InvalidRequestError('The request option must be accept.', { status: 400, type: 'invalid_request_error', code: 'invalid_request', param: 'SZ-Danger-Zone' });
   let settings: FlowOptions;
   try { settings = { ...options }; } catch { throw invalid(); }
   if (settings.now !== undefined && typeof settings.now !== 'function') throw invalid();
@@ -402,7 +406,7 @@ export async function runFlow(client: Pick<SystemZeroClient, 'decide' | 'options
       trace.decide_calls++;
       current.decide_calls = 1;
       phase = 'transport';
-      const response = await client.decide(request, withRetryContext({ idempotencyKey }, { workflowRecovery: true })).withResponse();
+      const response = await client.decide(request, withRetryContext({ idempotencyKey, ...(settings.dangerZone === undefined ? {} : { dangerZone: settings.dangerZone }) }, { workflowRecovery: true })).withResponse();
       phase = 'reply';
       current.request_id = response.metadata.requestId;
       current.replayed = response.metadata.replayed;

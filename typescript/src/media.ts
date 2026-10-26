@@ -20,12 +20,14 @@ export const MEDIA_LIMITS = Object.freeze({
 export const MEDIA_MIMES = Object.freeze({
   image: Object.freeze(["image/png", "image/jpeg"]),
   audio: Object.freeze(["audio/wav"]),
+  document: Object.freeze(["application/pdf"]),
+  video: Object.freeze(["video/mp4"]),
 });
 
 const errors = {
   "invalid_request": [
     400,
-    "The System Zero request is invalid."
+    "The request is invalid."
   ],
   "media_unsupported": [
     400,
@@ -59,11 +61,13 @@ function signatureMatches(mime: string, data: Uint8Array): boolean {
   const starts = (hex: string) => bytes.subarray(0, hex.length / 2).equals(Buffer.from(hex, 'hex'));
   const ascii = (start: number, length: number) => bytes.subarray(start, start + length).toString('latin1');
   switch (mime) {
+    case 'application/pdf': return ascii(0, 5) === '%PDF-';
     case 'image/png': return starts('89504e470d0a1a0a');
     case 'image/jpeg': return starts('ffd8ff');
     case 'image/gif': return ['GIF87a', 'GIF89a'].includes(ascii(0, 6));
     case 'image/webp': return ascii(0, 4) === 'RIFF' && ascii(8, 4) === 'WEBP';
     case 'audio/wav': return ascii(0, 4) === 'RIFF' && ascii(8, 4) === 'WAVE';
+    case 'video/mp4': return ascii(4, 4) === 'ftyp';
     default: return false;
   }
 }
@@ -125,6 +129,8 @@ function content(type: MediaKind, mime: string, data: Uint8Array, param: string)
 export function inlineAttachment(input: MediaInput): InlineAttachment {
   identity(input.name, input.type);
   if (!(input.data instanceof Uint8Array)) throw refusal('invalid_request', 'attachments');
+  // Video feedback stays with the API so a later hold keeps its error precedence.
+  if ((input.type as string) === 'video') return { name: input.name, type: input.type, data: `data:${input.mime};base64,${Buffer.from(input.data).toString('base64')}` };
   if (input.data.byteLength > MEDIA_LIMITS.maxInlineBytes) throw refusal('media_too_large', 'attachments');
   content(input.type, input.mime, input.data, 'attachments');
   return { name: input.name, type: input.type, data: `data:${input.mime};base64,${Buffer.from(input.data).toString('base64')}` };
@@ -144,7 +150,7 @@ export function validateAttachments<T extends readonly Attachment[]>(attachments
     if (typeof item.data !== 'string' || !item.data.startsWith('data:') || names.has(item.name)) throw refusal('invalid_request', `attachments[${index}]`);
     names.add(item.name);
   }
-  const counts = { image: 0, audio: 0 };
+  const counts = { image: 0, audio: 0, document: 0, video: 0 };
   let total = 0;
   for (const [index, item] of attachments.entries()) {
     counts[item.type]++;
@@ -161,4 +167,16 @@ export function validateAttachments<T extends readonly Attachment[]>(attachments
     total += bytes.length;
   }
   return attachments;
+}
+
+export const VIDEO_PROFILE = Object.freeze({
+  mime: 'video/mp4', dataUrlHeader: 'data:video/mp4;base64,',
+  maxVideo: 1, maxAudio: 0, maxAttachments: 1,
+  maxSeconds: 10, maxWidth: 1920, maxHeight: 1080, sampledFps: 2, maxFrames: 20,
+  maxInlineBytes: 2_621_440, maxBodyBytes: 3_665_920,
+  choiceOptions: Object.freeze({ min: 2, max: 10 }), scoreLevels: Object.freeze({ min: 2, max: 4 }),
+});
+
+export function videoAttachment(input: { name: string; data: Uint8Array }): InlineAttachment & { type: 'video' } {
+  return { ...inlineAttachment({ ...input, type: 'video', mime: 'video/mp4' }), type: 'video' };
 }

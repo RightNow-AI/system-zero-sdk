@@ -1,4 +1,4 @@
-"""Request and response types for the System Zero API."""
+"""Request and response types for the RightNow System Zero API."""
 
 from typing import Dict, List, Literal, TypeAlias, TypedDict, Union
 
@@ -36,7 +36,7 @@ Question: TypeAlias = Union[BooleanQuestion, ChoiceQuestion, ScoreQuestion]
 
 class Attachment(TypedDict):
     name: str
-    type: Literal['image', 'audio']
+    type: Literal['image', 'audio', 'document', 'video']
     data: str
 
 
@@ -197,6 +197,14 @@ class TextMediaRange(TypedDict):
     media: ServedRange
 
 
+class _LongContextChoiceOptional(TypedDict, total=False):
+    long_context: ServedRange
+
+
+class TextMediaChoiceRange(TextMediaRange, _LongContextChoiceOptional):
+    pass
+
+
 class _ModelLimitsOptional(TypedDict, total=False):
     images: int
     audio: int
@@ -208,7 +216,7 @@ class ModelLimits(_ModelLimitsOptional):
     questions: int
     question_tokens: int
     question_bytes: int
-    choice_options: TextMediaRange
+    choice_options: TextMediaChoiceRange
     score_levels: TextMediaRange
     attachments: int
     body_bytes: int

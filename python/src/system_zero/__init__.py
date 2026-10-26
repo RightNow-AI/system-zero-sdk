@@ -1,4 +1,4 @@
-"""System Zero API client and client-side helpers."""
+"""RightNow System Zero API client and client-side helpers."""
 
 from .client import (
     VERSION,
@@ -143,6 +143,19 @@ from .workflow_types import (
     Usage,
 )
 
+from .enabled_types import (
+    EnabledDecideRequest,
+    LongContextLimits,
+    LongContextQuestion,
+    LongContextRequest,
+    MediaQuestion,
+    MediaRequest,
+    OrdinaryQuestion,
+    OrdinaryRequest,
+    VideoAttachment,
+    VideoRequest,
+)
+
 from .tools import (
     NESTED_FUNCTION_TOOLS,
     FLAT_FUNCTION_TOOLS,
@@ -155,7 +168,7 @@ from .tools import (
 __version__ = VERSION
 
 from .types import Attachment
-from .media import (ByteData, MAX_ATTACHMENTS, MAX_INLINE_BYTES, MEDIA_LIMITS, MIMES, attachment_magic_matches, inline_attachment, validate_attachments)
+from .media import (ByteData, MAX_ATTACHMENTS, MAX_INLINE_BYTES, MEDIA_LIMITS, MIMES, VIDEO_PROFILE, attachment_magic_matches, inline_attachment, validate_attachments, video_attachment)
 
 __all__ = [
   "APIConnectionError",
@@ -180,6 +193,7 @@ __all__ = [
   "DecisionMode",
   "DeliberateNotAvailableError",
   "DocumentNotAvailableError",
+  "EnabledDecideRequest",
   "ErrorCode",
   "EvaluationRecord",
   "EvaluationReport",
@@ -206,17 +220,24 @@ __all__ = [
   "InvalidRequestError",
   "KNOWN_ERROR_CODES",
   "LegacyDecision",
+  "LongContextLimits",
   "LongContextNotAvailableError",
+  "LongContextQuestion",
+  "LongContextRequest",
   "LongRecordingNotAvailableError",
   "MAX_ATTACHMENTS",
   "MAX_FLOW_STEPS",
   "MAX_INLINE_BYTES",
   "MEDIA_LIMITS",
   "MIMES",
+  "MediaQuestion",
+  "MediaRequest",
   "Model",
   "ModelList",
   "NESTED_FUNCTION_TOOLS",
   "NotFoundError",
+  "OrdinaryQuestion",
+  "OrdinaryRequest",
   "OverloadedError",
   "PayloadTooLargeError",
   "PermissionError",
@@ -254,7 +275,10 @@ __all__ = [
   "ToolHandler",
   "Usage",
   "VERSION",
+  "VIDEO_PROFILE",
+  "VideoAttachment",
   "VideoNotAvailableError",
+  "VideoRequest",
   "__version__",
   "attachment_magic_matches",
   "create_tool_handler",
@@ -277,5 +301,6 @@ __all__ = [
   "stream_error",
   "validate_attachments",
   "validate_expected",
-  "validate_flow"
+  "validate_flow",
+  "video_attachment"
 ]

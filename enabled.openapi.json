@@ -1,0 +1,1002 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "System Zero enabled request contract",
+    "version": "0.4.0"
+  },
+  "paths": {
+    "/system-zero/decide": {
+      "post": {
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EnabledDecideRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "See the served API response contract."
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "DecideRequest": {
+        "type": "object",
+        "properties": {
+          "model": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "state": {
+            "$ref": "#/components/schemas/StructuredJson"
+          },
+          "attachments": {
+            "anyOf": [
+              {
+                "maxItems": 16,
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Attachment"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "questions": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string",
+              "pattern": "^[A-Za-z_][A-Za-z0-9_]{0,63}$"
+            },
+            "minProperties": 1,
+            "maxProperties": 1024,
+            "additionalProperties": {
+              "$ref": "#/components/schemas/Question"
+            }
+          },
+          "session_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256
+          },
+          "prompt_cache_key": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256
+          },
+          "route": {
+            "type": "string",
+            "enum": [
+              "standard",
+              "committee"
+            ]
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "standard",
+              "deliberate"
+            ]
+          }
+        },
+        "required": [
+          "model",
+          "state",
+          "questions"
+        ],
+        "additionalProperties": false,
+        "description": "Send one silent H.264 MP4 video as an inline base64 data URL. Maximum duration: 10 seconds. Maximum dimensions: 1920 x 1080. Maximum decoded file size: 2,621,440 bytes (2.5 MiB). The complete JSON request must fit 3,665,920 bytes, including base64 and questions. Frames are sampled at 2 per second from time zero, up to 20 frames. Rotated videos, soundtracks, separate attachments and video upload references are not supported.",
+        "allOf": [
+          {
+            "if": {
+              "required": [
+                "attachments"
+              ],
+              "properties": {
+                "attachments": {
+                  "type": "array",
+                  "contains": {
+                    "type": "object",
+                    "required": [
+                      "type"
+                    ],
+                    "properties": {
+                      "type": {
+                        "const": "video"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "attachments": {
+                  "type": "array",
+                  "minItems": 1,
+                  "maxItems": 1,
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "name",
+                      "type",
+                      "data"
+                    ],
+                    "properties": {
+                      "type": {
+                        "const": "video"
+                      },
+                      "data": {
+                        "type": "string",
+                        "pattern": "^data:video/mp4;base64,"
+                      }
+                    },
+                    "not": {
+                      "required": [
+                        "upload"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      },
+      "Attachment": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_-]{0,63}$"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "document",
+              "image",
+              "audio",
+              "video"
+            ]
+          },
+          "data": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          },
+          "mime": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "type"
+        ],
+        "additionalProperties": false,
+        "oneOf": [
+          {
+            "required": [
+              "data"
+            ],
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "text"
+                  ]
+                },
+                {
+                  "required": [
+                    "mime"
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "required": [
+              "text",
+              "mime"
+            ],
+            "not": {
+              "anyOf": [
+                {
+                  "required": [
+                    "data"
+                  ]
+                }
+              ]
+            }
+          }
+        ],
+        "description": "Exactly one of data (a base64 data URL) or text (with its mime, a text document). Kinds and types: When documents are available: document application/pdf; image image/png, image/jpeg, image/webp, image/gif; audio audio/wav; video video/mp4. When audio is available: Audio must be WAV (PCM or float) at a 16,000 Hz sample rate. Other audio formats are unsupported. Mono and multichannel files are accepted. Documents accept inline PDF only, at most 500 pages and at most 2,621,440 decoded inline bytes per request. Encrypted PDFs are not supported. Other document formats return 415 document_unsupported (pdf_required). Document references are refused as unpriced."
+      },
+      "Question": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "boolean"
+              },
+              "instructions": {
+                "$ref": "#/components/schemas/StructuredJson"
+              },
+              "criteria": {
+                "type": "object",
+                "properties": {
+                  "true": {
+                    "type": "string"
+                  },
+                  "false": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "type",
+              "instructions"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "choice"
+              },
+              "instructions": {
+                "$ref": "#/components/schemas/StructuredJson"
+              },
+              "criteria": {
+                "type": "object",
+                "description": "Each option's key, and its description or null.",
+                "propertyNames": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "minProperties": 1,
+                "maxProperties": 255,
+                "additionalProperties": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "type",
+              "instructions",
+              "criteria"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "score"
+              },
+              "instructions": {
+                "$ref": "#/components/schemas/StructuredJson"
+              },
+              "criteria": {
+                "minItems": 2,
+                "maxItems": 10,
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "type",
+              "instructions",
+              "criteria"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      },
+      "StructuredJson": {
+        "description": "Text, or a JSON object or array; every number finite (an integer past 2^53 - 1 reaches the node digit for digit).",
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "object"
+          },
+          {
+            "type": "array"
+          }
+        ]
+      },
+      "OrdinaryQuestion": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "boolean"
+              },
+              "instructions": {
+                "$ref": "#/components/schemas/StructuredJson"
+              },
+              "criteria": {
+                "type": "object",
+                "properties": {
+                  "true": {
+                    "type": "string"
+                  },
+                  "false": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "type",
+              "instructions"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "choice"
+              },
+              "instructions": {
+                "$ref": "#/components/schemas/StructuredJson"
+              },
+              "criteria": {
+                "type": "object",
+                "description": "Each option's key, and its description or null.",
+                "propertyNames": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "minProperties": 2,
+                "maxProperties": 10,
+                "additionalProperties": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "type",
+              "instructions",
+              "criteria"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "score"
+              },
+              "instructions": {
+                "$ref": "#/components/schemas/StructuredJson"
+              },
+              "criteria": {
+                "minItems": 2,
+                "maxItems": 4,
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "type",
+              "instructions",
+              "criteria"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      },
+      "MediaQuestion": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "boolean"
+              },
+              "instructions": {
+                "$ref": "#/components/schemas/StructuredJson"
+              },
+              "criteria": {
+                "type": "object",
+                "properties": {
+                  "true": {
+                    "type": "string"
+                  },
+                  "false": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "type",
+              "instructions"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "choice"
+              },
+              "instructions": {
+                "$ref": "#/components/schemas/StructuredJson"
+              },
+              "criteria": {
+                "type": "object",
+                "description": "Each option's key, and its description or null.",
+                "propertyNames": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "minProperties": 2,
+                "maxProperties": 26,
+                "additionalProperties": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "type",
+              "instructions",
+              "criteria"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "score"
+              },
+              "instructions": {
+                "$ref": "#/components/schemas/StructuredJson"
+              },
+              "criteria": {
+                "minItems": 2,
+                "maxItems": 10,
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "type",
+              "instructions",
+              "criteria"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      },
+      "LongContextQuestion": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "boolean"
+              },
+              "instructions": {
+                "$ref": "#/components/schemas/StructuredJson"
+              },
+              "criteria": {
+                "type": "object",
+                "properties": {
+                  "true": {
+                    "type": "string"
+                  },
+                  "false": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "type",
+              "instructions"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "choice"
+              },
+              "instructions": {
+                "$ref": "#/components/schemas/StructuredJson"
+              },
+              "criteria": {
+                "type": "object",
+                "description": "Each option's key, and its description or null.",
+                "propertyNames": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "minProperties": 2,
+                "maxProperties": 25,
+                "additionalProperties": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "type",
+              "instructions",
+              "criteria"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "score"
+              },
+              "instructions": {
+                "$ref": "#/components/schemas/StructuredJson"
+              },
+              "criteria": {
+                "minItems": 2,
+                "maxItems": 4,
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "type",
+              "instructions",
+              "criteria"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      },
+      "OrdinaryRequest": {
+        "type": "object",
+        "properties": {
+          "questions": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string",
+              "pattern": "^[A-Za-z_][A-Za-z0-9_]{0,63}$"
+            },
+            "minProperties": 1,
+            "maxProperties": 1024,
+            "additionalProperties": {
+              "$ref": "#/components/schemas/OrdinaryQuestion"
+            }
+          },
+          "attachments": {
+            "anyOf": [
+              {
+                "type": "array",
+                "anyOf": [
+                  {
+                    "not": {
+                      "contains": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "required": [
+                              "type"
+                            ],
+                            "properties": {
+                              "type": {
+                                "enum": [
+                                  "image",
+                                  "audio"
+                                ]
+                              }
+                            }
+                          },
+                          {
+                            "type": "object",
+                            "required": [
+                              "type"
+                            ],
+                            "properties": {
+                              "type": {
+                                "const": "video"
+                              }
+                            }
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  {
+                    "contains": {
+                      "type": "object",
+                      "required": [
+                        "type"
+                      ],
+                      "properties": {
+                        "type": {
+                          "const": "video"
+                        }
+                      }
+                    },
+                    "maxItems": 1,
+                    "items": {
+                      "properties": {
+                        "type": {
+                          "const": "video"
+                        }
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "MediaRequest": {
+        "type": "object",
+        "required": [
+          "attachments"
+        ],
+        "properties": {
+          "questions": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string",
+              "pattern": "^[A-Za-z_][A-Za-z0-9_]{0,63}$"
+            },
+            "minProperties": 1,
+            "maxProperties": 1024,
+            "additionalProperties": {
+              "$ref": "#/components/schemas/MediaQuestion"
+            }
+          },
+          "attachments": {
+            "type": "array",
+            "contains": {
+              "type": "object",
+              "required": [
+                "type"
+              ],
+              "properties": {
+                "type": {
+                  "enum": [
+                    "image",
+                    "audio"
+                  ]
+                }
+              }
+            },
+            "not": {
+              "contains": {
+                "type": "object",
+                "required": [
+                  "type"
+                ],
+                "properties": {
+                  "type": {
+                    "const": "video"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "LongContextRequest": {
+        "type": "object",
+        "properties": {
+          "model": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "state": {
+            "$ref": "#/components/schemas/StructuredJson"
+          },
+          "attachments": {
+            "anyOf": [
+              {
+                "maxItems": 16,
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Attachment"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "items": {
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/Attachment"
+                },
+                {
+                  "properties": {
+                    "type": {
+                      "const": "document"
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "questions": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string",
+              "pattern": "^[A-Za-z_][A-Za-z0-9_]{0,63}$"
+            },
+            "minProperties": 1,
+            "maxProperties": 32,
+            "additionalProperties": {
+              "$ref": "#/components/schemas/LongContextQuestion"
+            }
+          },
+          "session_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256
+          },
+          "prompt_cache_key": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256
+          },
+          "route": {
+            "type": "string",
+            "enum": [
+              "standard",
+              "committee"
+            ]
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "standard",
+              "deliberate"
+            ]
+          }
+        },
+        "required": [
+          "model",
+          "state",
+          "questions"
+        ],
+        "additionalProperties": false,
+        "description": "Stateless long context for an admitted workspace, when canonical state bytes plus text-document bytes exceed 131072. Only inline document attachments are allowed. At most 32 questions; choices take 2 to 25 options."
+      },
+      "EnabledDecideRequest": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/DecideRequest"
+          },
+          {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OrdinaryRequest"
+              },
+              {
+                "$ref": "#/components/schemas/MediaRequest"
+              },
+              {
+                "$ref": "#/components/schemas/LongContextRequest"
+              }
+            ]
+          }
+        ],
+        "description": "Served request alternatives. The gateway selects the ordinary or long context band from canonical state bytes and resolved text-document bytes, and admits long context only for a workspace granted that feature. Image or audio attachments use the media range. One silent inline video uses the text range and cannot be combined with any other attachment."
+      },
+      "LongContextLimits": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "state_tokens",
+          "rendered_tokens",
+          "questions",
+          "question_tokens",
+          "question_bytes",
+          "choice_options",
+          "score_levels",
+          "attachments",
+          "body_bytes",
+          "inline_attachment_bytes"
+        ],
+        "properties": {
+          "state_tokens": {
+            "type": "integer",
+            "description": "The longest state one request answers, counted in state tokens. A longer state is refused with 404 long_context_not_available while long_context is held."
+          },
+          "rendered_tokens": {
+            "type": "integer",
+            "description": "The longest rendered context one request answers, counted in rendered tokens: the state with each question rendered beside it. A longer one is refused with 404 long_context_not_available while long_context is held. Body bytes and the HTTP answer bound still apply independently."
+          },
+          "questions": {
+            "type": "integer",
+            "description": "The most questions one request may ask."
+          },
+          "question_tokens": {
+            "type": "integer"
+          },
+          "question_bytes": {
+            "type": "integer"
+          },
+          "choice_options": {
+            "type": "object",
+            "properties": {
+              "text": {
+                "type": "object",
+                "properties": {
+                  "min": {
+                    "type": "integer"
+                  },
+                  "max": {
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "min",
+                  "max"
+                ],
+                "additionalProperties": false
+              },
+              "media": {
+                "type": "object",
+                "properties": {
+                  "min": {
+                    "type": "integer"
+                  },
+                  "max": {
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "min",
+                  "max"
+                ],
+                "additionalProperties": false
+              },
+              "long_context": {
+                "type": "object",
+                "properties": {
+                  "min": {
+                    "type": "integer"
+                  },
+                  "max": {
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "min",
+                  "max"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "text",
+              "media"
+            ],
+            "additionalProperties": false
+          },
+          "score_levels": {
+            "type": "object",
+            "properties": {
+              "text": {
+                "type": "object",
+                "properties": {
+                  "min": {
+                    "type": "integer"
+                  },
+                  "max": {
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "min",
+                  "max"
+                ],
+                "additionalProperties": false
+              },
+              "media": {
+                "type": "object",
+                "properties": {
+                  "min": {
+                    "type": "integer"
+                  },
+                  "max": {
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "min",
+                  "max"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "text",
+              "media"
+            ],
+            "additionalProperties": false
+          },
+          "attachments": {
+            "type": "integer"
+          },
+          "images": {
+            "type": "integer"
+          },
+          "audio": {
+            "type": "integer"
+          },
+          "body_bytes": {
+            "type": "integer"
+          },
+          "inline_attachment_bytes": {
+            "type": "integer"
+          }
+        }
+      }
+    }
+  }
+}

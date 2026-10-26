@@ -11,10 +11,10 @@ const apiCodes = names(`
   document_not_available document_pictures_not_available document_too_large document_unsupported
   https_required idempotency_key_reuse image_not_available injection_suspected
   input_quarantined insufficient_credits invalid_criteria invalid_request
-  long_context_not_available long_duration_unsupported long_evidence_incomplete long_media_guard_refused
+  long_context_daily_budget_exhausted long_context_not_available long_duration_unsupported long_evidence_incomplete long_media_guard_refused
   long_no_readable_window long_options_unsupported long_phrase_invalid long_question_type_unsupported
   long_question_unsupported long_recording_not_available long_state_unsupported long_too_many_phrases
-  media_decode_failed media_too_large media_unpriced media_unsupported
+  media_decode_failed media_too_large media_unpriced media_unsupported output_limit_exceeded
   payload_too_large question_not_grounded question_too_large questions_too_large
   rate_limit_exceeded request_refused service_unavailable staging_attempt_ceiling
   stream_limit_exceeded state_too_large state_too_large_unguarded system_zero_timeout system_zero_unavailable
@@ -26,7 +26,7 @@ const gatewayCodes = names(`
   idempotency_conflict idempotency_replay_unavailable idempotency_replayed_error idempotency_unavailable limiter_unavailable
   maintenance internal_error concurrency_limit_exceeded monthly_cap_reached
 `);
-const rootNames = names(`Attachment InlineAttachment MEDIA_LIMITS MEDIA_MIMES MediaInput MediaKind attachmentMagicMatches inlineAttachment validateAttachments 
+const rootNames = names(`Attachment InlineAttachment MEDIA_LIMITS MEDIA_MIMES MediaInput MediaKind VIDEO_PROFILE attachmentMagicMatches inlineAttachment validateAttachments videoAttachment OrdinaryQuestion MediaQuestion LongContextQuestion OrdinaryRequest MediaRequest LongContextRequest EnabledDecideRequest LongContextLimits VideoRequest VideoAttachment
   STREAM_PROTOCOL STREAM_CLIENT_IMPLEMENTED STREAM_RECEIPT_TIMEOUT_MS StreamProtocolError StreamDisconnectedError SystemZeroStreamClient DecisionMode ReconnectPolicy StreamRequest StreamStartOptions StreamRateLimit StreamBase StreamHello StreamAck StreamScheduled StreamDecision StreamError StreamGoodbye PossiblyDecided StreamEvent EventLatency StreamWebSocket StreamWebSocketConstructor StreamClientOptions ClientMutation StreamLimitError
   JsonValue DecideRequest Question StructuredJson V1DecideReply
   BooleanAnswer ChoiceAnswer ScoreAnswer AuthoritativeAnswer LegacyReplayReply
@@ -60,7 +60,7 @@ const entries = {
 
 describe('public package surface', () => {
   it('publishes exactly the API error conveniences', () => {
-    expect(apiCodes).toHaveLength(55);
+    expect(apiCodes).toHaveLength(57);
     expect(gatewayCodes).toHaveLength(17);
     expect([...sdk.SYSTEM_ZERO_ERROR_CODES].sort()).toEqual(apiCodes);
     expect([...sdk.GATEWAY_ERROR_CODES].sort()).toEqual(gatewayCodes);

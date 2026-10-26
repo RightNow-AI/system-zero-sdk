@@ -11,10 +11,10 @@ from .types import Attachment
 
 MAX_INLINE_BYTES = 2621440
 MAX_ATTACHMENTS = 16
-MIMES = MappingProxyType({'image': ('image/png', 'image/jpeg'), 'audio': ('audio/wav',)})
+MIMES = MappingProxyType({'image': ('image/png', 'image/jpeg'), 'audio': ('audio/wav',), 'document': ('application/pdf',), 'video': ('video/mp4',)})
 MEDIA_LIMITS = MappingProxyType({'max_attachments': 16, 'max_images': 4, 'max_audio': 1, 'max_inline_bytes': 2621440, 'max_body_bytes': 3665920, 'audio_sample_rate': 16000, 'max_audio_duration_ms': 300000, 'max_audio_channels': 64, 'max_image_pixels': 16777216, 'max_image_aspect_ratio': 50})
 ByteData = Union[bytes, bytearray, memoryview]
-_ERRORS = {'invalid_request': [400, 'The System Zero request is invalid.'], 'media_unsupported': [400, 'The media kind or count is not supported. At most 4 images and 1 audio are allowed.'], 'media_too_large': [413, 'The media exceeds the decoded byte limit.'], 'media_decode_failed': [422, 'The media bytes do not match the declared format.'], 'media_unpriced': [403, 'This input type is not supported.']}
+_ERRORS = {'invalid_request': [400, 'The request is invalid.'], 'media_unsupported': [400, 'The media kind or count is not supported. At most 4 images and 1 audio are allowed.'], 'media_too_large': [413, 'The media exceeds the decoded byte limit.'], 'media_decode_failed': [422, 'The media bytes do not match the declared format.'], 'media_unpriced': [403, 'This input type is not supported.']}
 _NAME = re.compile(r"[A-Za-z][A-Za-z0-9_-]{0,63}\Z")
 _DATA_HEADER = re.compile(r"data:[a-z0-9.+/-]+;base64\Z")
 
@@ -34,6 +34,8 @@ def _raw_bytes(data: ByteData, cap: Optional[int], code: str, param: str = "data
 
 
 def _signature_matches(mime: str, data: bytes) -> bool:
+    if mime == 'application/pdf':
+        return data.startswith(b'%PDF-')
     if mime == 'image/png':
         return data.startswith(b'\x89PNG\r\n\x1a\n')
     if mime == 'image/jpeg':
@@ -42,6 +44,8 @@ def _signature_matches(mime: str, data: bytes) -> bool:
         return data.startswith((b'GIF87a', b'GIF89a'))
     if mime in {'image/webp', 'audio/wav'}:
         return data[:4] == b'RIFF' and data[8:12] == (b'WEBP' if mime == 'image/webp' else b'WAVE')
+    if mime == 'video/mp4':
+        return data[4:8] == b'ftyp'
     return False
 
 
@@ -111,11 +115,12 @@ def _content(kind: str, mime: str, raw: bytes, param: str) -> None:
         _refuse("media_decode_failed", param)
 
 
-def inline_attachment(*, name: str, type: Literal['image', 'audio'], mime: str, data: ByteData) -> Attachment:
+def inline_attachment(*, name: str, type: Literal['image', 'audio', 'document', 'video'], mime: str, data: ByteData) -> Attachment:
     """Encode one served data URL with bounded, caller-known checks."""
     _identity(name, type)
-    raw = _raw_bytes(data, MAX_INLINE_BYTES, "media_too_large")
-    _content(type, mime, raw, "attachments")
+    raw = _raw_bytes(data, None if type == "video" else MAX_INLINE_BYTES, "media_too_large")
+    if type != "video":
+        _content(type, mime, raw, "attachments")
     return {"name": name, "type": type, "data": "data:" + mime + ";base64," + base64.b64encode(raw).decode("ascii")}
 
 
@@ -157,3 +162,16 @@ def validate_attachments(items: Sequence[Attachment]) -> Sequence[Attachment]:
         _content(kind, header[5:-7], raw, param)
         total += len(raw)
     return items
+
+
+VIDEO_PROFILE = MappingProxyType({
+    "mime": "video/mp4", "data_url_header": "data:video/mp4;base64,",
+    "max_inline_bytes": MAX_INLINE_BYTES, "max_body_bytes": 3_665_920,
+    "max_attachments": 1, "max_video": 1, "max_separate_audio": 0,
+    "max_seconds": 10, "max_width": 1920, "max_height": 1080, "sampled_fps": 2, "max_frames": 20,
+    "choice_options": (2, 10), "score_levels": (2, 4),
+})
+
+def video_attachment(*, name: str, data: ByteData) -> Attachment:
+    """Encode one silent inline MP4; the API validates availability and contents."""
+    return inline_attachment(name=name, type="video", mime="video/mp4", data=data)

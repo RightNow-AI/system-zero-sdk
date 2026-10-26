@@ -80,7 +80,7 @@ def _retry_response(status: int, code: Optional[str], headers: Mapping[str, str]
 
 def _recover_workflow(status: int, code: Optional[str], headers: Mapping[str, str],
                       retryable: Optional[bool] = None, details: Optional[Mapping[str, object]] = None) -> bool:
-    """System Zero SDK helper."""
+    """RightNow System Zero SDK helper."""
     normalized = {key.lower(): value.strip() for key, value in headers.items()}
     hint = normalized.get("x-should-retry")
     if status != 429 or hint == "false" or retryable is False or not (hint == "true" or retryable is True):

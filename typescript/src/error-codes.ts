@@ -1,4 +1,4 @@
-// API error codes returned by System Zero.
+// API error codes returned by RightNow.
 export const SYSTEM_ZERO_ERROR_CODES = [
   "attachment_too_large",
   "audio_not_available",
@@ -20,6 +20,7 @@ export const SYSTEM_ZERO_ERROR_CODES = [
   "insufficient_credits",
   "invalid_criteria",
   "invalid_request",
+  "long_context_daily_budget_exhausted",
   "long_context_not_available",
   "long_duration_unsupported",
   "long_evidence_incomplete",
@@ -36,6 +37,7 @@ export const SYSTEM_ZERO_ERROR_CODES = [
   "media_too_large",
   "media_unpriced",
   "media_unsupported",
+  "output_limit_exceeded",
   "payload_too_large",
   "question_not_grounded",
   "question_too_large",

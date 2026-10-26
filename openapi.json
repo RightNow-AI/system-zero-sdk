@@ -1,7 +1,7 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "System Zero API",
+    "title": "RightNow System Zero API",
     "version": "1",
     "description": "Decisions over a state, with each selected outcome's estimated probability, every alternative and evidence-backed calibration status. Every answer and refusal carries X-Request-Id."
   },
@@ -459,7 +459,7 @@
       "apiKey": {
         "type": "http",
         "scheme": "bearer",
-        "description": "A System Zero API key, rnsk_..., as Authorization: Bearer <key>."
+        "description": "A RightNow API key, rnsk_..., as Authorization: Bearer <key>."
       }
     },
     "headers": {
@@ -546,16 +546,53 @@
             "anyOf": [
               {
                 "type": "array",
+                "maxItems": 16,
                 "items": {
-                  "$ref": "#/components/schemas/Attachment"
-                },
-                "maxItems": 16
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Attachment"
+                    },
+                    {
+                      "properties": {
+                        "type": {
+                          "enum": [
+                            "image",
+                            "audio",
+                            "document"
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 1,
+                "items": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Attachment"
+                    },
+                    {
+                      "properties": {
+                        "type": {
+                          "const": "video"
+                        },
+                        "data": {
+                          "pattern": "^data:video/mp4;base64,"
+                        }
+                      }
+                    }
+                  ]
+                }
               },
               {
                 "type": "null"
               }
             ],
-            "description": "Optional; null means no attachments. At most 4 images and 1 audio. The API validates complete files and availability."
+            "description": "One silent H.264 MP4 video, without any other attachment. Video upload references are not supported."
           },
           "questions": {
             "type": "object",
@@ -597,7 +634,64 @@
           "state",
           "questions"
         ],
-        "additionalProperties": false
+        "additionalProperties": false,
+        "description": "Send one silent H.264 MP4 video as an inline base64 data URL. Maximum duration: 10 seconds. Maximum dimensions: 1920 x 1080. Maximum decoded file size: 2,621,440 bytes (2.5 MiB). The complete JSON request must fit 3,665,920 bytes, including base64 and questions. Frames are sampled at 2 per second from time zero, up to 20 frames. Rotated videos, soundtracks, separate attachments and video upload references are not supported.",
+        "allOf": [
+          {
+            "if": {
+              "required": [
+                "attachments"
+              ],
+              "properties": {
+                "attachments": {
+                  "type": "array",
+                  "contains": {
+                    "type": "object",
+                    "required": [
+                      "type"
+                    ],
+                    "properties": {
+                      "type": {
+                        "const": "video"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "attachments": {
+                  "type": "array",
+                  "minItems": 1,
+                  "maxItems": 1,
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "name",
+                      "type",
+                      "data"
+                    ],
+                    "properties": {
+                      "type": {
+                        "const": "video"
+                      },
+                      "data": {
+                        "type": "string",
+                        "pattern": "^data:video/mp4;base64,"
+                      }
+                    },
+                    "not": {
+                      "required": [
+                        "upload"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
       },
       "Question": {
         "anyOf": [
@@ -703,12 +797,14 @@
             "type": "string",
             "enum": [
               "image",
-              "audio"
+              "audio",
+              "document",
+              "video"
             ]
           },
           "data": {
             "type": "string",
-            "description": "Served MIME types: image/png, image/jpeg, audio/wav. Aggregate decoded bytes at most 2,621,440."
+            "description": "Served MIME types: image/png, image/jpeg, audio/wav. Aggregate decoded bytes at most 2,621,440. Documents use application/pdf, at most 500 pages. Encrypted PDFs and document references are not supported. Video uses video/mp4, up to 10 seconds and 1920 x 1080. Soundtracks and rotation are refused."
           }
         },
         "required": [
@@ -717,7 +813,7 @@
           "data"
         ],
         "additionalProperties": false,
-        "description": "Inline media as a canonical base64 data URL: static PNG or JPEG images and 16,000 Hz PCM or float WAV audio."
+        "description": "Inline media as a canonical base64 data URL: static PNG or JPEG images and 16,000 Hz PCM or float WAV audio. PDF is supported through ordinary inline attachments. Only PDF is supported; other document formats are unavailable. One silent H.264 MP4 video may be sent as the only attachment."
       },
       "StructuredJson": {
         "description": "Text, or a JSON object or array; every number finite (an integer past 2^53 - 1 reaches the node digit for digit).",

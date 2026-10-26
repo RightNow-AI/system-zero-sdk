@@ -1,4 +1,4 @@
-"""System Zero SDK helper."""
+"""RightNow System Zero SDK helper."""
 
 import json
 

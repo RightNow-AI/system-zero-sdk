@@ -298,9 +298,9 @@ def check_member_content(name: str, raw: bytes, *, npm_metadata: bool=False) -> 
         if npm_metadata and name == 'package/package.json':
             check_npm_metadata(raw)
 
-def check_notices(nonempty: set[str], prefixes: tuple[str, ...]) -> None:
+def check_notices(populated: set[str], prefixes: tuple[str, ...]) -> None:
     for name in ('LICENSE', 'NOTICE'):
-        require(any((prefix + name in nonempty for prefix in prefixes)), f'artifact content is missing {name}', 'missing-' + name.lower())
+        require(any((prefix + name in populated for prefix in prefixes)), f'artifact content is missing {name}', 'missing-' + name.lower())
 
 def scan_container_bytes(raw: bytes) -> None:
     """Apply the shared text rules to raw TAR headers and ZIP text fields.
@@ -341,11 +341,11 @@ def read_tar(path: Path) -> tarfile.TarFile:
     if flags & 4:
         require(offset + 2 <= len(compressed) - 8, 'truncated gzip extra', 'archive-metadata')
         size = int.from_bytes(compressed[offset:offset + 2], 'little')
-        require(size == 0, 'nonempty gzip extra', 'archive-metadata')
+        require(size == 0, 'populated gzip extra', 'archive-metadata')
         offset += 2
     for flag in (8, 16):
         if flags & flag:
-            require(offset < len(compressed) - 8 and compressed[offset] == 0, 'nonempty gzip text metadata', 'archive-metadata')
+            require(offset < len(compressed) - 8 and compressed[offset] == 0, 'populated gzip text metadata', 'archive-metadata')
             offset += 1
     if flags & 2:
         offset += 2
@@ -374,24 +374,24 @@ def read_tar(path: Path) -> tarfile.TarFile:
             if member.type in (tarfile.XHDTYPE, tarfile.XGLTYPE, tarfile.GNUTYPE_LONGNAME, tarfile.GNUTYPE_LONGLINK):
                 scan_container_bytes(raw)
             require(member.type in (tarfile.REGTYPE, tarfile.AREGTYPE, tarfile.DIRTYPE, tarfile.XHDTYPE, tarfile.XGLTYPE), 'unsupported tar member type', 'special-member')
-            require(member.type != tarfile.DIRTYPE or member.size == 0, 'directory has a body', 'nonempty-directory')
+            require(member.type != tarfile.DIRTYPE or member.size == 0, 'directory has a body', 'populated-directory')
             check_member_content(member.name, raw)
             for field in (member.uname, member.gname, member.linkname):
                 scan_text(field)
             padded = (member.size + 511) // 512 * 512
             padding = data[offset + member.size:offset + padded]
-            require(len(padding) == padded - member.size and (not any(padding)), 'nonempty tar padding', 'archive-metadata')
+            require(len(padding) == padded - member.size and (not any(padding)), 'populated tar padding', 'archive-metadata')
             offset += padded
     return tarfile.open(fileobj=io.BytesIO(data), mode='r:', encoding='utf-8', errors='strict')
 
 def check_tar_contents(archive: tarfile.TarFile, prefixes: tuple[str, ...], *, npm_metadata: bool=False) -> None:
-    nonempty: set[str] = set()
+    populated: set[str] = set()
     total = 0
     for member in archive.getmembers():
         with member_context(member.name):
             require(member.type in (tarfile.REGTYPE, tarfile.AREGTYPE, tarfile.DIRTYPE), 'unsupported tar member type', 'special-member')
             check_member_name(member.name)
-            require(member.type != tarfile.DIRTYPE or member.size == 0, 'directory has a body', 'nonempty-directory')
+            require(member.type != tarfile.DIRTYPE or member.size == 0, 'directory has a body', 'populated-directory')
             if member.isdir():
                 continue
             total += member.size
@@ -404,8 +404,8 @@ def check_tar_contents(archive: tarfile.TarFile, prefixes: tuple[str, ...], *, n
             require(len(raw) == member.size, 'truncated tar body', 'invalid-artifact')
             check_member_content(member.name, raw, npm_metadata=npm_metadata)
             if raw.strip():
-                nonempty.add(member.name)
-    check_notices(nonempty, prefixes)
+                populated.add(member.name)
+    check_notices(populated, prefixes)
 
 def print_inventory(path: Path, names: list[str]) -> None:
     print(f'artifact contents {path.name}:')
@@ -580,24 +580,24 @@ def check_wheel(path: Path, version: str) -> list[str]:
         archive_names([member.orig_filename for member in members], {member.orig_filename for member in members if member.is_dir()})
         metadata = [name for name in names if len(PurePosixPath(name).parts) == 2 and name.endswith('.dist-info/METADATA')]
         require(len(metadata) == 1, 'wheel must contain one package metadata record')
-        nonempty: set[str] = set()
+        populated: set[str] = set()
         metadata_bytes = b''
         for member, raw in zip(members, bodies):
             with member_context(member.filename):
                 filetype = stat.S_IFMT(member.external_attr >> 16)
                 require(filetype in ({0, stat.S_IFDIR} if member.is_dir() else {0, stat.S_IFREG}) and (not member.flag_bits & 1) and (not member.external_attr & 16 or member.is_dir()), 'link, special or encrypted member', 'special-member')
-                require(not member.is_dir() or member.file_size == 0, 'directory has a body', 'nonempty-directory')
+                require(not member.is_dir() or member.file_size == 0, 'directory has a body', 'populated-directory')
                 check_member_content(member.filename, raw)
                 if member.filename == metadata[0]:
                     metadata_bytes = raw
                 if raw.strip():
-                    nonempty.add(member.filename)
+                    populated.add(member.filename)
         require(archive.getinfo(metadata[0]).file_size <= 1024 * 1024, 'invalid artifact metadata member')
         python_identity(metadata_bytes, version)
         python_import(names, '')
         require(f'{IMPORT_NAME}/py.typed' in names, 'wheel typing marker is missing')
         metadata_root = metadata[0].removesuffix('METADATA')
-        check_notices(nonempty, (metadata_root + 'licenses/', metadata_root))
+        check_notices(populated, (metadata_root + 'licenses/', metadata_root))
         return names
 
 def check_sdist(path: Path, version: str) -> list[str]:

@@ -1,13 +1,13 @@
-// Request and response types for currently available API operations.
+// Request and response types for published API surfaces.
 
 
 export type JsonValue = string | number | boolean | null | { [key: string]: JsonValue } | JsonValue[];
 
-export type DecideRequest = { "model": string; "state": StructuredJson; "attachments"?: (Array<Attachment>) | (null); "questions": Record<string, Question>; "session_id"?: string; "prompt_cache_key"?: string; "route"?: "standard"; "mode"?: "standard"; };
+export type DecideRequest = ({ "model": string; "state": StructuredJson; "attachments"?: (Array<(Attachment) & ({ "type"?: "image" | "audio" | "document"; })>) | (Array<(Attachment) & ({ "type"?: "video"; "data"?: unknown; })>) | (null); "questions": Record<string, Question>; "session_id"?: string; "prompt_cache_key"?: string; "route"?: "standard"; "mode"?: "standard"; }) & (unknown);
 
 export type Question = ({ "type": "boolean"; "instructions": StructuredJson; "criteria"?: { "true"?: string; "false"?: string; }; }) | ({ "type": "choice"; "instructions": StructuredJson; "criteria": Record<string, string | null>; }) | ({ "type": "score"; "instructions": StructuredJson; "criteria": Array<string>; });
 
-export type Attachment = { "name": string; "type": "image" | "audio"; "data": string; };
+export type Attachment = { "name": string; "type": "image" | "audio" | "document" | "video"; "data": string; };
 
 export type StructuredJson = (string) | (Record<string, JsonValue>) | (Array<JsonValue>);
 
@@ -35,7 +35,7 @@ export type QuestionRefusalData = { "error": { "code": "injection_suspected" | "
 
 export type ModelList = { "object": "list"; "data": Array<Model>; };
 
-export type Model = { "id": string; "object": "model"; "alias_for": string | null; "released_at": string | null; "calibration_versions": Array<string> | null; "limits": { "state_tokens": number; "rendered_tokens": number; "questions": number; "question_tokens": number; "question_bytes": number; "choice_options": { "text": { "min": number; "max": number; }; "media": { "min": number; "max": number; }; }; "score_levels": { "text": { "min": number; "max": number; }; "media": { "min": number; "max": number; }; }; "attachments": number; "images"?: number; "audio"?: number; "body_bytes": number; "inline_attachment_bytes": number; }; "held_routes": Array<string>; };
+export type Model = { "id": string; "object": "model"; "alias_for": string | null; "released_at": string | null; "calibration_versions": Array<string> | null; "limits": { "state_tokens": number; "rendered_tokens": number; "questions": number; "question_tokens": number; "question_bytes": number; "choice_options": { "text": { "min": number; "max": number; }; "media": { "min": number; "max": number; }; "long_context"?: { "min": number; "max": number; }; }; "score_levels": { "text": { "min": number; "max": number; }; "media": { "min": number; "max": number; }; }; "attachments": number; "images"?: number; "audio"?: number; "body_bytes": number; "inline_attachment_bytes": number; }; "held_routes": Array<string>; };
 
 export type ErrorEnvelope = { "error": { "message": string; "type": "invalid_request_error" | "authentication_error" | "permission_error" | "not_found_error" | "rate_limit_error" | "overloaded_error" | "api_error" | "server_error"; "param": string | null; "code": string | null; "retryable": boolean; "details"?: Record<string, JsonValue>; }; "request_id": string; };
 

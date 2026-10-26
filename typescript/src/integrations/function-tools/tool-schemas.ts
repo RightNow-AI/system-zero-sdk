@@ -223,6 +223,7 @@ export default [
           "anyOf": [
             {
               "type": "array",
+              "maxItems": 16,
               "items": {
                 "type": "object",
                 "properties": {
@@ -239,7 +240,7 @@ export default [
                   },
                   "data": {
                     "type": "string",
-                    "description": "Served MIME types: image/png, image/jpeg, audio/wav. Aggregate decoded bytes at most 2,621,440."
+                    "description": "Image PNG/JPEG or 16,000 Hz WAV audio."
                   }
                 },
                 "required": [
@@ -248,9 +249,8 @@ export default [
                   "data"
                 ],
                 "additionalProperties": false,
-                "description": "Inline media as a canonical base64 data URL: static PNG or JPEG images and 16,000 Hz PCM or float WAV audio."
-              },
-              "maxItems": 16
+                "description": "Inline image or audio as a canonical base64 data URL."
+              }
             },
             {
               "type": "null"

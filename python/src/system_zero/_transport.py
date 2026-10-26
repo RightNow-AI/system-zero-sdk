@@ -31,7 +31,7 @@ def _timeout(timeout: Optional[float], error_type: type[Exception]) -> Optional[
         return timeout
     remaining = state.deadline - time.monotonic()
     if remaining <= 0:
-        raise error_type("System Zero attempt deadline exceeded")
+        raise error_type("RightNow attempt deadline exceeded")
     return min(timeout, remaining) if timeout is not None else remaining
 
 
@@ -112,7 +112,7 @@ def _map_errors():
     except Exception as exc:
         for source, target in _CORE_ERRORS:
             if isinstance(exc, source):
-                raise target("System Zero HTTP transport failed") from exc
+                raise target("RightNow HTTP transport failed") from exc
         raise
 
 

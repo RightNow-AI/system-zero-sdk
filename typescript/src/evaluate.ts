@@ -213,7 +213,8 @@ function projectRecord(value: EvaluationRecord): EvaluationRecord {
   if (!object(value) || typeof value.id !== 'string' ||
     !['completed', 'refused', 'held', 'error'].includes(value.outcome) || !nonnegative(value.latency_ms) ||
     !Array.isArray(value.questions) ||
-    (value.code !== null && (typeof value.code !== 'string' || !knownCodes.has(value.code)))) inputError();
+    (value.code !== null && (typeof value.code !== 'string' || (!knownCodes.has(value.code)
+      && !(value.outcome === 'error' && /^[a-z][a-z0-9_]{0,63}$/u.test(value.code)))))) inputError();
   let usage: Usage | null = null;
   if (value.usage !== null) {
     if (!object(value.usage)) inputError();

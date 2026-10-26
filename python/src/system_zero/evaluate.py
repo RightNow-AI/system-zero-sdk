@@ -143,7 +143,7 @@ def _project_record(value: Mapping[str, Any]):
     if not isinstance(value, Mapping) or not isinstance(value.get('id'), str) or value.get('outcome') not in ('completed', 'refused', 'held', 'error') or (not _nonnegative(value.get('latency_ms'))) or (not isinstance(value.get('questions'), list)):
         _input_error()
     code = value.get('code')
-    if 'code' not in value or (code is not None and (not isinstance(code, str) or code not in _KNOWN_CODES)):
+    if 'code' not in value or (code is not None and (not isinstance(code, str) or (code not in _KNOWN_CODES and (not (value['outcome'] == 'error' and re.fullmatch('[a-z][a-z0-9_]{0,63}', code)))))):
         _input_error()
     usage = None
     if 'usage' not in value:

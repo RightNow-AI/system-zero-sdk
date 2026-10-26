@@ -31,6 +31,7 @@ export interface ToolResult {
   [key: string]: unknown;
 }
 export interface ToolHandlerOptions {
+  dangerZone?: 'accept';
   client?: Pick<SystemZeroClient, 'decide' | 'models'>;
   baseURL?: string;
   namespace?: string;
@@ -288,6 +289,7 @@ function success(data: Record<string, unknown>, requestId: string | null): ToolR
 }
 
 export function createToolHandler(options: ToolHandlerOptions = {}): ToolHandler {
+  if (options.dangerZone !== undefined && options.dangerZone !== 'accept') throw new InvalidRequestError('The request option must be accept.', { status: 400, type: 'invalid_request_error', code: 'invalid_request', param: 'SZ-Danger-Zone' });
   const namespace = options.namespace ?? 'system-zero-tools-v1';
   const maxCalls = options.maxDecideCalls ?? 100;
   if (typeof namespace !== 'string' || !namespace || !validString(namespace) || (!Number.isSafeInteger(maxCalls) || maxCalls < 0)) invalid();
@@ -308,7 +310,7 @@ export function createToolHandler(options: ToolHandlerOptions = {}): ToolHandler
       client ??= new SystemZeroClient({ baseURL: options.baseURL });
       // Admit synchronously so parallel callers share the count cap.
       decideCalls++;
-      const { data, metadata } = await client.decide(request as DecideRequest, withRetryContext({ idempotencyKey: key }, { workflowRecovery: true })).withResponse();
+      const { data, metadata } = await client.decide(request as DecideRequest, withRetryContext({ idempotencyKey: key, ...(options.dangerZone === undefined ? {} : { dangerZone: options.dangerZone }) }, { workflowRecovery: true })).withResponse();
       if (!record(data)) return refusal('system_zero_unavailable');
       return success(data, metadata.requestId || data.id || null);
     } catch (error) {

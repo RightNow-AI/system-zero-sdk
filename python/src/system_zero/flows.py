@@ -8,7 +8,7 @@ import math
 import re
 import struct
 import time
-from typing import Any, Callable, Dict, Mapping, Optional, cast
+from typing import Literal, Any, Callable, Dict, Mapping, Optional, cast
 from .client import SystemZero
 from ._retry import _retry_context
 from .decisions import decisions_for
@@ -26,13 +26,13 @@ _QUESTION_REFUSALS = {'injection_suspected': 'The request was refused because it
 _HELD_MESSAGES = {'long_context_not_available': 'This route is not available.', 'long_recording_not_available': 'This input type is not supported.', 'video_not_available': 'This input type is not supported.', 'image_not_available': 'Images are unavailable. Send the request without the image attachment.', 'audio_not_available': 'Audio is unavailable. Send the request without the audio attachment.', 'document_not_available': 'Documents are unavailable. Send the request without the document attachment.', 'committee_not_available': 'This route is not available.', 'deliberate_not_available': 'This mode is not available.'}
 
 def _invalid() -> InvalidRequestError:
-    return InvalidRequestError('The System Zero request is invalid.', status=400, type='invalid_request_error', code='invalid_request')
+    return InvalidRequestError('The request is invalid.', status=400, type='invalid_request_error', code='invalid_request')
 
 def _unavailable(request_id: Optional[str]=None) -> APIError:
-    return APIError('System Zero cannot serve this request right now. Retry after the Retry-After delay.', status=503, type='api_error', code='service_unavailable', retryable=True, request_id=request_id)
+    return APIError('RightNow cannot serve this request right now. Retry after the Retry-After delay.', status=503, type='api_error', code='service_unavailable', retryable=True, request_id=request_id)
 
 def _timeout(request_id: Optional[str]=None) -> APITimeoutError:
-    return APITimeoutError('System Zero exceeded the response deadline.', status=504, type='api_error', code='system_zero_timeout', request_id=request_id)
+    return APITimeoutError('RightNow exceeded the response deadline.', status=504, type='api_error', code='system_zero_timeout', request_id=request_id)
 
 def _safe_integer(value: Any) -> bool:
     if type(value) is int:
@@ -288,7 +288,7 @@ def _normalize_error(error: Exception, request_id: Optional[str]=None) -> System
     return _unavailable(error.request_id or request_id if isinstance(error, SystemZeroError) else request_id)
 
 def _safe_error(error: SystemZeroError) -> Dict[str, Any]:
-    return {'code': error.code if error.code in _KNOWN_CODES else 'service_unavailable', 'type': error.type if error.type in _ERROR_TYPES else 'api_error', 'status': error.status if _safe_integer(error.status) and 100 <= error.status <= 599 else None, 'retryable': error.retryable is True}
+    return {'code': error.code if isinstance(error.code, str) and (error.code in _KNOWN_CODES or re.fullmatch('[a-z][a-z0-9_]{0,63}', error.code)) else 'service_unavailable', 'type': error.type if error.type in _ERROR_TYPES else 'api_error', 'status': error.status if _safe_integer(error.status) and 100 <= error.status <= 599 else None, 'retryable': error.retryable is True}
 
 def _usage(body: Any) -> Optional[Dict[str, Any]]:
     if type(body) is not dict:
@@ -308,7 +308,7 @@ def _client_call_bound(client: SystemZero) -> float:
         raise _invalid()
     return bound
 
-def run_flow(client: SystemZero, definition: Mapping[str, Any], *, run_id: str, deadline_ms: float, include_content: bool=False, max_decide_calls: Optional[int]=None, now: Optional[Callable[[], float]]=None) -> FlowTrace:
+def run_flow(client: SystemZero, definition: Mapping[str, Any], *, run_id: str, deadline_ms: float, include_content: bool=False, max_decide_calls: Optional[int]=None, danger_zone: Optional[Literal['accept']]=None, now: Optional[Callable[[], float]]=None) -> FlowTrace:
     """Run ordered, bounded decisions and return a content-free trace by default.
 
     Errors retain their SDK class and carry the partial trace on ``error.trace``.
@@ -316,6 +316,8 @@ def run_flow(client: SystemZero, definition: Mapping[str, Any], *, run_id: str, 
     transports must obey the client's timeout contract. Client settings are never
     modified, and the function does not create workers or background operations.
     """
+    if danger_zone is not None and danger_zone != 'accept':
+        raise InvalidRequestError('The request option must be accept.', status=400, type='invalid_request_error', code='invalid_request', param='SZ-Danger-Zone')
     clock = now if now is not None else lambda: time.monotonic() * 1000
     if not callable(clock):
         raise _invalid()
@@ -392,7 +394,7 @@ def run_flow(client: SystemZero, definition: Mapping[str, Any], *, run_id: str, 
                 origin = 'http'
                 token = _retry_context.set({'workflow_recovery': True})
                 try:
-                    response = client.decide_with_response(request, idempotency_key=key)
+                    response = client.decide_with_response(request, idempotency_key=key, **{'danger_zone': danger_zone} if danger_zone is not None else {})
                 finally:
                     _retry_context.reset(token)
                 origin = 'local'
@@ -445,7 +447,7 @@ def run_flow(client: SystemZero, definition: Mapping[str, Any], *, run_id: str, 
             pass
         status = 'failed'
         if origin in ('http', 'refusal'):
-            if typed.code in _HELD_CODES:
+            if isinstance(typed.code, str) and typed.code in _HELD_CODES:
                 status = 'held'
             elif typed.status is not None and 400 <= typed.status < 500:
                 status = 'refused'

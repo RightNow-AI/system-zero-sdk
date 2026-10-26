@@ -1,11 +1,12 @@
 import { randomUUID } from 'node:crypto';
 import { isIP } from 'node:net';
 import type { DecideRequest, DecideReply, ModelList } from './api-types.js';
-import { APIConnectionError, APIError, APITimeoutError, responseError, SystemZeroError } from './errors.js';
+import type { EnabledDecideRequest, VideoRequest } from './enabled-types.js';
+import { APIConnectionError, APIError, APITimeoutError, InvalidRequestError, responseError, SystemZeroError } from './errors.js';
 import { retryWaitMs, shouldRecoverWorkflow, shouldRetry } from './retry.js';
 import { hasResponseStarted, nodeFetch, requestSent } from './transport.js';
 
-export const VERSION = '0.3.0';
+export const VERSION = '0.4.0';
 export const DEFAULT_BASE_URL = 'https://api.rightnowai.co/v1';
 export type Fetch = typeof globalThis.fetch;
 
@@ -28,6 +29,8 @@ export interface ClientOptions {
 }
 
 export interface RequestOptions {
+  /** Explicit consent once LongContextRequest is available for the workspace; never sent by default. Until then the API ignores or refuses it. Workspace opt-in is also required. */
+  dangerZone?: 'accept';
   idempotencyKey?: string;
   clientRequestId?: string;
   /** Extra headers, including x-mock-scenario in local tests. */
@@ -178,7 +181,7 @@ export class SystemZeroClient {
     this.models = Object.freeze({ list: (requestOptions: RequestOptions = {}) => this.#request<ModelList>('GET', '/models', undefined, requestOptions) });
   }
 
-  decide(request: DecideRequest, options: RequestOptions = {}): APIPromise<DecideReply> {
+  decide(request: DecideRequest | EnabledDecideRequest | VideoRequest, options: RequestOptions = {}): APIPromise<DecideReply> {
     return this.#request<DecideReply>('POST', '/system-zero/decide', JSON.stringify(request), options);
   }
 
@@ -189,6 +192,12 @@ export class SystemZeroClient {
     const context = retryContexts.get(options);
     const maxRetries = Math.min(this.options.maxRetries, context?.maxRetries ?? this.options.maxRetries);
     const headers = requestHeaders(options.headers);
+    if (headers.has('SZ-Danger-Zone') || (options.dangerZone !== undefined && options.dangerZone !== 'accept')) {
+      throw new InvalidRequestError('Use the dangerZone option with the exact value accept; do not supply its header.', {
+        status: 400, type: 'invalid_request_error', code: 'invalid_request', param: 'SZ-Danger-Zone',
+      });
+    }
+    if (options.dangerZone === 'accept' && method === 'POST' && path === '/system-zero/decide') headers.set('SZ-Danger-Zone', 'accept');
     try {
       headers.set('authorization', `Bearer ${this.#apiKey}`);
       headers.set('user-agent', `system-zero-typescript/${VERSION} node/${process.versions.node}`);
@@ -246,7 +255,7 @@ export class SystemZeroClient {
       const admittedTimeLeft = externalRemaining();
       if (previous && timeLeft < 1 || admittedTimeLeft <= 0) {
         if (admittedTimeLeft <= 0) context?.onDeadline?.();
-        throw previous ?? new APITimeoutError('System Zero request timed out.', { code: 'system_zero_timeout' });
+        throw previous ?? new APITimeoutError('RightNow request timed out.', { code: 'system_zero_timeout' });
       }
       // One millisecond is the minimum useful retry timeout on supported runtimes.
       (init.headers as Headers).set('x-sdk-retry-count', String(attempt));
@@ -263,7 +272,7 @@ export class SystemZeroClient {
       }
       const { response, body, json } = result;
       if (response.ok) {
-        if (!json) throw new APIError('System Zero returned invalid JSON.', { status: response.status, type: 'api_error', headers: response.headers, request_id: response.headers.get('x-request-id') });
+        if (!json) throw new APIError('RightNow returned invalid JSON.', { status: response.status, type: 'api_error', headers: response.headers, request_id: response.headers.get('x-request-id') });
         return { data: body as T, response, metadata: metadata(response.headers, new Headers(init.headers).get('idempotency-key')) };
       }
       let error = responseError(response.status, response.headers, body, false);
@@ -316,14 +325,14 @@ export class SystemZeroClient {
         const transportFields = cause instanceof APIConnectionError ? {
           ...cause, request_sent: fields().request_sent === true ? true : cause.request_sent,
         } : fields();
-        throw new APIConnectionError('System Zero connection failed.', { ...transportFields, cause });
+        throw new APIConnectionError('RightNow connection failed.', { ...transportFields, cause });
       } finally {
         reader?.releaseLock();
       }
     })();
     const deadline = new Promise<never>((_resolve, reject) => {
       timer = setTimeout(() => {
-        reject(new APIConnectionError('System Zero request timed out.', { ...fields(), type: 'timeout_error' }));
+        reject(new APIConnectionError('RightNow request timed out.', { ...fields(), type: 'timeout_error' }));
         controller.abort();
         // Injected transports may ignore abort. Cancel both tee branches without awaiting them.
         void reader?.cancel().catch(() => {});

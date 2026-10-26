@@ -76,7 +76,7 @@ class LiveBehaviorTests(unittest.TestCase):
 
     def test_local_call_admission_refuses_before_transport(self):
         catalog = json.loads(Path(tools.__file__).with_name("error-catalog.json").read_text(encoding="utf-8"))
-        self.assertEqual(len(catalog), 72)
+        self.assertEqual(len(catalog), 74)
         self.assertNotIn("call_limit_reached", catalog)
         seen = []
         with sdk.SystemZero(api_key="SYNTHETIC", max_retries=0, transport=httpx.MockTransport(

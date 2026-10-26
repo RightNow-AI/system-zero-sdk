@@ -2,16 +2,17 @@ import { createHash } from 'node:crypto';
 import { appendFileSync, closeSync, existsSync, fsyncSync, openSync, readFileSync, ftruncateSync, unlinkSync, mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 import type { DecideRequest } from './api-types.js';
+import type { EnabledDecideRequest, VideoRequest } from './enabled-types.js';
 import { checkedBaseURL, withRetryContext } from './client.js';
 import type { SystemZeroClient } from './client.js';
 import { InvalidRequestError, SystemZeroError } from './errors.js';
 import { SYSTEM_ZERO_ERROR_CODES, GATEWAY_ERROR_CODES } from './public-error-codes.js';
 import { scoreReply, scoreRefusal, validateExpected, evaluate, type QuestionScore, type EvaluationRecord } from './evaluate.js';
 
-export interface BatchItem { id: string; request: DecideRequest; expected: Record<string, boolean | string | null> }
+export interface BatchItem { id: string; request: DecideRequest | EnabledDecideRequest | VideoRequest; expected: Record<string, boolean | string | null> }
 interface Admission {
   schema: 1; run_id: string; id: string; request_hash: string; expected_hash: string; idempotency_key: string;
-  admitted_at_ms: number; target: string;
+  admitted_at_ms: number; target: string; danger_zone?: 'accept';
 }
 type BatchUsage = NonNullable<EvaluationRecord['usage']>;
 export interface BatchRecord extends Admission {
@@ -19,6 +20,8 @@ export interface BatchRecord extends Admission {
   usage: BatchUsage | null; questions: QuestionScore[];
 }
 export interface BatchOptions {
+  /** Explicit LongContextRequest option; workspace opt-in is also required. */
+  dangerZone?: 'accept';
   runId: string; resultsPath: string; deadlineMs: number; concurrency?: number; maxRetries?: number;
   /** Admission count cap; defaults to 1,000 and includes durable admissions on resume. */
   maxDecideCalls?: number;
@@ -86,6 +89,7 @@ function readRows<T>(path: string): T[] {
 /** Offline persistence plus ordinary decide calls. Use one results path and API key per run. */
 export async function runBatch(client: Pick<SystemZeroClient, 'decide' | 'options'>, input: readonly BatchItem[], options: BatchOptions): Promise<BatchResult> {
   // One elapsed deadline includes preparation and is shared by every item.
+  if (options.dangerZone !== undefined && options.dangerZone !== 'accept') invalid('SZ-Danger-Zone');
   const started = performance.now();
   const now = options.now ?? Date.now;
   const concurrency = options.concurrency ?? 2; const retries = options.maxRetries ?? client.options.maxRetries;
@@ -103,7 +107,7 @@ export async function runBatch(client: Pick<SystemZeroClient, 'decide' | 'option
     const copy = JSON.parse(JSON.stringify(item)) as BatchItem;
     validateExpected(copy.request, copy.expected);
     const hash = requestHash(copy.request);
-    return { item: copy, admission: { schema: 1 as const, run_id: options.runId, id: item.id, request_hash: hash, expected_hash: requestHash(copy.expected), idempotency_key: idempotencyKey(options.runId, item.id, hash), admitted_at_ms: 0, target: targetHash } };
+    return { item: copy, admission: { schema: 1 as const, run_id: options.runId, id: item.id, request_hash: hash, expected_hash: requestHash(copy.expected), idempotency_key: idempotencyKey(options.runId, item.id, hash), admitted_at_ms: 0, target: targetHash, ...(options.dangerZone === undefined ? {} : { danger_zone: options.dangerZone }) } };
   });
   const lock = options.resultsPath + '.lock'; let lockFd: number;
   try { mkdirSync(dirname(options.resultsPath), { recursive: true }); lockFd = openSync(lock, 'wx', 0o600); } catch { invalid(); }
@@ -160,7 +164,7 @@ export async function runBatch(client: Pick<SystemZeroClient, 'decide' | 'option
           try {
             // The transport owns the only recovery policy. Admission can narrow
             // its count/time bounds but cannot reset its monotonic call budget.
-            const reply = await client.decide(entry.item.request, withRetryContext({ idempotencyKey: a.idempotency_key }, {
+            const reply = await client.decide(entry.item.request, withRetryContext({ idempotencyKey: a.idempotency_key, ...(options.dangerZone === undefined ? {} : { dangerZone: options.dangerZone }) }, {
               workflowRecovery: true,
               maxRetries: retries,
               onAttempt: () => { row.attempts++; },
@@ -177,7 +181,9 @@ export async function runBatch(client: Pick<SystemZeroClient, 'decide' | 'option
             row.questions = scoreReply(entry.item.request, entry.item.expected, reply);
             row.outcome = 'completed'; row.code = null;
           } catch (error) {
-            row.code = error instanceof SystemZeroError && error.code && (KNOWN.has(error.code) || CONFLICT.has(error.code)) ? error.code : 'service_unavailable';
+            row.code = error instanceof SystemZeroError && typeof error.code === 'string'
+              && (KNOWN.has(error.code) || CONFLICT.has(error.code) || /^[a-z][a-z0-9_]{0,63}$/u.test(error.code))
+              ? error.code : 'service_unavailable';
             if (error instanceof SystemZeroError && error.status === 404 && HELD.has(row.code)) { row.outcome = 'held'; }
             else if (error instanceof SystemZeroError && error.status === 422 && REFUSED.has(row.code)) {
               row.outcome = 'refused'; row.questions = scoreRefusal(entry.item.request, entry.item.expected, row.code);

@@ -62,7 +62,7 @@ export const nodeFetch: typeof globalThis.fetch = (input, init = {}) => new Prom
       const responseHeaders = new Headers();
       for (let index = 0; index < incoming.rawHeaders.length; index += 2) responseHeaders.append(incoming.rawHeaders[index]!, incoming.rawHeaders[index + 1]!);
       const status = incoming.statusCode ?? 500;
-      if (status < 200 || status > 599) throw new APIError('System Zero returned an invalid HTTP status.', {
+      if (status < 200 || status > 599) throw new APIError('RightNow returned an invalid HTTP status.', {
         status, type: 'api_error', retryable: false, headers: responseHeaders,
         request_id: responseHeaders.get('x-request-id'),
       });
@@ -76,13 +76,13 @@ export const nodeFetch: typeof globalThis.fetch = (input, init = {}) => new Prom
       cleanAbort?.();
       incoming.destroy();
       request.destroy();
-      reject(error instanceof APIError ? error : new APIError('System Zero returned an invalid HTTP response.', {
+      reject(error instanceof APIError ? error : new APIError('RightNow returned an invalid HTTP response.', {
         status: incoming.statusCode ?? null, type: 'api_error', retryable: false,
       }));
     }
   });
   if (init.signal) {
-    const abort = () => request.destroy(new Error('System Zero HTTP transport aborted.'));
+    const abort = () => request.destroy(new Error('RightNow HTTP transport aborted.'));
     init.signal.addEventListener('abort', abort, { once: true });
     cleanAbort = () => init.signal?.removeEventListener('abort', abort);
     if (init.signal.aborted) { abort(); return; }

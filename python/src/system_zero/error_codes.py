@@ -1,4 +1,4 @@
-"""API error codes returned by System Zero."""
+"""API error codes returned by RightNow."""
 from enum import Enum
 
 class ErrorCode(str, Enum):
@@ -34,6 +34,7 @@ class ErrorCode(str, Enum):
     INVALID_REQUEST = 'invalid_request'
     INVALID_TRACE_HEADER = 'invalid_trace_header'
     LIMITER_UNAVAILABLE = 'limiter_unavailable'
+    LONG_CONTEXT_DAILY_BUDGET_EXHAUSTED = 'long_context_daily_budget_exhausted'
     LONG_CONTEXT_NOT_AVAILABLE = 'long_context_not_available'
     LONG_DURATION_UNSUPPORTED = 'long_duration_unsupported'
     LONG_EVIDENCE_INCOMPLETE = 'long_evidence_incomplete'
@@ -54,6 +55,7 @@ class ErrorCode(str, Enum):
     METHOD_NOT_ALLOWED = 'method_not_allowed'
     MODEL_NOT_FOUND = 'model_not_found'
     MONTHLY_CAP_REACHED = 'monthly_cap_reached'
+    OUTPUT_LIMIT_EXCEEDED = 'output_limit_exceeded'
     PAYLOAD_TOO_LARGE = 'payload_too_large'
     QUESTION_NOT_GROUNDED = 'question_not_grounded'
     QUESTION_TOO_LARGE = 'question_too_large'
@@ -96,6 +98,7 @@ SYSTEM_ZERO_ERROR_CODES = (
     'insufficient_credits',
     'invalid_criteria',
     'invalid_request',
+    'long_context_daily_budget_exhausted',
     'long_context_not_available',
     'long_duration_unsupported',
     'long_evidence_incomplete',
@@ -112,6 +115,7 @@ SYSTEM_ZERO_ERROR_CODES = (
     'media_too_large',
     'media_unpriced',
     'media_unsupported',
+    'output_limit_exceeded',
     'payload_too_large',
     'question_not_grounded',
     'question_too_large',

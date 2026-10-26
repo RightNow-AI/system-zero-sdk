@@ -17,7 +17,7 @@ export const SYSTEM_ZERO_ERRORS = {
   ],
   "capacity_exhausted": [
     429,
-    "System Zero is at capacity. Retry after the Retry-After delay."
+    "RightNow is at capacity. Retry after the Retry-After delay."
   ],
   "committee_not_available": [
     404,
@@ -117,7 +117,7 @@ export const SYSTEM_ZERO_ERRORS = {
   ],
   "invalid_request": [
     400,
-    "The System Zero request is invalid."
+    "The request is invalid."
   ],
   "invalid_trace_header": [
     400,
@@ -126,6 +126,10 @@ export const SYSTEM_ZERO_ERRORS = {
   "limiter_unavailable": [
     503,
     "API rate limiting is temporarily unavailable. Please retry shortly."
+  ],
+  "long_context_daily_budget_exhausted": [
+    429,
+    "The daily cap for this decision class is reached. New work of this class resumes on the next UTC day."
   ],
   "long_context_not_available": [
     404,
@@ -207,6 +211,10 @@ export const SYSTEM_ZERO_ERRORS = {
     429,
     "This workspace reached its monthly decision cap."
   ],
+  "output_limit_exceeded": [
+    422,
+    "The decision exceeded its output token limit."
+  ],
   "payload_too_large": [
     413,
     "The request exceeds the body limit. Send fewer or smaller attachments."
@@ -229,11 +237,11 @@ export const SYSTEM_ZERO_ERRORS = {
   ],
   "request_refused": [
     422,
-    "System Zero refused this request. Change it before sending it again."
+    "RightNow refused this request. Change it before sending it again."
   ],
   "service_unavailable": [
     503,
-    "System Zero cannot serve this request right now. Retry after the Retry-After delay."
+    "RightNow cannot serve this request right now. Retry after the Retry-After delay."
   ],
   "staging_attempt_ceiling": [
     429,
@@ -253,11 +261,11 @@ export const SYSTEM_ZERO_ERRORS = {
   ],
   "system_zero_timeout": [
     504,
-    "System Zero exceeded the response deadline."
+    "RightNow exceeded the response deadline."
   ],
   "system_zero_unavailable": [
     503,
-    "System Zero is temporarily unavailable."
+    "RightNow is temporarily unavailable."
   ],
   "unknown_endpoint": [
     404,

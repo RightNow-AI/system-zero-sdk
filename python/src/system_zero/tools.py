@@ -1,4 +1,4 @@
-"""Provider-independent System Zero function tools using the existing Python SDK.
+"""Provider-independent RightNow System Zero function tools using the existing Python SDK.
 
 The host sets a finite call cap. Ordinary SDK retries keep one deterministic idempotency key.
 """
@@ -14,7 +14,7 @@ from pathlib import Path
 import re
 import struct
 from threading import Lock
-from typing import Any, Dict, Optional
+from typing import Literal, Any, Dict, Optional
 
 from system_zero import InvalidRequestError, SystemZero, SystemZeroError
 from system_zero.client import _checked_base_url
@@ -366,7 +366,11 @@ class ToolHandler:
     def __init__(
         self, client: Optional[SystemZero] = None, *, namespace: str = "system-zero-tools-v1",
         max_decide_calls: int = 100, base_url: Optional[str] = None,
+        danger_zone: Optional[Literal["accept"]] = None,
     ):
+        if danger_zone is not None and danger_zone != "accept":
+            raise InvalidRequestError("The request option must be accept.", status=400, type="invalid_request_error", code="invalid_request", param="SZ-Danger-Zone")
+        self._danger_zone = danger_zone
         bounds = (max_decide_calls,)
         if any(type(value) not in (int, float) or not 0 <= value <= _MAX_SAFE_INTEGER or
                not math.isfinite(value) or int(value) != value for value in bounds):
@@ -466,7 +470,7 @@ class ToolHandler:
                     self._decide_calls += 1
             token = _retry_context.set({"workflow_recovery": True})
             try:
-                response = client.decide_with_response(request, idempotency_key=key) if request is not None else client.models.list_with_response()
+                response = client.decide_with_response(request, idempotency_key=key, **({"danger_zone": self._danger_zone} if self._danger_zone is not None else {})) if request is not None else client.models.list_with_response()
             finally:
                 _retry_context.reset(token)
             data = response.data
@@ -495,9 +499,10 @@ class ToolHandler:
 def create_tool_handler(
     client: Optional[SystemZero] = None, *, namespace: str = "system-zero-tools-v1",
     max_decide_calls: int = 100, base_url: Optional[str] = None,
+        danger_zone: Optional[Literal["accept"]] = None,
 ) -> ToolHandler:
     return ToolHandler(
-        client, namespace=namespace, max_decide_calls=max_decide_calls,
+        client, namespace=namespace, max_decide_calls=max_decide_calls, danger_zone=danger_zone,
         base_url=base_url,
     )
 

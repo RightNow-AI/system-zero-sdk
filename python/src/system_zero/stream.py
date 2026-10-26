@@ -529,7 +529,7 @@ class SystemZeroStreamClient(AsyncIterator[StreamEvent]):
         self._check_open()
         self._require_started()
         if not isinstance(text, str) or not text or not isinstance(self._desired_state, str):
-            raise ValueError("append_text requires nonempty text and string state.")
+            raise ValueError("append_text requires non-empty text and string state.")
         self._desired_state += text
         return await self._submit("append_text", {"text": text})
 
@@ -546,7 +546,7 @@ class SystemZeroStreamClient(AsyncIterator[StreamEvent]):
         self._check_open()
         self._require_started()
         if not isinstance(attachments, list) or not attachments:
-            raise ValueError("append_attachments requires a nonempty attachment list.")
+            raise ValueError("append_attachments requires a non-empty attachment list.")
         return await self._submit("append_attachments", {"attachments": deepcopy(attachments)})
 
     async def replace(self, state: Any, *, attachments: Optional[list[Attachment]] = None) -> StreamAck:

@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Callable, Dict, List, Literal, Optional, TypeAlias, TypedDict, Union
 
 from .types import Attachment, DecideRequest, DecisionAlternative, DecisionValue, JsonValue, Question, StructuredJson, Usage
+from .enabled_types import EnabledDecideRequest, VideoRequest
 
 
 class _FlowReference(TypedDict):
@@ -98,6 +99,7 @@ class FlowDefinition(TypedDict):
 
 
 class _FlowOptionsOptional(TypedDict, total=False):
+    danger_zone: Literal["accept"]
     include_content: bool
     now: Optional[Callable[[], float]]
     max_decide_calls: int
@@ -267,7 +269,7 @@ class EvaluationReport(TypedDict):
 
 class BatchItem(TypedDict):
     id: str
-    request: DecideRequest
+    request: Union[DecideRequest, EnabledDecideRequest, VideoRequest]
     expected: ExpectedAnswers
 
 
@@ -293,6 +295,7 @@ class BatchRecord(TypedDict):
 
 
 class _BatchOptionsOptional(TypedDict, total=False):
+    danger_zone: Literal["accept"]
     concurrency: int
     max_retries: int
     now_ms: Callable[[], float]

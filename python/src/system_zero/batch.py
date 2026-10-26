@@ -8,7 +8,7 @@ from pathlib import Path
 import re
 import struct
 import time
-from typing import Any, Callable, Mapping, Optional, Sequence
+from typing import Literal, Any, Callable, Mapping, Optional, Sequence
 from .client import SystemZero, _checked_base_url
 from ._retry import _RetryContext, _retry_context
 from .errors import APIError, InvalidRequestError, SystemZeroError
@@ -110,7 +110,7 @@ def _read(path: Path) -> list[dict[str, Any]]:
         rows.append(row)
     return rows
 
-def run_batch(client: SystemZero, items: Sequence[Mapping[str, Any]], *, run_id: str, results_path: str | Path, deadline_ms: float, concurrency: int=2, max_retries: Optional[int]=None, max_decide_calls: Optional[int]=None, now_ms: Callable[[], float]=lambda: time.time() * 1000, sleep_ms: Optional[Callable[[float], None]]=None, random: Optional[Callable[[], float]]=None) -> BatchResult:
+def run_batch(client: SystemZero, items: Sequence[Mapping[str, Any]], *, run_id: str, results_path: str | Path, deadline_ms: float, concurrency: int=2, max_retries: Optional[int]=None, max_decide_calls: Optional[int]=None, danger_zone: Optional[Literal['accept']]=None, now_ms: Callable[[], float]=lambda: time.time() * 1000, sleep_ms: Optional[Callable[[float], None]]=None, random: Optional[Callable[[], float]]=None) -> BatchResult:
     """Run or resume a batch, returning records and a nullable stopped reason.
 
     Each item uses the client's bounded HTTP loop with before-work recovery. max_retries
@@ -119,6 +119,8 @@ def run_batch(client: SystemZero, items: Sequence[Mapping[str, Any]], *, run_id:
     Keep the same API key, target and receipt files for replay. Unfinished
     admissions cannot replay after the server's 24-hour idempotency lifetime.
     """
+    if danger_zone is not None and danger_zone != 'accept':
+        raise _invalid(param='SZ-Danger-Zone')
     started = time.monotonic() * 1000
     max_calls = 1000 if max_decide_calls is None else max_decide_calls
     if not _integer(max_calls):
@@ -156,7 +158,7 @@ def run_batch(client: SystemZero, items: Sequence[Mapping[str, Any]], *, run_id:
             key = idempotency_key(run_id, identifier, digest)
             if identifier in prepared:
                 raise _invalid('Batch item ids must be unique.')
-            prepared[identifier] = {'request': request, 'expected': expected, 'admission': {'schema': 1, 'run_id': run_id, 'id': identifier, 'request_hash': digest, 'expected_hash': request_fingerprint(expected), 'idempotency_key': key, 'target': target}}
+            prepared[identifier] = {'request': request, 'expected': expected, 'admission': {'schema': 1, 'run_id': run_id, 'id': identifier, 'request_hash': digest, 'expected_hash': request_fingerprint(expected), 'idempotency_key': key, 'target': target, **({'danger_zone': danger_zone} if danger_zone is not None else {})}}
         idempotency_key(run_id, 'validation', '0' * 64)
     except (ValueError, TypeError, UnicodeError, RecursionError) as error:
         raise _invalid() from error
@@ -193,7 +195,7 @@ def run_batch(client: SystemZero, items: Sequence[Mapping[str, Any]], *, run_id:
             allowed = set(admission) | {'outcome', 'code', 'attempts', 'latency_ms', 'usage', 'questions'}
             if set(row) != allowed:
                 raise _invalid()
-            if row.get('outcome') not in ('completed', 'held', 'error', 'refused') or (row.get('code') is not None and row['code'] not in _KNOWN_CODES) or (not _integer(row.get('attempts'))) or (type(row.get('latency_ms')) not in (int, float)) or (not math.isfinite(row['latency_ms'])) or (row['latency_ms'] < 0) or (not isinstance(row.get('questions'), list)):
+            if row.get('outcome') not in ('completed', 'held', 'error', 'refused') or (row.get('code') is not None and (not isinstance(row['code'], str) or (row['code'] not in _KNOWN_CODES and (not (row['outcome'] == 'error' and re.fullmatch('[a-z][a-z0-9_]{0,63}', row['code'])))))) or (not _integer(row.get('attempts'))) or (type(row.get('latency_ms')) not in (int, float)) or (not math.isfinite(row['latency_ms'])) or (row['latency_ms'] < 0) or (not isinstance(row.get('questions'), list)):
                 raise _invalid()
             if row['outcome'] == 'held' and row.get('code') not in _HELD:
                 raise _invalid()
@@ -254,7 +256,7 @@ def run_batch(client: SystemZero, items: Sequence[Mapping[str, Any]], *, run_id:
             else:
                 token = _retry_context.set(context)
                 try:
-                    response = client.decide(plan['request'], idempotency_key=admission['idempotency_key'])
+                    response = client.decide(plan['request'], idempotency_key=admission['idempotency_key'], **{'danger_zone': danger_zone} if danger_zone is not None else {})
                 except SystemZeroError as error:
                     failure = error
                 except Exception:
@@ -266,7 +268,7 @@ def run_batch(client: SystemZero, items: Sequence[Mapping[str, Any]], *, run_id:
             usage: Optional[dict[str, int]] = None
             questions = []
             if failure is not None:
-                code = failure.code if failure.code in _KNOWN_CODES else 'service_unavailable'
+                code = failure.code if isinstance(failure.code, str) and (failure.code in _KNOWN_CODES or re.fullmatch('[a-z][a-z0-9_]{0,63}', failure.code)) else 'service_unavailable'
                 outcome = 'held' if failure.status == 404 and code in _HELD else 'refused' if failure.status == 422 and code in _REFUSALS else 'error'
                 if outcome == 'refused':
                     questions = score_refusal(plan['request'], plan['expected'], code)

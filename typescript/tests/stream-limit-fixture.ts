@@ -15,7 +15,7 @@ export const TEST_STREAM_LIMITS = {
   "event_burst": 1000000,
   "max_messages_per_second": 1000000,
   "message_burst": 1000000,
-  "max_streams_per_process": 4,
+  "max_streams_per_process": 16,
   "max_send_queue_bytes": 4194304,
   "max_send_queue_frames": 64,
   "min_interval_ms": 0,

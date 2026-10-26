@@ -125,7 +125,13 @@ export class ImageNotAvailableError extends CapabilityNotAvailableError {}
 export class AudioNotAvailableError extends CapabilityNotAvailableError {}
 export class DocumentNotAvailableError extends CapabilityNotAvailableError {}
 export class VideoNotAvailableError extends CapabilityNotAvailableError {}
-export class LongContextNotAvailableError extends CapabilityNotAvailableError {}
+/** Workspace opt-in lives in console Settings; details.eligibility names a refused rule. */
+export class LongContextNotAvailableError extends CapabilityNotAvailableError {
+  get eligibility(): 'billing' | 'opt_in' | 'class' | 'deny_list' | 'global_switch' | 'account_deleted' | (string & Record<never, never>) | null {
+    const value = this.details?.eligibility;
+    return typeof value === 'string' ? value : null;
+  }
+}
 export class LongRecordingNotAvailableError extends CapabilityNotAvailableError {}
 export class CommitteeNotAvailableError extends CapabilityNotAvailableError {}
 export class DeliberateNotAvailableError extends CapabilityNotAvailableError {}
@@ -169,5 +175,5 @@ export function responseError(status: number, headers: Headers, body: unknown, f
     request_id: typeof envelope?.request_id === 'string' ? envelope.request_id : headers.get('x-request-id'),
   };
   if (record(error?.details)) fields.details = error.details;
-  return new ErrorClass(typeof error?.message === 'string' ? error.message : `System Zero HTTP request failed with status ${status}.`, fields);
+  return new ErrorClass(typeof error?.message === 'string' ? error.message : `RightNow HTTP request failed with status ${status}.`, fields);
 }

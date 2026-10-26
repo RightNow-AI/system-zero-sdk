@@ -1,13 +1,13 @@
 {
   "name": "@rightnowai/system-zero",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "license": "Apache-2.0",
   "homepage": "https://github.com/RightNow-AI/system-zero-sdk",
   "type": "module",
   "engines": {
     "node": ">=22"
   },
-  "description": "System Zero API client with typed decisions and client-side workflows.",
+  "description": "RightNow System Zero API client with typed decisions and client-side workflows.",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {

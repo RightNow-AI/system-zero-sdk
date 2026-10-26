@@ -77,7 +77,7 @@ describe('live HTTP and local helper behavior', () => {
   });
 
   it('refuses local call admission before transport without an API error code', async () => {
-    expect(Object.keys(SYSTEM_ZERO_ERRORS)).toHaveLength(72);
+    expect(Object.keys(SYSTEM_ZERO_ERRORS)).toHaveLength(74);
     expect(Object.hasOwn(SYSTEM_ZERO_ERRORS, 'call_limit_reached')).toBe(false);
     const transport = vi.fn(async () => Response.json({ answers: {} }));
     const client = new sdk.SystemZeroClient({ apiKey: 'SYNTHETIC', fetch: transport, maxRetries: 0 });

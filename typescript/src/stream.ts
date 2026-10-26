@@ -291,7 +291,7 @@ export class SystemZeroStreamClient implements AsyncIterable<StreamEvent> {
 
   appendText(text: string): Promise<StreamAck> {
     return this.#mutate(snapshot => {
-      if (typeof snapshot?.state !== 'string' || typeof text !== 'string' || !text.length) throw new TypeError('appendText requires string state and nonempty text.');
+      if (typeof snapshot?.state !== 'string' || typeof text !== 'string' || !text.length) throw new TypeError('appendText requires string state and non-empty text.');
       return { ...snapshot, state: snapshot.state + text };
     }, eventId => ({ type: 'append_text', event_id: eventId, text }));
   }
@@ -299,7 +299,7 @@ export class SystemZeroStreamClient implements AsyncIterable<StreamEvent> {
   appendItems(items: JsonValue[]): Promise<StreamAck> {
     const snapshot = copy(items);
     return this.#mutate(state => {
-      if (!Array.isArray(state?.state) || !Array.isArray(snapshot) || !snapshot.length) throw new TypeError('appendItems requires array state and nonempty items.');
+      if (!Array.isArray(state?.state) || !Array.isArray(snapshot) || !snapshot.length) throw new TypeError('appendItems requires array state and non-empty items.');
       return { ...state, state: [...state.state, ...snapshot] };
     }, eventId => ({ type: 'append_items', event_id: eventId, items: snapshot }));
   }
@@ -307,7 +307,7 @@ export class SystemZeroStreamClient implements AsyncIterable<StreamEvent> {
   appendAttachments(attachments: Attachment[]): Promise<StreamAck> {
     let snapshot: Attachment[];
     try {
-      if (!Array.isArray(attachments) || !attachments.length) throw responseError(400, new Headers(), { error: { code: 'invalid_request', type: 'invalid_request_error', message: 'The System Zero request is invalid.', param: 'attachments', retryable: false } }, false);
+      if (!Array.isArray(attachments) || !attachments.length) throw responseError(400, new Headers(), { error: { code: 'invalid_request', type: 'invalid_request_error', message: 'The request is invalid.', param: 'attachments', retryable: false } }, false);
       // Validate caller objects before copying, in full-list HTTP order and indices.
       validateStreamAttachments([...(this.#desired?.attachments ?? []), ...attachments]);
       snapshot = copy(attachments);
@@ -577,7 +577,7 @@ export class SystemZeroStreamClient implements AsyncIterable<StreamEvent> {
         const key = pending.at(-1)?.key ?? this.#acceptedKey;
         if (typeof key !== 'string' || !key.trim()) throw new StreamProtocolError('Cannot replay stream work without its original idempotency key.');
         this.#replayOnRequest = key === this.#refusedKey && this.#startOptions.decisionMode === 'on_change' && this.options.reconnectPolicy !== 'never';
-        const ack = await this.#sendMutation({ type: 'start', event_id: 'evt_1', request: { ...this.#request, ...state }, idempotency_key: key, decision_mode: this.options.reconnectPolicy === 'never' || this.#replayOnRequest ? 'on_request' : this.#startOptions.decisionMode, min_interval_ms: this.#startOptions.minIntervalMs }, pending);
+        const ack = await this.#sendMutation({ type: 'start', event_id: 'evt_1', request: { ...this.#request, ...state } as StreamRequest, idempotency_key: key, decision_mode: this.options.reconnectPolicy === 'never' || this.#replayOnRequest ? 'on_request' : this.#startOptions.decisionMode, min_interval_ms: this.#startOptions.minIntervalMs }, pending);
         this.#accepted = state;
         this.#acceptedKey = key;
         for (const mutation of pending) { this.#mutations = this.#mutations.filter(item => item !== mutation); mutation.ack.resolve(mutation.timer?.ack ?? ack); }

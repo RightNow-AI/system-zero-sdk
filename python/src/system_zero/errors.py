@@ -1,7 +1,7 @@
 """Typed public failures with open code strings and unmodified envelope details."""
 from ._retry import _retry_after_seconds
 from types import MappingProxyType
-from typing import Any, Literal, Mapping, Optional
+from typing import Any, Literal, Mapping, Optional, Union
 
 class SystemZeroError(Exception):
 
@@ -88,7 +88,15 @@ class CapabilityNotAvailableError(NotFoundError):
 RouteNotAvailableError = CapabilityNotAvailableError
 
 class LongContextNotAvailableError(RouteNotAvailableError):
-    """Long context is held."""
+    """Expected HTTP 404 until workspace availability. Workspace opt-in is also required.
+
+    eligibility exposes details.eligibility, including future rule strings.
+    """
+
+    @property
+    def eligibility(self) -> Optional[Union[Literal['billing', 'opt_in', 'class', 'deny_list', 'global_switch', 'account_deleted'], str]]:
+        value = self.details.get('eligibility') if self.details is not None else None
+        return value if isinstance(value, str) else None
 
 class LongRecordingNotAvailableError(RouteNotAvailableError):
     """Long recordings are held independently of short audio."""

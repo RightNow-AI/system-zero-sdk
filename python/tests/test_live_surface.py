@@ -9,7 +9,7 @@ import system_zero
 
 API_CODES = set("""
   attachment_too_large audio_not_available capacity_exhausted committee_not_available
-  daily_dispatch_limit deliberate_not_available document_controls_not_available document_decode_failed
+  daily_dispatch_limit deliberate_not_available long_context_daily_budget_exhausted output_limit_exceeded document_controls_not_available document_decode_failed
   document_not_available document_pictures_not_available document_too_large document_unsupported
   https_required idempotency_key_reuse image_not_available injection_suspected
   input_quarantined insufficient_credits invalid_criteria invalid_request
@@ -49,11 +49,13 @@ EXPECTED = set("""
 
 EXPECTED.update(['STREAM_PROTOCOL', 'StreamDisconnectedError', 'StreamProtocolError', 'SystemZeroStreamClient', 'stream_client', 'stream_error', 'DecisionMode', 'EventLatency', 'PossiblyDecided', 'ReconnectPolicy', 'StreamAck', 'StreamClient', 'StreamDecision', 'StreamError', 'StreamEvent', 'StreamEvents', 'StreamGoodbye', 'StreamHello', 'StreamScheduled', 'StreamLimitError'])
 
-EXPECTED.update(['Attachment', 'ByteData', 'MAX_ATTACHMENTS', 'MAX_INLINE_BYTES', 'MEDIA_LIMITS', 'MIMES', 'attachment_magic_matches', 'inline_attachment', 'validate_attachments'])
+EXPECTED.update(['OrdinaryQuestion', 'MediaQuestion', 'LongContextQuestion', 'OrdinaryRequest', 'MediaRequest', 'LongContextRequest', 'EnabledDecideRequest', 'LongContextLimits', 'VideoRequest', 'VideoAttachment'])
+
+EXPECTED.update(['Attachment', 'ByteData', 'MAX_ATTACHMENTS', 'MAX_INLINE_BYTES', 'MEDIA_LIMITS', 'MIMES', 'VIDEO_PROFILE', 'attachment_magic_matches', 'inline_attachment', 'validate_attachments', 'video_attachment'])
 
 class PublicSurfaceTests(unittest.TestCase):
     def test_error_conveniences_equal_the_api_catalog(self):
-        self.assertEqual(len(API_CODES), 55)
+        self.assertEqual(len(API_CODES), 57)
         self.assertEqual(len(GATEWAY_CODES), 17)
         self.assertEqual(set(system_zero.SYSTEM_ZERO_ERROR_CODES), API_CODES)
         self.assertEqual(len(system_zero.SYSTEM_ZERO_ERROR_CODES), len(API_CODES))

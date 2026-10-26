@@ -4,72 +4,72 @@
     "message": "This account does not currently have API access."
   },
   "attachment_too_large": {
-    "message": "This input exceeds the supported limits.",
-    "status": 413
+    "status": 413,
+    "message": "This input exceeds the supported limits."
   },
   "audio_not_available": {
-    "message": "Audio is unavailable. Send the request without the audio attachment.",
-    "status": 404
+    "status": 404,
+    "message": "Audio is unavailable. Send the request without the audio attachment."
   },
   "auth_error": {
     "status": 403,
     "message": "API key is revoked"
   },
   "capacity_exhausted": {
-    "message": "System Zero is at capacity. Retry after the Retry-After delay.",
-    "status": 429
+    "status": 429,
+    "message": "RightNow is at capacity. Retry after the Retry-After delay."
   },
   "committee_not_available": {
-    "message": "This route is not available.",
-    "status": 404
+    "status": 404,
+    "message": "This route is not available."
   },
   "concurrency_limit_exceeded": {
     "status": 429,
     "message": "This account has reached its concurrent call limit. Retry after the Retry-After delay."
   },
   "daily_dispatch_limit": {
-    "message": "This account reached today's request limit. It resets at 00:00 UTC.",
-    "status": 429
+    "status": 429,
+    "message": "This account reached today's request limit. It resets at 00:00 UTC."
   },
   "deliberate_not_available": {
-    "message": "This mode is not available.",
-    "status": 404
+    "status": 404,
+    "message": "This mode is not available."
   },
   "document_controls_not_available": {
-    "message": "Documents with control characters are unavailable. Remove the control characters and send it again.",
-    "status": 404
+    "status": 404,
+    "message": "Documents with control characters are unavailable. Remove the control characters and send it again."
   },
   "document_decode_failed": {
-    "message": "The document could not be decoded.",
-    "status": 422
+    "status": 422,
+    "message": "The document could not be decoded."
   },
   "document_not_available": {
-    "message": "Documents are unavailable. Send the request without the document attachment.",
-    "status": 404
+    "status": 404,
+    "message": "Documents are unavailable. Send the request without the document attachment."
   },
   "document_pictures_not_available": {
-    "message": "Pictures inside documents are unavailable. Send the document without pictures, or as text.",
-    "status": 404
+    "status": 404,
+    "message": "Pictures inside documents are unavailable. Send the document without pictures, or as text."
   },
   "document_too_large": {
-    "message": "The document exceeds the decoded byte limit.",
-    "status": 413
+    "status": 413,
+    "message": "The document exceeds the decoded byte limit."
   },
   "document_unsupported": {
-    "message": "The document format is not supported.",
-    "status": 415
+    "status": 415,
+    "message": "The document format is not supported."
   },
   "https_required": {
-    "message": "This API answers only over HTTPS. Send the request to the https address.",
-    "status": 403
+    "status": 403,
+    "message": "This API answers only over HTTPS. Send the request to the https address."
   },
   "idempotency_conflict": {
     "status": 409,
     "message": "A request with this Idempotency-Key is still running. Retry with the same key shortly."
   },
   "idempotency_key_reuse": {
-    "message": "This idempotency key already settled another request.",
-    "status": 400
+    "status": 400,
+    "message": "This idempotency key already settled another request."
   },
   "idempotency_replay_unavailable": {
     "status": 409,
@@ -84,20 +84,20 @@
     "message": "Replay protection is temporarily unavailable. Retry this request with the same Idempotency-Key."
   },
   "image_not_available": {
-    "message": "Images are unavailable. Send the request without the image attachment.",
-    "status": 404
+    "status": 404,
+    "message": "Images are unavailable. Send the request without the image attachment."
   },
   "injection_suspected": {
-    "message": "The request was refused because its content reads as instructions to the model. Remove the embedded instructions and send it again.",
-    "status": 422
+    "status": 422,
+    "message": "The request was refused because its content reads as instructions to the model. Remove the embedded instructions and send it again."
   },
   "input_quarantined": {
-    "message": "This exact input caused repeated serving failures, so it is refused for up to 24 hours. Change the input or contact support.",
-    "status": 422
+    "status": 422,
+    "message": "This exact input caused repeated serving failures, so it is refused for up to 24 hours. Change the input or contact support."
   },
   "insufficient_credits": {
-    "message": "The workspace's balance does not cover this call.",
-    "status": 402
+    "status": 402,
+    "message": "The workspace's balance does not cover this call."
   },
   "internal_error": {
     "status": 500,
@@ -108,16 +108,16 @@
     "message": "Invalid API key."
   },
   "invalid_criteria": {
-    "message": "The question criteria are invalid.",
-    "status": 422
+    "status": 422,
+    "message": "The question criteria are invalid."
   },
   "invalid_idempotency_key": {
     "status": 400,
     "message": "Idempotency-Key must be nonblank ASCII and 255 characters or less."
   },
   "invalid_request": {
-    "message": "The System Zero request is invalid.",
-    "status": 400
+    "status": 400,
+    "message": "The request is invalid."
   },
   "invalid_trace_header": {
     "status": 400,
@@ -127,73 +127,77 @@
     "status": 503,
     "message": "API rate limiting is temporarily unavailable. Please retry shortly."
   },
+  "long_context_daily_budget_exhausted": {
+    "status": 429,
+    "message": "The daily cap for this decision class is reached. New work of this class resumes on the next UTC day."
+  },
   "long_context_not_available": {
-    "message": "This route is not available.",
-    "status": 404
+    "status": 404,
+    "message": "This route is not available."
   },
   "long_duration_unsupported": {
-    "message": "This input exceeds the supported limits.",
-    "status": 413
+    "status": 413,
+    "message": "This input exceeds the supported limits."
   },
   "long_evidence_incomplete": {
-    "message": "This input could not be read completely.",
-    "status": 422
+    "status": 422,
+    "message": "This input could not be read completely."
   },
   "long_media_guard_refused": {
-    "message": "This input was refused.",
-    "status": 422
+    "status": 422,
+    "message": "This input was refused."
   },
   "long_no_readable_window": {
-    "message": "This input could not be read.",
-    "status": 422
+    "status": 422,
+    "message": "This input could not be read."
   },
   "long_options_unsupported": {
-    "message": "These options cannot be evaluated for this input.",
-    "status": 422
+    "status": 422,
+    "message": "These options cannot be evaluated for this input."
   },
   "long_phrase_invalid": {
-    "message": "This phrase cannot be evaluated for this input.",
-    "status": 422
+    "status": 422,
+    "message": "This phrase cannot be evaluated for this input."
   },
   "long_question_type_unsupported": {
-    "message": "This question type cannot be answered for this input.",
-    "status": 422
+    "status": 422,
+    "message": "This question type cannot be answered for this input."
   },
   "long_question_unsupported": {
-    "message": "This question cannot be answered for this input.",
-    "status": 422
+    "status": 422,
+    "message": "This question cannot be answered for this input."
   },
   "long_recording_not_available": {
-    "message": "This input type is not supported.",
-    "status": 404
+    "status": 404,
+    "message": "This input type is not supported."
   },
   "long_state_unsupported": {
-    "message": "This input combination is not supported.",
-    "status": 400
+    "status": 400,
+    "message": "This input combination is not supported."
   },
   "long_too_many_phrases": {
-    "message": "This request exceeds the supported limits.",
-    "status": 413
+    "status": 413,
+    "message": "This request exceeds the supported limits."
   },
   "maintenance": {
     "status": 503,
     "message": "The API is down for maintenance. Retry after the Retry-After delay."
   },
   "media_decode_failed": {
-    "message": "The media bytes do not match the declared format.",
-    "status": 422
+    "status": 422,
+    "message": "The media bytes do not match the declared format."
   },
   "media_too_large": {
-    "message": "The media exceeds the decoded byte limit.",
-    "status": 413
+    "status": 413,
+    "message": "The media exceeds the decoded byte limit."
   },
   "media_unpriced": {
-    "message": "This input type is not supported.",
-    "status": 403
+    "status": 403,
+    "message": "This input type is not supported."
   },
   "media_unsupported": {
-    "message": "This input kind or count is not supported.",
-    "status": 400
+    "status": 400,
+    "message": "This input kind or count is not supported."
   },
   "method_not_allowed": {
     "status": 405,
@@ -207,84 +211,88 @@
     "status": 429,
     "message": "This workspace reached its monthly decision cap."
   },
+  "output_limit_exceeded": {
+    "status": 422,
+    "message": "The decision exceeded its output token limit."
+  },
   "payload_too_large": {
-    "message": "The request exceeds the body limit. Send fewer or smaller attachments.",
-    "status": 413
+    "status": 413,
+    "message": "The request exceeds the body limit. Send fewer or smaller attachments."
   },
   "question_not_grounded": {
-    "message": "The question cannot be answered from this state.",
-    "status": 422
+    "status": 422,
+    "message": "The question cannot be answered from this state."
   },
   "question_too_large": {
-    "message": "The question exceeds the size limit.",
-    "status": 422
+    "status": 422,
+    "message": "The question exceeds the size limit."
   },
   "questions_too_large": {
-    "message": "The questions exceed the reply or token limit. Send fewer or shorter questions.",
-    "status": 413
+    "status": 413,
+    "message": "The questions exceed the reply or token limit. Send fewer or shorter questions."
   },
   "rate_limit_exceeded": {
-    "message": "Too many requests from this key or address. Retry after the Retry-After delay.",
-    "status": 429
+    "status": 429,
+    "message": "Too many requests from this key or address. Retry after the Retry-After delay."
   },
   "request_refused": {
-    "message": "System Zero refused this request. Change it before sending it again.",
-    "status": 422
+    "status": 422,
+    "message": "RightNow refused this request. Change it before sending it again."
   },
   "service_unavailable": {
-    "message": "System Zero cannot serve this request right now. Retry after the Retry-After delay.",
-    "status": 503
+    "status": 503,
+    "message": "RightNow cannot serve this request right now. Retry after the Retry-After delay."
   },
   "staging_attempt_ceiling": {
-    "message": "The request ceiling is reached. Retry after the Retry-After delay.",
-    "status": 429
+    "status": 429,
+    "message": "The request ceiling is reached. Retry after the Retry-After delay."
   },
   "state_too_large": {
-    "message": "The state exceeds the size or nesting limit.",
-    "status": 413
+    "status": 413,
+    "message": "The state exceeds the size or nesting limit."
   },
   "state_too_large_unguarded": {
-    "message": "This release does not answer states of this length. Shorten or split the state.",
-    "status": 413
+    "status": 413,
+    "message": "This release does not answer states of this length. Shorten or split the state."
   },
   "stream_limit_exceeded": {
-    "message": "This account has reached its stream limit. Retry after the Retry-After delay.",
-    "status": 429
+    "status": 429,
+    "message": "This account has reached its stream limit. Retry after the Retry-After delay."
   },
   "system_zero_timeout": {
-    "message": "System Zero exceeded the response deadline.",
-    "status": 504
+    "status": 504,
+    "message": "RightNow exceeded the response deadline."
   },
   "system_zero_unavailable": {
-    "message": "System Zero is temporarily unavailable.",
-    "status": 503
+    "status": 503,
+    "message": "RightNow is temporarily unavailable."
   },
   "unknown_endpoint": {
     "status": 404,
     "message": "The requested API endpoint was not found."
   },
   "upload_in_use": {
-    "message": "The requested item is in use by another request.",
-    "status": 409
+    "status": 409,
+    "message": "The requested item is in use by another request."
   },
   "upload_not_found": {
-    "message": "The requested item is not available to this account.",
-    "status": 404
+    "status": 404,
+    "message": "The requested item is not available to this account."
   },
   "upload_not_ready": {
-    "message": "The requested item is not ready.",
-    "status": 409
+    "status": 409,
+    "message": "The requested item is not ready."
   },
   "video_not_available": {
-    "message": "This input type is not supported.",
-    "status": 404
+    "status": 404,
+    "message": "This input type is not supported."
   },
   "workspace_limit_exceeded": {
-    "message": "This workspace is over one of its own allowances, such as calls in flight or bytes being read. Retry after the Retry-After delay.",
-    "status": 429
+    "status": 429,
+    "message": "This workspace is over one of its own allowances, such as calls in flight or bytes being read. Retry after the Retry-After delay."
   },
   "workspace_quarantined": {
-    "message": "This account's requests are paused for up to an hour after repeated serving failures. Contact support.",
-    "status": 422
+    "status": 422,
+    "message": "This account's requests are paused for up to an hour after repeated serving failures. Contact support."
   }
 }

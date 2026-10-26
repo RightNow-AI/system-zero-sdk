@@ -19,12 +19,24 @@ const image = { name: 'picture', type: 'image' as const, data: dataUrl('image/pn
 const audio = { name: 'recording', type: 'audio' as const, data: dataUrl('audio/wav', wav()) };
 
 describe('served media profile', () => {
-  it('exposes only the served MIME and byte limits at version 0.3.0', () => {
-    expect(sdk.VERSION).toBe('0.3.0');
-    expect(sdk.MEDIA_MIMES).toEqual({ image: ['image/png', 'image/jpeg'], audio: ['audio/wav'] });
+  it('encodes only PDF documents and preserves the ordinary inline request', async () => {
+    const bytes = Buffer.from('%PDF-1.7\nSynthetic signature fixture');
+    const attachment = sdk.inlineAttachment({ name: 'paper', type: 'document', mime: 'application/pdf', data: bytes });
+    expect(attachment).toEqual({ name: 'paper', type: 'document', data: dataUrl('application/pdf', bytes) });
+    expect(() => sdk.inlineAttachment({ name: 'paper', type: 'document', mime: 'text/plain', data: bytes })).toThrow();
+    const transport = vi.fn(async (_url: string | URL | Request, init?: RequestInit) => {
+      expect(JSON.parse(String(init?.body)).attachments).toEqual([attachment]);
+      return Response.json({ answers: {} });
+    });
+    await new sdk.SystemZeroClient({ apiKey: 'SYNTHETIC', fetch: transport }).decide({ ...request, attachments: [attachment] });
+    expect(transport).toHaveBeenCalledTimes(1);
+  });
+  it('exposes only the served MIME and byte limits at version 0.4.0', () => {
+    expect(sdk.VERSION).toBe('0.4.0');
+    expect(sdk.MEDIA_MIMES).toEqual({ image: ['image/png', 'image/jpeg'], audio: ['audio/wav'], document: ['application/pdf'], video: ['video/mp4'] });
     expect(sdk.MEDIA_LIMITS).toEqual({ maxAttachments: 16, maxImages: 4, maxAudio: 1, maxInlineBytes: 2621440, maxBodyBytes: 3665920, audioSampleRate: 16000, maxAudioDurationMs: 300000, maxAudioChannels: 64, maxImagePixels: 16777216, maxImageAspectRatio: 50 });
     const spec = JSON.parse(readFileSync(new URL('../../openapi.json', import.meta.url), 'utf8'));
-    expect(spec.components.schemas.Attachment.properties.type.enum).toEqual(['image', 'audio']);
+    expect(spec.components.schemas.Attachment.properties.type.enum).toEqual(['image', 'audio', 'document', 'video']);
     expect(spec.components.schemas.DecideRequest.properties.attachments.anyOf).toContainEqual({ type: 'null' });
   });
 
@@ -48,7 +60,7 @@ describe('served media profile', () => {
   ])('reuses signature checks for %s', (mime, bytes) => {
     expect(sdk.attachmentMagicMatches(mime, bytes)).toBe(true);
     expect(sdk.inlineAttachment({ name: 'picture', type: 'image', mime, data: bytes }).data).toBe(dataUrl(mime, bytes));
-    expect(sdk.attachmentMagicMatches('application/pdf', Buffer.from('%PDF-'))).toBe(false);
+    expect(sdk.attachmentMagicMatches('application/pdf', Buffer.from('%PDF-'))).toBe(true);
   });
 
   it.each([
