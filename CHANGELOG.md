@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.4.2
+
+0.4.1 was tagged but never published to PyPI or npm. This release includes its key-hygiene fixes and corrects stream cleanup on Python 3.10 and 3.11 when a receipt notification races with cancellation.
+
+Python streams redact WebSocket handshake headers before DEBUG logging. Python clients conceal stored API keys in vars(client) and repr; pickling a client is refused without exposing the key. Stream clients redact echoed credentials in retained failures, including pending SDK tasks waiting on native transport failures.
+
+Node native HTTP debug channels are refused when they could print credentials. SDK error diagnostics and function-tool refusal payloads redact echoed credentials. Unsafe native attachments and hooks may be omitted.
+
 ## 0.4.1
 
 Python streams redact WebSocket handshake headers before DEBUG logging. Python clients conceal stored API keys in vars(client) and repr; pickling a client is refused without exposing the key. Stream clients redact echoed credentials in retained failures, including pending SDK tasks waiting on native transport failures.

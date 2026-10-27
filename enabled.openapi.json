@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "System Zero enabled request contract",
-    "version": "0.4.1"
+    "version": "0.4.2"
   },
   "paths": {
     "/system-zero/decide": {

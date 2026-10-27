@@ -1424,11 +1424,18 @@ class SystemZeroStreamClient(AsyncIterator[StreamEvent]):
             if remaining <= 0:
                 raise self._transport_error(TimeoutError(),
                     "Stream command receipt timed out; outstanding work may have been decided.")
+            # Isolate wait_for's Python 3.10/3.11 cancellation/result race:
+            # the owner waits on a shield, so a completed receipt cannot consume
+            # its cancellation. The inner wait only handles a neutral SDK event.
+            waiting = asyncio.create_task(asyncio.wait_for(self._receipt_changed.wait(), remaining))
             try:
-                await asyncio.wait_for(self._receipt_changed.wait(), remaining)
+                await asyncio.shield(waiting)
             except asyncio.TimeoutError:
                 # Recheck after a same-deadline pong or command receipt updates ownership.
                 continue
+            finally:
+                waiting.cancel()
+                await asyncio.gather(waiting, return_exceptions=True)
 
     @protected_async
     async def _receive(self) -> None:

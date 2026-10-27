@@ -24,7 +24,7 @@ from .types import DecideReply, DecideRequest, ModelList
 from .enabled_types import EnabledDecideRequest, VideoRequest
 
 
-VERSION = "0.4.1"
+VERSION = "0.4.2"
 DEFAULT_BASE_URL = "https://api.rightnowai.co/v1"
 _MAX_TIMEOUT_SECONDS = 2_147_483_647 / 1000
 

@@ -31,8 +31,8 @@ describe('served media profile', () => {
     await new sdk.SystemZeroClient({ apiKey: 'SYNTHETIC', fetch: transport }).decide({ ...request, attachments: [attachment] });
     expect(transport).toHaveBeenCalledTimes(1);
   });
-  it('exposes only the served MIME and byte limits at version 0.4.1', () => {
-    expect(sdk.VERSION).toBe('0.4.1');
+  it('exposes only the served MIME and byte limits at version 0.4.2', () => {
+    expect(sdk.VERSION).toBe('0.4.2');
     expect(sdk.MEDIA_MIMES).toEqual({ image: ['image/png', 'image/jpeg'], audio: ['audio/wav'], document: ['application/pdf'], video: ['video/mp4'] });
     expect(sdk.MEDIA_LIMITS).toEqual({ maxAttachments: 16, maxImages: 4, maxAudio: 1, maxInlineBytes: 2621440, maxBodyBytes: 3665920, audioSampleRate: 16000, maxAudioDurationMs: 300000, maxAudioChannels: 64, maxImagePixels: 16777216, maxImageAspectRatio: 50 });
     const spec = JSON.parse(readFileSync(new URL('../../openapi.json', import.meta.url), 'utf8'));

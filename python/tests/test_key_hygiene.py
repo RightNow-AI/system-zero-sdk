@@ -502,6 +502,9 @@ def test_review_round3_retained_stream_failure(path, fault, surface, monkeypatch
             elif path == 'json-pong':
                 socket_.server('ping', nonce=1)
             await asyncio.wait_for(faulted.wait(), 2)
+            # Cleanup joins the reader before closing the socket. Hold close open
+            # so every runtime samples a completed retained failure deterministically.
+            await asyncio.wait_for(socket_.close_started.wait(), 2)
             for _ in range(96): await asyncio.sleep(0)
             stop.set()
             await watcher
@@ -710,4 +713,32 @@ def test_review_round5_all_pending_tasks(path, fault, monkeypatch):
                 caller.cancel()
                 await asyncio.gather(caller, return_exceptions=True)
             await asyncio.wait_for(client.close(), 2)
+    asyncio.run(scenario())
+
+
+def test_review_round7_receipt_cleanup_preserves_cancellation():
+    async def scenario():
+        client = stream_module.SystemZeroStreamClient(KEY)
+        receipt = asyncio.get_running_loop().create_future()
+        client._arm_receipt(receipt)
+        waiting = asyncio.Event()
+        original_wait = client._receipt_changed.wait
+        async def wait():
+            waiting.set()
+            await original_wait()
+        client._receipt_changed.wait = wait
+        watcher = asyncio.create_task(client._watch_receipt())
+        try:
+            await waiting.wait()
+            # Match _receive cleanup: publish the event, then cancel its owner
+            # before it resumes. A timed wait must not swallow this cancellation.
+            client._clear_receipt()
+            watcher.cancel()
+            done, _ = await asyncio.wait({watcher}, timeout=1)
+            assert watcher in done, 'receipt cleanup must finish after cancellation'
+            assert watcher.cancelled(), 'receipt event must not consume cancellation'
+        finally:
+            watcher.cancel()
+            await asyncio.gather(watcher, return_exceptions=True)
+            receipt.cancel()
     asyncio.run(scenario())
