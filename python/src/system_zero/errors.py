@@ -1,4 +1,5 @@
-"""Typed public failures with open code strings and unmodified envelope details."""
+"""Typed public failures with open code strings and sanitized envelope details."""
+from ._redaction import redact, redact_text
 from ._retry import _retry_after_seconds
 from types import MappingProxyType
 from typing import Any, Literal, Mapping, Optional, Union
@@ -6,6 +7,10 @@ from typing import Any, Literal, Mapping, Optional, Union
 class SystemZeroError(Exception):
 
     def __init__(self, message: str, *, status: Optional[int]=None, type: str='api_error', code: Optional[str]=None, param: Optional[str]=None, retryable: bool=False, details: Optional[Mapping[str, Any]]=None, request_id: Optional[str]=None, headers: Optional[Mapping[str, str]]=None, idempotency_key: Optional[str]=None):
+        message = redact_text(message)
+        type, code, param = (redact(type), redact(code), redact(param))
+        request_id, idempotency_key = (redact(request_id), redact(idempotency_key))
+        details, headers = (redact(details), redact(headers))
         super().__init__(message)
         self.message = message
         self.status = status
@@ -17,6 +22,15 @@ class SystemZeroError(Exception):
         self.request_id = request_id
         self.idempotency_key = idempotency_key
         self.headers = MappingProxyType(dict(headers or {}))
+
+    def __reduce__(self):
+        state = dict(redact(vars(self)))
+        state['headers'] = dict(self.headers)
+        return (type(self), (self.message,), state)
+
+    def __setstate__(self, state):
+        self.__dict__.update(state)
+        self.headers = MappingProxyType(dict(self.headers))
 
 class InvalidRequestError(SystemZeroError):
     """The server refused the request shape or content."""

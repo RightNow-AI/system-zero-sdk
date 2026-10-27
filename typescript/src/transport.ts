@@ -1,3 +1,4 @@
+import { assertSafeNativeDebug } from './redaction.js';
 import { request as requestHttp } from 'node:http';
 import { request as requestHttps } from 'node:https';
 import { Readable } from 'node:stream';
@@ -13,6 +14,8 @@ export function requestSent(signal: AbortSignal): boolean | null { return sent.g
 
 /** Node's public HTTP APIs expose bytes before complete headers, unlike global fetch. */
 export const nodeFetch: typeof globalThis.fetch = (input, init = {}) => new Promise((resolve, reject) => {
+  try { assertSafeNativeDebug(); }
+  catch { reject(new APIError('Native HTTP debug logging cannot safely carry credentials. Disable NODE_DEBUG for http, https, net, tls, stream and websocket.')); return; }
   const url = new URL(typeof input === 'string' ? input : input instanceof URL ? input.href : input.url);
   if (url.protocol !== 'http:' && url.protocol !== 'https:') {
     reject(new TypeError('Only HTTP and HTTPS base URLs are supported.'));

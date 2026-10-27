@@ -1,8 +1,11 @@
 """Async server-side stream v1 client. Reconnect replays state, never old frames."""
 
+from ._redaction import Secret, DiagnosticLogger, protect_exception, protected, protected_async, redact, reveal
+
 import asyncio
 from collections import deque
 from contextlib import nullcontext
+from contextvars import ContextVar
 from copy import deepcopy
 from dataclasses import dataclass, field
 import ipaddress
@@ -167,6 +170,17 @@ def _integer(value: Any, minimum: int = 0, maximum: int = 9007199254740991) -> b
     return type(value) is int and minimum <= value <= maximum
 
 
+_task_owner = ContextVar("system_zero_stream_task_owner", default=None)
+
+
+def _current_owner():
+    current = asyncio.current_task()
+    owner = _task_owner.get()
+    # A transport may re-enter close(). Preserve the logical caller without
+    # treating independently created tasks inheriting this context as owners.
+    return owner[1] if owner is not None and owner[0] is current else current
+
+
 def _future() -> asyncio.Future:
     future = asyncio.get_running_loop().create_future()
     # A latency is optional to await. Retrieve failures even when nobody does.
@@ -312,7 +326,7 @@ class SystemZeroStreamClient(AsyncIterator[StreamEvent]):
             if (isinstance(value, bool) or not isinstance(value, (int, float)) or
                     not 0 < value <= _TIMER_MAX_DELAY_SECONDS):
                 raise ValueError(name + " must be positive, finite and at most 2147483.647 seconds.")
-        self._api_key = key
+        self._api_key = Secret(key)
         self.stream_url = stream_url
         self.reconnect_policy = reconnect_policy
         self.max_reconnect_attempts = max_reconnect_attempts
@@ -467,6 +481,8 @@ class SystemZeroStreamClient(AsyncIterator[StreamEvent]):
             self.events()
 
     def _emit(self, event: Any, *, closing: bool = False) -> None:
+        if isinstance(event, dict) and event.get("type") == "error":
+            event = redact(event)
         if self._closed or self._events_ended or self._overflow_error is not None:
             return
         subscribers = tuple(self._subscribers)
@@ -484,11 +500,12 @@ class SystemZeroStreamClient(AsyncIterator[StreamEvent]):
         for subscriber in tuple(self._subscribers):
             subscriber._finish(self._overflow_error, discard=discard)
 
+    @protected_async
     async def connect(self) -> StreamHello:
         self._check_open()
         if self._runner is None:
             self._ready = _future()
-            self._runner = asyncio.create_task(self._run())
+            self._runner = asyncio.create_task(self._safe_task(self._run))
         elif self._idle:
             self._reconnect_requested.set()
         hello = cast(StreamHello, await asyncio.shield(cast(asyncio.Future, self._ready)))
@@ -584,7 +601,7 @@ class SystemZeroStreamClient(AsyncIterator[StreamEvent]):
                         self._ready = _future()
                         # A deliberate connection handover retains queued work;
                         # ordinary 1000 closure intentionally rejects that queue.
-                        await cast(ClientConnection, self._socket).close(code=1001)
+                        await self._safe_task(lambda: cast(ClientConnection, self._socket).close(code=1001))
                         await self._available()
                         continue
                     try:
@@ -737,6 +754,141 @@ class SystemZeroStreamClient(AsyncIterator[StreamEvent]):
             raise StreamProtocolError("Server native control queue limit is invalid.")
         self._native_queue_limit = min(queue, 2)
 
+    @protected
+    def _safe_failure(self, error: BaseException) -> BaseException:
+        # Retained Futures and Tasks are ordinary client diagnostics. Establish
+        # the owning key even when a protocol callback runs in another context.
+        return protect_exception(error) if isinstance(error, Exception) else error
+
+    async def _await_native(self, awaitable: Awaitable) -> Any:
+        # Drive the native await iterator without making it another Task. Each
+        # yielded Future is observed by a callback; this Task awaits only a
+        # neutral signal, including the turn before that callback can run.
+        iterator = awaitable.__await__()
+        value = failure = None
+        try:
+            while True:
+                try:
+                    if failure is None:
+                        waiting = iterator.send(value)
+                    else:
+                        error, failure = failure, None
+                        waiting = iterator.throw(error)
+                except StopIteration as finished:
+                    return finished.value
+                try:
+                    if waiting is None:
+                        await asyncio.sleep(0)
+                        value = None
+                        continue
+                    if not asyncio.isfuture(waiting) or not waiting._asyncio_future_blocking:
+                        raise RuntimeError("Native awaitable yielded an invalid wait.")
+                    if waiting is asyncio.current_task() or waiting.get_loop() is not asyncio.get_running_loop():
+                        raise RuntimeError("Native awaitable yielded an incompatible wait.")
+                    # This is the Future await protocol consumed by Task too.
+                    # Reset its handoff flag, but never yield it to our Task.
+                    waiting._asyncio_future_blocking = False
+                    ready = asyncio.get_running_loop().create_future()
+                    def completed(_done, signal=ready):
+                        if not signal.done():
+                            signal.set_result(None)
+                    waiting.add_done_callback(completed)
+                    try:
+                        try:
+                            await asyncio.shield(ready)
+                        except asyncio.CancelledError:
+                            if not waiting.cancel():
+                                if not waiting.cancelled():
+                                    waiting.exception()
+                                raise
+                            while not ready.done():
+                                try:
+                                    await asyncio.shield(ready)
+                                except asyncio.CancelledError:
+                                    pass
+                        waiting.result()
+                        value = None
+                    finally:
+                        waiting.remove_done_callback(completed)
+                except BaseException as error:
+                    # Deliver the native type/cause to the existing transport
+                    # handler without publishing it on a Task waiter. The
+                    # protected producer sanitizes before completing outwardly.
+                    failure = error
+        finally:
+            iterator.close()
+
+    def _safe_pong(self, native: asyncio.Future) -> asyncio.Future:
+        # ping() returns a Future as a value. Copy its outcome before any Task
+        # can retain/await it, rather than returning the raw Future in a Task.
+        safe = _future()
+        def completed(done):
+            if safe.done():
+                if not done.cancelled():
+                    done.exception()
+            elif done.cancelled():
+                safe.cancel()
+            else:
+                try:
+                    value = done.result()
+                except BaseException as error:
+                    safe.set_exception(self._safe_failure(error))
+                else:
+                    safe.set_result(value)
+        native.add_done_callback(completed)
+        safe.add_done_callback(lambda done: native.cancel() if done.cancelled() else None)
+        return safe
+
+    @protected_async
+    async def _safe_task(self, operation: Callable, *args: Any) -> Any:
+        # A retained Task must never expose a native waiter's exception in repr
+        # before its coroutine resumes. Only this neutral bridge is awaited by
+        # the retained owner; the producer and its outcome stay in local state.
+        complete = asyncio.get_running_loop().create_future()
+        result = failure = None
+        owner = _current_owner()
+
+        async def produce() -> None:
+            nonlocal result, failure
+            token = _task_owner.set((asyncio.current_task(), owner))
+            try:
+                try:
+                    # Lazy construction also handles cancellation before startup.
+                    result = await self._await_native(operation(*args))
+                except BaseException as error:
+                    failure = self._safe_failure(error)
+            finally:
+                _task_owner.reset(token)
+
+        producer = asyncio.create_task(produce())
+        producer.add_done_callback(lambda _done: complete.set_result(None))
+        try:
+            await asyncio.shield(complete)
+        except asyncio.CancelledError:
+            if not producer.cancel():
+                # Completion may precede delivery through the bridge. A new
+                # caller cancellation still wins if no producer can receive it.
+                if not producer.cancelled():
+                    producer.exception()
+                raise
+            # Keep a strong reference and join owned cleanup without ever
+            # awaiting the producer Task itself (its repr can nest raw waits).
+            while not complete.done():
+                try:
+                    await asyncio.shield(complete)
+                except asyncio.CancelledError:
+                    pass
+        if producer.cancelled():
+            raise asyncio.CancelledError
+        # A failure of the sanitizer itself must also be retrieved.
+        producer.result()
+        if failure is not None:
+            # Outside the except suite: preserve the sanitized native cause
+            # chain needed by transport classification.
+            raise failure
+        return result
+
+    @protected_async
     async def _write_native(self, socket: ClientConnection, size: int, write: Callable,
                             before: Optional[Callable[[], None]] = None) -> Any:
         while True:
@@ -782,7 +934,7 @@ class SystemZeroStreamClient(AsyncIterator[StreamEvent]):
             if not task.cancelled():
                 error = task.exception()
                 if error is not None and self._transport_failure is not None and not self._transport_failure.done():
-                    self._transport_failure.set_exception(error)
+                    self._transport_failure.set_exception(self._safe_failure(error))
         def paced_frame(frame) -> None:
             if frame.opcode != OP_PONG:
                 send_frame(frame)
@@ -791,7 +943,7 @@ class SystemZeroStreamClient(AsyncIterator[StreamEvent]):
                 if self._transport_failure is not None and not self._transport_failure.done():
                     self._transport_failure.set_exception(StreamProtocolError("Native control queue exceeds the advertised limit."))
                 return
-            task = asyncio.create_task(pong(frame))
+            task = asyncio.create_task(self._safe_task(pong, frame))
             self._native_tasks.add(task)
             task.add_done_callback(completed)
         protocol.send_frame = paced_frame
@@ -823,7 +975,7 @@ class SystemZeroStreamClient(AsyncIterator[StreamEvent]):
                 if delay == 0:
                     if before is not None:
                         before()
-                    await self._send_raw(socket, raw)
+                    await self._safe_task(self._send_raw, socket, raw)
                     return True
             # Release the writer during token waits so receipts and heartbeats progress.
             sleep = asyncio.ensure_future(self._sleep(min(_TIMER_MAX_DELAY_SECONDS, max(0.001, delay))))
@@ -867,6 +1019,7 @@ class SystemZeroStreamClient(AsyncIterator[StreamEvent]):
         return connection_error(error, message, request_sent=self._request_sent,
                                 websocket_opening=self._socket is None, context_boundary=context_boundary)
 
+    @protected_async
     async def _send_raw(self, socket: ClientConnection, raw: str) -> None:
         context_boundary = sys.exc_info()[1]
         self._request_sent = True
@@ -891,7 +1044,7 @@ class SystemZeroStreamClient(AsyncIterator[StreamEvent]):
             # A failed write need not wake recv. Give the connection owner the
             # same failure immediately instead of waiting for a receipt timeout.
             if self._transport_failure is not None and not self._transport_failure.done():
-                self._transport_failure.set_exception(error)
+                self._transport_failure.set_exception(self._safe_failure(error))
             raise error from None
 
     async def _wait_until(self, deadline: float) -> None:
@@ -990,6 +1143,7 @@ class SystemZeroStreamClient(AsyncIterator[StreamEvent]):
             self._opening_started = self._monotonic()
         return self.reconnect_timeout - (self._monotonic() - self._opening_started)
 
+    @protected_async
     async def _run(self) -> None:
         failure: Optional[BaseException] = None
         try:
@@ -1015,17 +1169,17 @@ class SystemZeroStreamClient(AsyncIterator[StreamEvent]):
                 try:
                     try:
                         stream_url = _checked_stream_url(self.stream_url)
-                        key = _checked_stream_key(self._api_key)
+                        key = _checked_stream_key(reveal(self._api_key))
                     except ValueError as error:
                         raise StreamProtocolError(str(error)) from None
                     # Native probes are enabled only by hello; JSON heartbeat remains compatible with older servers.
                     headers = {"Authorization": "Bearer " + key}
-                    self._socket = await asyncio.wait_for(connect(stream_url,
+                    self._socket = await asyncio.wait_for(self._await_native(connect(stream_url,
                                                  subprotocols=[STREAM_PROTOCOL],
-                                                 additional_headers=headers,
+                                                 additional_headers=headers, logger=DiagnosticLogger(self._api_key),
                                                  compression=None, ping_interval=None, proxy=None,
                                                  open_timeout=min(10, remaining), close_timeout=1, max_size=4194304,
-                                                 max_queue=64), min(10, remaining))
+                                                 max_queue=64)), min(10, remaining))
                     # connect returns only after a valid HTTP Upgrade response.
                     self._request_sent = True
                     if self._socket.subprotocol != STREAM_PROTOCOL:
@@ -1033,7 +1187,7 @@ class SystemZeroStreamClient(AsyncIterator[StreamEvent]):
                     remaining = self._opening_remaining()
                     if remaining <= 0:
                         raise asyncio.TimeoutError
-                    hello = self._decode(await asyncio.wait_for(self._socket.recv(), min(10, remaining)), first=True)
+                    hello = self._decode(await asyncio.wait_for(self._await_native(self._socket.recv()), min(10, remaining)), first=True)
                     # An accepted hello ends only the failed-opening episode, before replay can wait for an ack.
                     self._opening_attempts = self._attempt = 0
                     self._opening_started = self._opening_failure = None
@@ -1204,8 +1358,9 @@ class SystemZeroStreamClient(AsyncIterator[StreamEvent]):
         elif frame["stream_id"] != self._stream_id or frame["seq"] != self._seq + 1 or frame.get("type") not in {"ack", "scheduled", "decision", "error", "ping", "goodbye"}:
             raise StreamProtocolError("Invalid stream message ordering or type.")
         self._seq = frame["seq"]
-        return frame
+        return redact(frame) if frame.get("type") == "error" else frame
 
+    @protected_async
     async def _native_heartbeat(self, socket: ClientConnection, interval: float) -> None:
         while True:
             await self._sleep(interval)
@@ -1215,13 +1370,14 @@ class SystemZeroStreamClient(AsyncIterator[StreamEvent]):
             admitted = _future()
             async def send_probe():
                 try:
-                    return await self._write_native(socket, 4, socket.ping,
+                    pong = await self._write_native(socket, 4, socket.ping,
                         before=lambda: None if admitted.done() else admitted.set_result(None))
+                    return self._safe_pong(pong)
                 except BaseException as error:
                     if not admitted.done():
-                        admitted.set_exception(error)
+                        admitted.set_exception(self._safe_failure(error))
                     raise
-            sending = asyncio.create_task(send_probe())
+            sending = asyncio.create_task(self._safe_task(send_probe))
             async def probe() -> None:
                 pong = await sending
                 await pong
@@ -1274,6 +1430,7 @@ class SystemZeroStreamClient(AsyncIterator[StreamEvent]):
                 # Recheck after a same-deadline pong or command receipt updates ownership.
                 continue
 
+    @protected_async
     async def _receive(self) -> None:
         socket = cast(ClientConnection, self._socket)
         reading = asyncio.create_task(self._receive_frames(socket))
@@ -1294,15 +1451,16 @@ class SystemZeroStreamClient(AsyncIterator[StreamEvent]):
                 task.cancel()
             await asyncio.gather(*tasks, return_exceptions=True)
 
+    @protected_async
     async def _receive_frames(self, socket: ClientConnection) -> None:
-        received = asyncio.create_task(socket.recv())
+        received = asyncio.create_task(self._safe_task(socket.recv))
         pongs: set[asyncio.Task] = set()
         def pong_done(task: asyncio.Task) -> None:
             pongs.discard(task)
             if not task.cancelled():
                 error = task.exception()
                 if error is not None and self._transport_failure is not None and not self._transport_failure.done():
-                    self._transport_failure.set_exception(error)
+                    self._transport_failure.set_exception(self._safe_failure(error))
         try:
             while True:
                 remaining = self._last_ping + 2 * self._heartbeat_interval - self._monotonic()
@@ -1318,7 +1476,7 @@ class SystemZeroStreamClient(AsyncIterator[StreamEvent]):
                     # Cancel only the wait; the same recv keeps its partially assembled output.
                     continue
                 frame = self._decode(raw)
-                received = asyncio.create_task(socket.recv())
+                received = asyncio.create_task(self._safe_task(socket.recv))
                 kind = frame["type"]
                 if kind == "ping":
                     if not _integer(frame.get("nonce"), 1):
@@ -1328,7 +1486,7 @@ class SystemZeroStreamClient(AsyncIterator[StreamEvent]):
                     # this ping. The connection owner still joins every write.
                     if len(pongs) >= 2:
                         raise StreamProtocolError("Too many pending stream heartbeat replies.")
-                    pong = asyncio.create_task(self._send({"type": "pong", "nonce": frame["nonce"]}))
+                    pong = asyncio.create_task(self._safe_task(self._send, {"type": "pong", "nonce": frame["nonce"]}))
                     pongs.add(pong)
                     pong.add_done_callback(pong_done)
                     continue
@@ -1486,6 +1644,7 @@ class SystemZeroStreamClient(AsyncIterator[StreamEvent]):
             self._explicit_intent = bool(self._outstanding)
 
     def _disconnected(self, error: BaseException) -> None:
+        protect_exception(error)
         self._pacing_wake.set()
         if self._disconnecting:
             return
@@ -1536,7 +1695,7 @@ class SystemZeroStreamClient(AsyncIterator[StreamEvent]):
             # cleanup. Repeated callers join it instead of interrupting it.
             if self._runner is not None and not self._cleaning_connection:
                 self._runner.cancel()
-        current = asyncio.current_task()
+        current = _current_owner()
         if self._runner is not None and self._runner is not current:
             await asyncio.shield(asyncio.gather(self._runner, return_exceptions=True))
         if self._decision_task is not None and self._decision_task is not current:

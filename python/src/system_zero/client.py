@@ -1,5 +1,7 @@
 """Synchronous server-side RightNow System Zero HTTP API client."""
 
+from ._redaction import redact, Secret, protected, reveal
+
 import ipaddress
 import json
 import os
@@ -22,7 +24,7 @@ from .types import DecideReply, DecideRequest, ModelList
 from .enabled_types import EnabledDecideRequest, VideoRequest
 
 
-VERSION = "0.4.0"
+VERSION = "0.4.1"
 DEFAULT_BASE_URL = "https://api.rightnowai.co/v1"
 _MAX_TIMEOUT_SECONDS = 2_147_483_647 / 1000
 
@@ -125,7 +127,7 @@ class SystemZero:
                 not 0 <= max_retry_wait <= _MAX_TIMEOUT_SECONDS):
             raise ValueError("max_retry_wait must be nonnegative, finite and at most 2147483.647 seconds.")
         checked_base_url = _checked_base_url(base_url)
-        self._api_key = key
+        self._api_key = Secret(key)
         self.base_url = checked_base_url
         self.timeout = timeout
         self.max_retries = min(max_retries, 5)
@@ -148,6 +150,7 @@ class SystemZero:
     def __exit__(self, exc_type, exc_value, traceback) -> None:
         self.close()
 
+    @protected
     def close(self) -> None:
         if not self._closed:
             self._closed = True
@@ -188,6 +191,7 @@ class SystemZero:
             headers=outgoing, retry_budget=retry_budget, _danger_zone=danger_zone,
         ))
 
+    @protected
     def _request(
         self, method: str, path: str, *, body: Optional[Mapping[str, Any]] = None,
         idempotency_key: Optional[str] = None, client_request_id: Optional[str] = None,
@@ -216,7 +220,7 @@ class SystemZero:
                                       status=400, type="invalid_request_error", code="invalid_request", param="SZ-Danger-Zone")
         if _danger_zone == "accept" and method == "POST" and path == "/system-zero/decide":
             outgoing["SZ-Danger-Zone"] = "accept"
-        outgoing["Authorization"] = "Bearer " + self._api_key
+        outgoing["Authorization"] = "Bearer " + reveal(self._api_key)
         outgoing["User-Agent"] = "system-zero-python/" + VERSION + " python/" + ".".join(map(str, sys.version_info[:3]))
         outgoing["Accept"] = "application/json"
         if body is not None:
@@ -301,7 +305,7 @@ class SystemZero:
                     parsed = None
                 if response.is_success and isinstance(parsed, dict):
                     result_headers = MappingProxyType(dict(response.headers))
-                    result = ResponseResult(parsed, response_metadata(result_headers, used_key), response.status_code, result_headers)
+                    result = ResponseResult(parsed, response_metadata(redact(result_headers), redact(used_key)), response.status_code, result_headers)
                 else:
                     error = _api_error(response, parsed)
                     envelope_error = parsed.get("error") if isinstance(parsed, dict) else None

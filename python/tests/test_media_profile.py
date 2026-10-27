@@ -42,7 +42,7 @@ def test_pdf_helper_and_ordinary_request():
 
 
 def test_served_registry_limits_and_version():
-    assert sdk.VERSION == sdk.__version__ == "0.4.0"
+    assert sdk.VERSION == sdk.__version__ == "0.4.1"
     assert dict(sdk.MIMES) == {"image": ("image/png", "image/jpeg"), "audio": ("audio/wav",), "document": ("application/pdf",), "video": ("video/mp4",)}
     assert dict(sdk.MEDIA_LIMITS) == {"max_attachments": 16, "max_images": 4, "max_audio": 1, "max_inline_bytes": 2621440,
                                     "max_body_bytes": 3665920, "audio_sample_rate": 16000, "max_audio_duration_ms": 300000, "max_audio_channels": 64, "max_image_pixels": 16777216, "max_image_aspect_ratio": 50}

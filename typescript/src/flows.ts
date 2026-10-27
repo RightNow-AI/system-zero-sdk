@@ -1,6 +1,6 @@
 import { createHash, type Hash } from 'node:crypto';
 import type { Attachment, DecideRequest, JsonValue, Question } from './api-types.js';
-import { withRetryContext } from './client.js';
+import { withRetryContext, redactClientDiagnostics } from './client.js';
 import type { SystemZeroClient } from './client.js';
 import { decisionsFor, type Alternative, type DecisionResult, type SystemZeroReply } from './decisions.js';
 import { SYSTEM_ZERO_ERROR_CODES, GATEWAY_ERROR_CODES } from './public-error-codes.js';
@@ -460,6 +460,6 @@ export async function runFlow(client: Pick<SystemZeroClient, 'decide' | 'options
       current.elapsed_ms = lastTime - current.started_ms;
       current.error = errorTrace(error);
     }
-    throw Object.assign(error, { trace });
+    throw redactClientDiagnostics(client, Object.assign(error, { trace }));
   }
 }

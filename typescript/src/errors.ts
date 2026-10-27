@@ -1,3 +1,4 @@
+import { redact, redactText, registerErrorPrototype } from './redaction.js';
 import { retryAfterMs } from './retry.js';
 import type { ErrorEnvelope } from './api-types.js';
 
@@ -27,6 +28,7 @@ export class SystemZeroError extends Error {
   readonly headers: Headers;
 
   constructor(message: string, fields: ErrorFields = {}) {
+    message = redactText(message); fields = redact(fields);
     super(message, fields.cause === undefined ? undefined : { cause: fields.cause });
     this.name = new.target.name;
     this.status = fields.status ?? null;
@@ -91,7 +93,7 @@ function transportFailure(cause: unknown): { code: string | null; timeout: boole
     // An SDK error's API code is not a native transport code.
     if (value instanceof APIConnectionError) { code ??= value.transport_code; timeout ||= value.type === 'timeout_error'; continue; }
     const error = value as { code?: unknown; name?: unknown; cause?: unknown; error?: unknown; errors?: unknown };
-    if (typeof error.code === 'string' && error.code) code ??= error.code;
+    if (typeof error.code === 'string' && /^[A-Z][A-Z0-9_]{0,63}$/u.test(error.code)) code ??= error.code;
     timeout ||= error.name === 'TimeoutError';
     pending.push(error.cause, error.error);
     if (Array.isArray(error.errors)) pending.push(...error.errors.slice(0, 32));
@@ -107,7 +109,7 @@ export class APIConnectionError extends SystemZeroError {
   constructor(message: string, fields: ConnectionErrorFields = {}) {
     const native = transportFailure(fields.cause);
     super(message, { ...fields, type: fields.type ?? (native.timeout || new.target === APITimeoutError ? 'timeout_error' : 'connection_error') });
-    this.transport_code = fields.transport_code === undefined ? native.code : fields.transport_code;
+    this.transport_code = fields.transport_code === undefined ? native.code : redactText(fields.transport_code ?? '') || null;
     this.request_sent = fields.request_sent ?? null;
   }
 }
@@ -155,6 +157,11 @@ const classes = {
   api_error: APIError,
   server_error: ServerError,
 } as const;
+
+for (const kind of [SystemZeroError, APIConnectionError, APITimeoutError, StreamLimitError,
+  CapabilityNotAvailableError, ...Object.values(classes), ...Object.values(codeClasses)]) {
+  registerErrorPrototype(kind.prototype);
+}
 
 function record(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === 'object' && !Array.isArray(value);

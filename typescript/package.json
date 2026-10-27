@@ -1,6 +1,6 @@
 {
   "name": "@rightnowai/system-zero",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "license": "Apache-2.0",
   "homepage": "https://github.com/RightNow-AI/system-zero-sdk",
   "type": "module",

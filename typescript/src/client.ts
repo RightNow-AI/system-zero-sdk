@@ -1,3 +1,4 @@
+import { redact } from './redaction.js';
 import { randomUUID } from 'node:crypto';
 import { isIP } from 'node:net';
 import type { DecideRequest, DecideReply, ModelList } from './api-types.js';
@@ -6,7 +7,7 @@ import { APIConnectionError, APIError, APITimeoutError, InvalidRequestError, res
 import { retryWaitMs, shouldRecoverWorkflow, shouldRetry } from './retry.js';
 import { hasResponseStarted, nodeFetch, requestSent } from './transport.js';
 
-export const VERSION = '0.4.0';
+export const VERSION = '0.4.1';
 export const DEFAULT_BASE_URL = 'https://api.rightnowai.co/v1';
 export type Fetch = typeof globalThis.fetch;
 
@@ -58,6 +59,11 @@ export function redactClientText(client: object | undefined, text: string): stri
   }
   return text.replace(/\brnsk_[A-Za-z0-9_-]{20,}\b/gu, '[redacted]')
     .replace(/\bBearer[ \t]+[A-Za-z0-9._~+/-]+=*/giu, 'Bearer [redacted]');
+}
+
+/** Sanitize diagnostics produced after a request, including workflow traces. */
+export function redactClientDiagnostics<T>(client: object, value: T): T {
+  return redact(value, clientSecrets.get(client));
 }
 
 export function checkedBaseURL(value: string): string {
@@ -214,7 +220,7 @@ export class SystemZeroClient {
     if (body !== undefined) init.body = body;
     return new APIPromise(this.#send<T>(`${baseURL}${path}`, init, maxRetries, retryBudget, context).catch((error: unknown) => {
       if (error instanceof SystemZeroError) error.idempotencyKey = headers.get('idempotency-key');
-      throw error;
+      throw redact(error, this.#apiKey);
     }));
   }
 
@@ -273,7 +279,7 @@ export class SystemZeroClient {
       const { response, body, json } = result;
       if (response.ok) {
         if (!json) throw new APIError('RightNow returned invalid JSON.', { status: response.status, type: 'api_error', headers: response.headers, request_id: response.headers.get('x-request-id') });
-        return { data: body as T, response, metadata: metadata(response.headers, new Headers(init.headers).get('idempotency-key')) };
+        return { data: body as T, response, metadata: redact(metadata(response.headers, new Headers(init.headers).get('idempotency-key')), this.#apiKey) };
       }
       let error = responseError(response.status, response.headers, body, false);
       const retryable = body !== null && typeof body === 'object' && 'error' in body && body.error !== null && typeof body.error === 'object' && 'retryable' in body.error && typeof body.error.retryable === 'boolean' ? body.error.retryable : undefined;

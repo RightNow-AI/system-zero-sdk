@@ -1,3 +1,4 @@
+import { assertSafeNativeDebug, redact, registerErrorPrototype } from './redaction.js';
 import { randomUUID } from 'node:crypto';
 import type { IncomingMessage } from 'node:http';
 import { isIP } from 'node:net';
@@ -33,6 +34,7 @@ export class StreamDisconnectedError extends Error {
   constructor(message?: string, readonly closeCode?: number) { super(message); }
 }
 class ConnectionLost extends Error {}
+for (const kind of [StreamProtocolError, StreamDisconnectedError, ConnectionLost]) registerErrorPrototype(kind.prototype);
 
 function deferred<T>() {
   let resolve!: (value: T) => void;
@@ -245,6 +247,7 @@ export class SystemZeroStreamClient implements AsyncIterable<StreamEvent> {
   #ambiguous = new Map<number, string>();
 
   constructor(options: StreamClientOptions = {}) {
+    assertSafeNativeDebug();
     const key = options.apiKey ?? process.env.SYSTEM_ZERO_API_KEY;
     if (!key) throw new Error('Supply an apiKey or set SYSTEM_ZERO_API_KEY in the server environment.');
     if (typeof key !== 'string' || !/^[\x21-\x7e]+$/u.test(key)) throw new TypeError('apiKey must contain only visible ASCII characters.');
@@ -781,7 +784,7 @@ export class SystemZeroStreamClient implements AsyncIterable<StreamEvent> {
   #message(text: string, binary: boolean) {
     if (binary) { this.#stop(new StreamProtocolError('Server sent binary application data.'), 1003); return; }
     let raw: unknown;
-    try { raw = JSON.parse(text); } catch { this.#stop(new StreamProtocolError('Server sent invalid JSON.'), 1007); return; }
+    try { raw = JSON.parse(text); if (object(raw) && raw.type === 'error') raw = redact(raw, this.#key); } catch { this.#stop(new StreamProtocolError('Server sent invalid JSON.'), 1007); return; }
     if (!object(raw) || typeof raw.type !== 'string' || !integer(raw.seq, 1) || raw.seq !== this.#seq + 1 || typeof raw.stream_id !== 'string' || !/^szws_[0-9a-f]{32}$/.test(raw.stream_id) || (this.#streamId && raw.stream_id !== this.#streamId)) { this.#stop(new StreamProtocolError('Server frame sequence or identity is invalid.'), 1002); return; }
     this.#seq = raw.seq; this.#streamId = raw.stream_id;
     this.#requestSent = true;
@@ -996,6 +999,7 @@ export class SystemZeroStreamClient implements AsyncIterable<StreamEvent> {
   }
 
   #stop(error: Error, code: number) {
+    error = redact(error, this.#key);
     if (this.#stopped) return;
     this.#stopped = true;
     // Overflow during publish takes priority over a fatal frame's reserved owner.
@@ -1010,6 +1014,7 @@ export class SystemZeroStreamClient implements AsyncIterable<StreamEvent> {
   }
 
   #disconnect(error: Error, code: number, peerClosed = false) {
+    error = redact(error, this.#key);
     if (this.#disconnecting) return;
     if (!this.#socket && !this.#connecting && !this.#closed && !this.#terminal) return;
     if (error instanceof ConnectionLost && code === 1006) error = this.#transportError(error.message);

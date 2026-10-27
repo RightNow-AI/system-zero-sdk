@@ -307,7 +307,9 @@ def _client_call_bound(client: SystemZero) -> float:
     if not _number(bound) or bound < 1:
         raise _invalid()
     return bound
+from ._redaction import protected
 
+@protected
 def run_flow(client: SystemZero, definition: Mapping[str, Any], *, run_id: str, deadline_ms: float, include_content: bool=False, max_decide_calls: Optional[int]=None, danger_zone: Optional[Literal['accept']]=None, now: Optional[Callable[[], float]]=None) -> FlowTrace:
     """Run ordered, bounded decisions and return a content-free trace by default.
 

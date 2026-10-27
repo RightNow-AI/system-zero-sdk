@@ -19,6 +19,7 @@ from typing import Literal, Any, Dict, Optional
 from system_zero import InvalidRequestError, SystemZero, SystemZeroError
 from system_zero.client import _checked_base_url
 from system_zero._retry import _retry_context
+from system_zero._redaction import reveal as _reveal
 
 
 _HERE = _resource_files(__package__) if __package__ else Path(__file__).resolve().parent
@@ -433,7 +434,7 @@ class ToolHandler:
 
     def _clean_result(self, value: Any) -> Any:
         if isinstance(value, str):
-            keys = (getattr(self._client, "_api_key", None), os.environ.get("SYSTEM_ZERO_API_KEY"))
+            keys = (_reveal(getattr(self._client, "_api_key", None)), os.environ.get("SYSTEM_ZERO_API_KEY"))
             for key in keys:
                 if isinstance(key, str) and key:
                     value = value.replace(key, "[redacted]")

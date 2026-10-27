@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.1
+
+Python streams redact WebSocket handshake headers before DEBUG logging. Python clients conceal stored API keys in vars(client) and repr; pickling a client is refused without exposing the key. Stream clients redact echoed credentials in retained failures, including pending SDK tasks waiting on native transport failures.
+
+Node native HTTP debug channels are refused when they could print credentials. SDK error diagnostics redact echoed credentials. Unsafe native attachments and hooks may be omitted.
+
 ## 0.4.0
 
 Batch receipts and flow traces retain well-formed server error codes, including new codes. Batch resume accepts these error records. Corrected the TypeScript video documentation.
