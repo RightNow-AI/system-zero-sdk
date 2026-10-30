@@ -61,13 +61,13 @@ function units(value: unknown): number {
 function distribution(answer: Record<string, unknown>, canonical: boolean): Map<string, number> {
   if (!record(answer.probabilities) || Object.keys(answer.probabilities).length === 0) invalid('missing probabilities');
   const values = new Map<string, number>();
-  let total = 0;
   for (const [key, value] of Object.entries(answer.probabilities)) {
     if (!probability(value)) invalid('probabilities must be finite numbers in [0, 1]');
-    const amount = canonical ? units(value) : value;
-    values.set(key, amount);
-    total += amount;
+    values.set(key, canonical ? units(value) : value);
   }
+  // Add in UTF-8 key order, the reader's tie order, so a legacy float total never depends on property enumeration order.
+  let total = 0;
+  for (const key of [...values.keys()].sort((a, b) => Buffer.compare(Buffer.from(a), Buffer.from(b)))) total += values.get(key)!;
    
   if (canonical ? Math.abs(total - million) > 1 || (values.size === 1 && total !== million) : Math.abs(total - 1) > 0.000001) invalid('probabilities must sum to one');
   return values;
