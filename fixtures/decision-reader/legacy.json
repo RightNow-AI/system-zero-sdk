@@ -26,6 +26,38 @@
     "kind": "legacy"
   },
   {
+    "name": "legacy-choice-total-lower-edge",
+    "answer": {
+      "type": "choice",
+      "choice": "b",
+      "probabilities": {
+        "a": 0.060817,
+        "b": 0.532085,
+        "c": 0.407097
+      },
+      "confidence": 0.125,
+      "calibration_version": "unpublished"
+    },
+    "accepts": true,
+    "kind": "legacy"
+  },
+  {
+    "name": "legacy-choice-total-lower-edge-unordered-keys",
+    "answer": {
+      "type": "choice",
+      "choice": "b",
+      "probabilities": {
+        "b": 0.611317,
+        "1": 0.032434,
+        "a": 0.356248
+      },
+      "confidence": 0.255,
+      "calibration_version": "unpublished"
+    },
+    "accepts": true,
+    "kind": "legacy"
+  },
+  {
     "name": "legacy-score",
     "answer": {
       "type": "score",
