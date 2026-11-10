@@ -1,11 +1,13 @@
 import ts from 'typescript';
 import { fileURLToPath } from 'node:url';
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { expect, it } from 'vitest';
 import { SystemZeroClient, InvalidRequestError, LongContextNotAvailableError, VideoNotAvailableError, videoAttachment, runBatch, runFlow } from '../src/index.js';
 import type { RequestOptions } from '../src/client.js';
+import oneMillionCases from '../../fixtures/long-context/1m.json';
+import { SystemZeroStreamClient } from '../src/index.js';
 import type { EnabledDecideRequest, VideoRequest } from '../src/index.js';
 
 const request = { model: 'system-zero', state: 'sample', questions: { q: { type: 'boolean' as const, instructions: 'Is it set?' } } };
@@ -54,7 +56,7 @@ it('keeps the typed input refusal', async () => {
   await expect(client.decide(request)).rejects.toBeInstanceOf(VideoNotAvailableError);
 });
 
-it.each(['accept', 'long_context_64k', 'long_context_128k'] as const)('batch forwards the option and refuses an invalid option before admission (%s)', async selected => {
+it.each(['accept', 'long_context_64k', 'long_context_128k', 'long_context_1m'] as const)('batch forwards the option and refuses an invalid option before admission (%s)', async selected => {
   const folder = mkdtempSync(join(tmpdir(), 'sdk-enablement-'));
   const seen: Headers[] = [];
   const client = new SystemZeroClient({ apiKey: 'synthetic', timeout: 1000, maxRetries: 0, fetch: async (_url, init) => {
@@ -69,9 +71,19 @@ it.each(['accept', 'long_context_64k', 'long_context_128k'] as const)('batch for
     expect(seen[0]?.get('SZ-Danger-Zone')).toBe(selected);
     await expect(runBatch(client, items, { ...common, dangerZone: 'wrong' as 'accept' })).rejects.toBeInstanceOf(InvalidRequestError);
     expect(seen).toHaveLength(1);
+    if (selected === 'long_context_1m') {
+      // Simulate a lost result row while retaining the admission journal.
+      writeFileSync(common.resultsPath, '');
+      await runBatch(client, items, { ...common, dangerZone: selected });
+      expect(seen).toHaveLength(2);
+      expect(seen[1]?.get('sz-danger-zone')).toBe(selected);
+      expect(seen[1]?.get('idempotency-key')).toBe(seen[0]?.get('idempotency-key'));
+      await expect(runBatch(client, items, { ...common, dangerZone: 'long_context_64k' })).rejects.toBeInstanceOf(InvalidRequestError);
+      expect(seen).toHaveLength(2);
+    }
   } finally { rmSync(folder, { recursive: true, force: true }); }
 });
-it.each(['accept', 'long_context_64k', 'long_context_128k'] as const)('flow forwards its explicit request option (%s)', async selected => {
+it.each(['accept', 'long_context_64k', 'long_context_128k', 'long_context_1m'] as const)('flow forwards its explicit request option (%s)', async selected => {
   const seen: Headers[] = [];
   const client = new SystemZeroClient({ apiKey: 'synthetic', timeout: 1000, maxRetries: 0, fetch: async (_url, init) => {
     seen.push(new Headers(init?.headers));
@@ -183,4 +195,85 @@ it('preserves direct model limits and optional long class bands through discover
   expect(result).toEqual(payload);
   expect(result.data[0]!.limits.long_context).toBeUndefined();
   expect(result.data[1]!.limits.long_context).toEqual([band]);
+});
+it('1M generates a key even with retries disabled', async () => {
+  const seen: Headers[] = [];
+  const client = new SystemZeroClient({ apiKey: 'SYNTHETIC', maxRetries: 0, retryBudget: 0,
+    fetch: async (_url, init) => { seen.push(new Headers(init?.headers)); return Response.json({ answers: {} }); } });
+  await client.decide(request, options({ dangerZone: 'long_context_1m' }));
+  expect(seen[0]?.get('idempotency-key')).toBeTruthy();
+});
+it('1M requires exactly one question before transport', () => {
+  let calls = 0;
+  const client = new SystemZeroClient({ apiKey: 'SYNTHETIC', fetch: async () => { calls++; return Response.json({}); } });
+  expect(() => client.decide({ ...request, questions: {} }, options({ dangerZone: 'long_context_1m' })))
+    .toThrow(expect.objectContaining({ code: 'questions_too_large', param: 'questions' }));
+  expect(calls).toBe(0);
+});
+
+it.each(oneMillionCases)('1M locally refuses %j', test => {
+  let calls = 0;
+  const client = new SystemZeroClient({ apiKey: 'SYNTHETIC', fetch: async () => { calls++; return Response.json({}); } });
+  expect(() => client.decide({ ...request, ...test.patch } as unknown as Parameters<typeof client.decide>[0], { dangerZone: 'long_context_1m' }))
+    .toThrow(expect.objectContaining({ status: test.status, code: test.code, param: test.param }));
+  expect(calls).toBe(0);
+});
+it.each(['', ' ', '\t'])('1M refuses an explicit blank key %j from options or headers', key => {
+  let calls = 0;
+  const client = new SystemZeroClient({ apiKey: 'SYNTHETIC', maxRetries: 0, fetch: async () => { calls++; return Response.json({}); } });
+  for (const extra of [{ idempotencyKey: key }, { headers: { 'Idempotency-Key': key } }]) {
+    expect(() => client.decide(request, { dangerZone: 'long_context_1m', ...extra }))
+      .toThrow(expect.objectContaining({ status: 400, code: 'invalid_request', param: 'Idempotency-Key' }));
+  }
+  expect(calls).toBe(0);
+});
+it.each([undefined, null, []])('1M accepts absent, null and empty attachments: %j', async attachments => {
+  const client = new SystemZeroClient({ apiKey: 'SYNTHETIC', maxRetries: 0, fetch: async (_url, init) => {
+    const headers = new Headers(init?.headers);
+    expect(headers.get('sz-danger-zone')).toBe('long_context_1m');
+    expect(headers.get('idempotency-key')).toBe('caller-key');
+    return Response.json({ answers: {} }, { headers: { 'sz-danger-zone': 'long_context_1m' } });
+  } });
+  const result = await client.decide({ ...request, attachments }, { dangerZone: 'long_context_1m', idempotencyKey: 'caller-key' }).withResponse();
+  expect(result.metadata.dangerZone).toEqual(['long_context_1m']);
+});
+it('1M measures the exact UTF-8 body boundary', async () => {
+  let calls = 0;
+  const client = new SystemZeroClient({ apiKey: 'SYNTHETIC', maxRetries: 0, fetch: async (_url, init) => {
+    calls++; expect(Buffer.byteLength(String(init?.body), 'utf8')).toBe(8_388_608); return Response.json({ answers: {} });
+  } });
+  const overhead = Buffer.byteLength(JSON.stringify({ ...request, state: '' }));
+  const state = '\u00e9' + 'x'.repeat(8_388_608 - overhead - 2);
+  await client.decide({ ...request, state }, { dangerZone: 'long_context_1m' });
+  expect(() => client.decide({ ...request, state: state + 'x' }, { dangerZone: 'long_context_1m' }))
+    .toThrow(expect.objectContaining({ status: 413, code: 'payload_too_large' }));
+  expect(calls).toBe(1);
+});
+it('1M refuses stream start and construction before connecting', async () => {
+  expect(() => new SystemZeroStreamClient({ apiKey: 'SYNTHETIC', dangerZone: 'long_context_1m' }))
+    .toThrow(expect.objectContaining({ status: 404, code: 'long_context_not_available' }));
+  const client = new SystemZeroStreamClient({ apiKey: 'SYNTHETIC' });
+  await expect(client.start(request, { dangerZone: 'long_context_1m' })).rejects.toMatchObject({ status: 404, code: 'long_context_not_available' });
+});
+it.each([false, true])('1M retries cold admission with the same class and key (workflow=%s)', async workflow => {
+  const { withRetryContext } = await import('../src/client.js');
+  const seen: Headers[] = [];
+  const client = new SystemZeroClient({ apiKey: 'SYNTHETIC', maxRetries: 1, sleep: async () => {}, random: () => 0,
+    fetch: async (_url, init) => {
+      seen.push(new Headers(init?.headers));
+      return seen.length === 1 ? Response.json({ error: { code: 'service_unavailable' } }, { status: 503 }) : Response.json({ answers: {} });
+    } });
+  await client.decide(request, withRetryContext({ dangerZone: 'long_context_1m' }, { workflowRecovery: workflow }));
+  expect(seen).toHaveLength(2);
+  expect(seen[0]?.get('idempotency-key')).toBeTruthy();
+  expect(seen[1]?.get('idempotency-key')).toBe(seen[0]?.get('idempotency-key'));
+  expect(seen.map(headers => headers.get('sz-danger-zone'))).toEqual(['long_context_1m', 'long_context_1m']);
+});
+it.each([[402, 'insufficient_credits'], [429, 'long_context_daily_budget_exhausted']] as const)('1M never retries %s %s', async (status, code) => {
+  let calls = 0;
+  const client = new SystemZeroClient({ apiKey: 'SYNTHETIC', sleep: async () => {}, fetch: async () => {
+    calls++; return Response.json({ error: { code, retryable: true } }, { status, headers: { 'x-should-retry': 'true' } });
+  } });
+  await expect(client.decide(request, { dangerZone: 'long_context_1m' })).rejects.toMatchObject({ status, code });
+  expect(calls).toBe(1);
 });

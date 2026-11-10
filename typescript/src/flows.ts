@@ -28,7 +28,7 @@ export interface FlowDefinition {
 }
 export interface FlowOptions {
   /** Explicit long-context request option; workspace opt-in is also required. */
-  dangerZone?: 'accept' | 'long_context_64k' | 'long_context_128k';
+  dangerZone?: 'accept' | 'long_context_64k' | 'long_context_128k' | 'long_context_1m';
   run_id: string;
   /** Call count cap, defaulting to MAX_STEPS (32). Larger caps are refused. */
   max_decide_calls?: number;
@@ -335,7 +335,7 @@ function errorTrace(error: SystemZeroError): FlowErrorTrace {
 /** Execute ordinary counted decide calls. All returned diagnostics omit content by default. */
 export async function runFlow(client: Pick<SystemZeroClient, 'decide' | 'options'>, input: unknown, options: FlowOptions): Promise<FlowTrace> {
   if (!record(options)) throw invalid();
-  if (options.dangerZone !== undefined && !['accept', 'long_context_64k', 'long_context_128k'].includes(options.dangerZone)) throw new InvalidRequestError('The request option must be accept, long_context_64k or long_context_128k.', { status: 400, type: 'invalid_request_error', code: 'invalid_request', param: 'SZ-Danger-Zone' });
+  if (options.dangerZone !== undefined && !['accept', 'long_context_64k', 'long_context_128k', 'long_context_1m'].includes(options.dangerZone)) throw new InvalidRequestError('The request option must be accept, long_context_64k, long_context_128k or long_context_1m.', { status: 400, type: 'invalid_request_error', code: 'invalid_request', param: 'SZ-Danger-Zone' });
   let settings: FlowOptions;
   try { settings = { ...options }; } catch { throw invalid(); }
   if (settings.now !== undefined && typeof settings.now !== 'function') throw invalid();

@@ -86,7 +86,11 @@ def _distribution(answer: Mapping[str, Any], canonical: bool) -> Dict[str, Union
         if not isinstance(key, str) or not _probability(value):
             _invalid("probabilities must be finite numbers in [0, 1]")
         values[key] = _units(value) if canonical else value
-    total = sum(values.values())
+    total = sum(values.values()) if canonical else 0
+    # Sequential UTF-8 key order avoids Python 3.12+'s compensated float sum.
+    if not canonical:
+        for key in sorted(values, key=lambda key: key.encode("utf-8")):
+            total += values[key]
     
     if (canonical and (abs(total - _MILLION) > 1 or (len(values) == 1 and total != _MILLION))) or (not canonical and abs(total - 1) > 0.000001):
         _invalid("probabilities must sum to one")

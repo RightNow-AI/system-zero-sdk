@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "System Zero enabled request contract",
-    "version": "0.4.3"
+    "version": "0.4.4"
   },
   "paths": {
     "/system-zero/decide": {
@@ -796,7 +796,7 @@
           "questions"
         ],
         "additionalProperties": false,
-        "description": "Select long_context_64k for 38,001 to 65,536 state tokens or long_context_128k for 65,537 to 131,072 using SZ-Danger-Zone. Send state without attachments. Any attachment answers 404 long_context_not_available. The 1M class is closed."
+        "description": "Select long_context_64k for 38,001 to 65,536 state tokens or long_context_128k for 65,537 to 131,072 using SZ-Danger-Zone. Send state without attachments. Any attachment answers 404 long_context_not_available. Select long_context_1m for a string state above 131,072 through 1,048,576 tokens, exactly one question, no attachments, policy, mode, route, session_id or prompt_cache_key; ordinary HTTP calls require an Idempotency-Key. Rendered requests are at most 1,048,575 tokens and bodies at most 8,388,608 bytes."
       },
       "EnabledDecideRequest": {
         "allOf": [

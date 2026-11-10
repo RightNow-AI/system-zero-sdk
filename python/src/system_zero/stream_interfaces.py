@@ -121,7 +121,7 @@ class StreamClient(Protocol):
         ...
 
     async def start(self, request: DecideRequest, *, decision_mode: DecisionMode = "on_change",
-                    min_interval_ms: int = 0) -> StreamAck:
+                    min_interval_ms: int = 0, danger_zone: Optional[str] = None) -> StreamAck:
         ...
 
     async def append_text(self, text: str) -> StreamAck:

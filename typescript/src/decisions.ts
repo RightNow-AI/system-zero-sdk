@@ -66,8 +66,10 @@ function distribution(answer: Record<string, unknown>, canonical: boolean): Map<
     if (!probability(value)) invalid('probabilities must be finite numbers in [0, 1]');
     const amount = canonical ? units(value) : value;
     values.set(key, amount);
-    total += amount;
+    if (canonical) total += amount;
   }
+  // Sequential UTF-8 key order keeps legacy totals identical across readers.
+  if (!canonical) for (const key of [...values.keys()].sort((a, b) => Buffer.compare(Buffer.from(a), Buffer.from(b)))) total += values.get(key)!;
    
   if (canonical ? Math.abs(total - million) > 1 || (values.size === 1 && total !== million) : Math.abs(total - 1) > 0.000001) invalid('probabilities must sum to one');
   return values;

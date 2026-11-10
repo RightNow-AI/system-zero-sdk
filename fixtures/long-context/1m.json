@@ -1,0 +1,92 @@
+[
+  {
+    "name": "object state",
+    "patch": {
+      "state": {}
+    },
+    "code": "long_context_not_available",
+    "param": "state",
+    "status": 404
+  },
+  {
+    "name": "array state",
+    "patch": {
+      "state": []
+    },
+    "code": "long_context_not_available",
+    "param": "state",
+    "status": 404
+  },
+  {
+    "name": "no questions",
+    "patch": {
+      "questions": {}
+    },
+    "code": "questions_too_large",
+    "param": "questions",
+    "status": 413
+  },
+  {
+    "name": "two questions",
+    "patch": {
+      "questions": {
+        "a": {
+          "type": "boolean",
+          "instructions": "Ready?"
+        },
+        "b": {
+          "type": "boolean",
+          "instructions": "Set?"
+        }
+      }
+    },
+    "code": "questions_too_large",
+    "param": "questions",
+    "status": 413
+  },
+  {
+    "name": "policy",
+    "patch": {
+      "policy": null
+    },
+    "code": "long_context_not_available",
+    "param": "policy",
+    "status": 404
+  },
+  {
+    "name": "mode",
+    "patch": {
+      "mode": null
+    },
+    "code": "long_context_not_available",
+    "param": "mode",
+    "status": 404
+  },
+  {
+    "name": "route",
+    "patch": {
+      "route": null
+    },
+    "code": "long_context_not_available",
+    "param": "route",
+    "status": 404
+  },
+  {
+    "name": "session_id",
+    "patch": {
+      "session_id": null
+    },
+    "code": "long_context_not_available",
+    "param": "session_id",
+    "status": 404
+  },
+  {
+    "name": "prompt_cache_key",
+    "patch": {
+      "prompt_cache_key": null
+    },
+    "code": "long_context_not_available",
+    "param": "prompt_cache_key",
+    "status": 404
+  }
+]

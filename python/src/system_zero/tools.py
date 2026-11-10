@@ -367,10 +367,10 @@ class ToolHandler:
     def __init__(
         self, client: Optional[SystemZero] = None, *, namespace: str = "system-zero-tools-v1",
         max_decide_calls: int = 100, base_url: Optional[str] = None,
-        danger_zone: Optional[Literal["accept"]] = None,
+        danger_zone: Optional[Literal["accept", "long_context_64k", "long_context_128k", "long_context_1m"]] = None,
     ):
-        if danger_zone is not None and danger_zone != "accept":
-            raise InvalidRequestError("The request option must be accept.", status=400, type="invalid_request_error", code="invalid_request", param="SZ-Danger-Zone")
+        if danger_zone is not None and danger_zone not in ("accept", "long_context_64k", "long_context_128k", "long_context_1m"):
+            raise InvalidRequestError("The request option must be an explicit context class or accept.", status=400, type="invalid_request_error", code="invalid_request", param="SZ-Danger-Zone")
         self._danger_zone = danger_zone
         bounds = (max_decide_calls,)
         if any(type(value) not in (int, float) or not 0 <= value <= _MAX_SAFE_INTEGER or
@@ -500,7 +500,7 @@ class ToolHandler:
 def create_tool_handler(
     client: Optional[SystemZero] = None, *, namespace: str = "system-zero-tools-v1",
     max_decide_calls: int = 100, base_url: Optional[str] = None,
-        danger_zone: Optional[Literal["accept"]] = None,
+        danger_zone: Optional[Literal["accept", "long_context_64k", "long_context_128k", "long_context_1m"]] = None,
 ) -> ToolHandler:
     return ToolHandler(
         client, namespace=namespace, max_decide_calls=max_decide_calls, danger_zone=danger_zone,

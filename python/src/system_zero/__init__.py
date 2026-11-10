@@ -1,5 +1,10 @@
 """RightNow System Zero API client and client-side helpers."""
 
+from .tool_selection import (
+    tool_questions,
+    select_tool,
+)
+
 from .client import (
     VERSION,
 )
@@ -297,8 +302,10 @@ __all__ = [
   "run_flow",
   "score_refusal",
   "score_reply",
+  "select_tool",
   "stream_client",
   "stream_error",
+  "tool_questions",
   "validate_attachments",
   "validate_expected",
   "validate_flow",

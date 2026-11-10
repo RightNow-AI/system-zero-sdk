@@ -1,5 +1,7 @@
 import httpx
 import pytest
+import json
+from pathlib import Path
 from system_zero import SystemZero, InvalidRequestError, LongContextNotAvailableError, video_attachment, run_batch, run_flow
 
 REQUEST = {"model": "system-zero", "state": "sample", "questions": {"q": {"type": "boolean", "instructions": "Is it set?"}}}
@@ -57,7 +59,7 @@ def test_typed_eligibility_and_refusal_envelope(rule):
     assert (error.status, error.code, str(error), error.request_id, error.eligibility, error.retryable) == (404, "long_context_not_available", "This route is not available.", "req_held", rule, False)
     assert len(seen) == 1
 
-@pytest.mark.parametrize("selected", ["accept", "long_context_64k", "long_context_128k"])
+@pytest.mark.parametrize("selected", ["accept", "long_context_64k", "long_context_128k", "long_context_1m"])
 def test_batch_forwards_and_validates_option(tmp_path, selected):
     seen = []
     def send(request):
@@ -71,9 +73,16 @@ def test_batch_forwards_and_validates_option(tmp_path, selected):
         assert seen[0].headers["SZ-Danger-Zone"] == selected
         with pytest.raises(InvalidRequestError):
             run_batch(client, items, danger_zone="wrong", **options)
-    assert len(seen) == 1
+        if selected == "long_context_1m":
+            options["results_path"].write_text("")
+            run_batch(client, items, danger_zone=selected, **options)
+            assert seen[1].headers["sz-danger-zone"] == selected
+            assert seen[1].headers["idempotency-key"] == seen[0].headers["idempotency-key"]
+            with pytest.raises(InvalidRequestError):
+                run_batch(client, items, danger_zone="long_context_64k", **options)
+    assert len(seen) == (2 if selected == "long_context_1m" else 1)
 
-@pytest.mark.parametrize("selected", ["accept", "long_context_64k", "long_context_128k"])
+@pytest.mark.parametrize("selected", ["accept", "long_context_64k", "long_context_128k", "long_context_1m"])
 def test_flow_forwards_option(selected):
     seen = []
     def send(request):
@@ -172,3 +181,94 @@ def test_model_long_bands_have_typed_required_fields():
                 "rendered_tokens": int, "attachments": Literal[0]}
     assert get_type_hints(ModelLongContextLimits) == expected
     assert ModelLongContextLimits.__required_keys__ == set(expected)
+def test_1m_generates_key_without_retries():
+    seen = []
+    with SystemZero(api_key="SYNTHETIC", max_retries=0, retry_budget=0,
+                    transport=httpx.MockTransport(lambda request: seen.append(request) or httpx.Response(200, json={"answers": {}}))) as client:
+        client.decide(REQUEST, danger_zone="long_context_1m")
+    assert seen[0].headers["idempotency-key"]
+
+def test_1m_requires_one_question_before_transport():
+    seen = []
+    with SystemZero(api_key="SYNTHETIC", transport=httpx.MockTransport(lambda request: seen.append(request) or httpx.Response(200, json={}))) as client:
+        with pytest.raises(Exception) as caught:
+            client.decide({**REQUEST, "questions": {}}, danger_zone="long_context_1m")
+    assert (caught.value.code, caught.value.param) == ("questions_too_large", "questions")
+    assert not seen
+
+ONE_MILLION_CASES = json.loads((Path(__file__).resolve().parents[2] / "fixtures/long-context/1m.json").read_text())
+
+@pytest.mark.parametrize("case", ONE_MILLION_CASES, ids=lambda case: case["name"])
+def test_1m_local_shapes(case):
+    seen = []
+    with SystemZero(api_key="SYNTHETIC", transport=httpx.MockTransport(lambda request: seen.append(request) or httpx.Response(200, json={}))) as client:
+        with pytest.raises(Exception) as caught:
+            client.decide({**REQUEST, **case["patch"]}, danger_zone="long_context_1m")
+    assert (caught.value.status, caught.value.code, caught.value.param) == (case["status"], case["code"], case["param"])
+    assert not seen
+
+@pytest.mark.parametrize("key", ["", " ", "\t"])
+def test_1m_blank_keys(key):
+    seen = []
+    with SystemZero(api_key="SYNTHETIC", max_retries=0, transport=httpx.MockTransport(lambda request: seen.append(request) or httpx.Response(200, json={}))) as client:
+        for extra in ({"idempotency_key": key}, {"headers": {"Idempotency-Key": key}}):
+            with pytest.raises(InvalidRequestError) as caught:
+                client.decide(REQUEST, danger_zone="long_context_1m", **extra)
+            assert (caught.value.status, caught.value.code, caught.value.param) == (400, "invalid_request", "Idempotency-Key")
+    assert not seen
+
+@pytest.mark.parametrize("attachments", [None, []])
+def test_1m_empty_attachments_and_metadata(attachments):
+    seen = []
+    with SystemZero(api_key="SYNTHETIC", max_retries=0, transport=httpx.MockTransport(lambda request: seen.append(request) or httpx.Response(200, json={"answers": {}}, headers={"sz-danger-zone": "long_context_1m"}))) as client:
+        result = client.decide_with_response({**REQUEST, "attachments": attachments}, danger_zone="long_context_1m", idempotency_key="caller-key")
+    assert seen[0].headers["idempotency-key"] == "caller-key"
+    assert seen[0].headers["sz-danger-zone"] == "long_context_1m"
+    assert result.metadata.danger_zone == ["long_context_1m"]
+
+def test_1m_utf8_body_boundary():
+    seen = []
+    overhead = len(json.dumps({**REQUEST, "state": ""}, ensure_ascii=False, separators=(",", ":")).encode())
+    state = "\u00e9" + "x" * (8_388_608 - overhead - 2)
+    with SystemZero(api_key="SYNTHETIC", max_retries=0, transport=httpx.MockTransport(lambda request: seen.append(request) or httpx.Response(200, json={"answers": {}}))) as client:
+        client.decide({**REQUEST, "state": state}, danger_zone="long_context_1m")
+        with pytest.raises(InvalidRequestError) as caught:
+            client.decide({**REQUEST, "state": state + "x"}, danger_zone="long_context_1m")
+    assert (caught.value.status, caught.value.code) == (413, "payload_too_large")
+    assert len(seen) == 1 and len(seen[0].content) == 8_388_608
+
+def test_1m_stream_refusal_before_connect():
+    import asyncio
+    from system_zero import SystemZeroStreamClient
+    with pytest.raises(LongContextNotAvailableError):
+        SystemZeroStreamClient(api_key="SYNTHETIC", danger_zone="long_context_1m")
+    client = SystemZeroStreamClient(api_key="SYNTHETIC")
+    with pytest.raises(LongContextNotAvailableError):
+        asyncio.run(client.start(REQUEST, danger_zone="long_context_1m"))
+    assert client._runner is None
+
+@pytest.mark.parametrize("workflow", [False, True])
+def test_1m_cold_retry(workflow):
+    from system_zero._retry import _retry_context
+    seen = []
+    def send(request):
+        seen.append(request)
+        return httpx.Response(503, json={"error": {"code": "service_unavailable"}}) if len(seen) == 1 else httpx.Response(200, json={"answers": {}})
+    with SystemZero(api_key="SYNTHETIC", max_retries=1, sleep=lambda _: None, random=lambda: 0, transport=httpx.MockTransport(send)) as client:
+        token = _retry_context.set({"workflow_recovery": workflow})
+        try:
+            client.decide(REQUEST, danger_zone="long_context_1m")
+        finally:
+            _retry_context.reset(token)
+    assert len(seen) == 2
+    assert seen[0].headers["idempotency-key"] == seen[1].headers["idempotency-key"]
+    assert [request.headers["sz-danger-zone"] for request in seen] == ["long_context_1m", "long_context_1m"]
+
+@pytest.mark.parametrize("status,code", [(402, "insufficient_credits"), (429, "long_context_daily_budget_exhausted")])
+def test_1m_never_retries_credit_limits(status, code):
+    seen = []
+    with SystemZero(api_key="SYNTHETIC", sleep=lambda _: None, transport=httpx.MockTransport(lambda request: seen.append(request) or httpx.Response(status, json={"error": {"code": code, "retryable": True}}, headers={"x-should-retry": "true"}))) as client:
+        with pytest.raises(Exception) as caught:
+            client.decide(REQUEST, danger_zone="long_context_1m")
+    assert (caught.value.status, caught.value.code) == (status, code)
+    assert len(seen) == 1

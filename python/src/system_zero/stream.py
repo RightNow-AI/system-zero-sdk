@@ -309,10 +309,14 @@ class SystemZeroStreamClient(AsyncIterator[StreamEvent]):
                  reconnect_policy: ReconnectPolicy = "latest",
                  max_reconnect_attempts: int = 8, reconnect_timeout: float = 120.0,
                  receipt_timeout: float = 30.0,
+                 danger_zone: Optional[str] = None,
                  sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,
                  random: Callable[[], float] = random_module.random,
                  monotonic: Callable[[], float] = time.monotonic,
                  now: Callable[[], float] = time.time):
+        if danger_zone == "long_context_1m":
+            from .client import _long_context_unavailable
+            _long_context_unavailable("SZ-Danger-Zone")
         key = api_key if api_key is not None else os.environ.get("SYSTEM_ZERO_API_KEY")
         if key is None:
             raise ValueError("Set api_key or SYSTEM_ZERO_API_KEY.")
@@ -527,7 +531,10 @@ class SystemZeroStreamClient(AsyncIterator[StreamEvent]):
         self._check_open()
 
     async def start(self, request: DecideRequest, *, decision_mode: DecisionMode = "on_change",
-                    min_interval_ms: int = 0) -> StreamAck:
+                    min_interval_ms: int = 0, danger_zone: Optional[str] = None) -> StreamAck:
+        if danger_zone == "long_context_1m":
+            from .client import _long_context_unavailable
+            _long_context_unavailable("SZ-Danger-Zone")
         if decision_mode not in {"on_change", "on_request"}:
             raise ValueError("decision_mode must be on_change or on_request.")
         if not _integer(min_interval_ms, 0, 60000):

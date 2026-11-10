@@ -110,7 +110,7 @@ def _read(path: Path) -> list[dict[str, Any]]:
         rows.append(row)
     return rows
 
-def run_batch(client: SystemZero, items: Sequence[Mapping[str, Any]], *, run_id: str, results_path: str | Path, deadline_ms: float, concurrency: int=2, max_retries: Optional[int]=None, max_decide_calls: Optional[int]=None, danger_zone: Optional[Literal['accept', 'long_context_64k', 'long_context_128k']]=None, now_ms: Callable[[], float]=lambda: time.time() * 1000, sleep_ms: Optional[Callable[[float], None]]=None, random: Optional[Callable[[], float]]=None) -> BatchResult:
+def run_batch(client: SystemZero, items: Sequence[Mapping[str, Any]], *, run_id: str, results_path: str | Path, deadline_ms: float, concurrency: int=2, max_retries: Optional[int]=None, max_decide_calls: Optional[int]=None, danger_zone: Optional[Literal['accept', 'long_context_64k', 'long_context_128k', 'long_context_1m']]=None, now_ms: Callable[[], float]=lambda: time.time() * 1000, sleep_ms: Optional[Callable[[float], None]]=None, random: Optional[Callable[[], float]]=None) -> BatchResult:
     """Run or resume a batch, returning records and a nullable stopped reason.
 
     Each item uses the client's bounded HTTP loop with before-work recovery. max_retries
@@ -119,7 +119,7 @@ def run_batch(client: SystemZero, items: Sequence[Mapping[str, Any]], *, run_id:
     Keep the same API key, target and receipt files for replay. Unfinished
     admissions cannot replay after the server's 24-hour idempotency lifetime.
     """
-    if danger_zone is not None and danger_zone not in ('accept', 'long_context_64k', 'long_context_128k'):
+    if danger_zone is not None and danger_zone not in ('accept', 'long_context_64k', 'long_context_128k', 'long_context_1m'):
         raise _invalid(param='SZ-Danger-Zone')
     started = time.monotonic() * 1000
     max_calls = 1000 if max_decide_calls is None else max_decide_calls

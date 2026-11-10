@@ -7,7 +7,7 @@ import { APIConnectionError, APIError, APITimeoutError, InvalidRequestError, Lon
 import { retryWaitMs, shouldRecoverWorkflow, shouldRetry } from './retry.js';
 import { hasResponseStarted, nodeFetch, requestSent } from './transport.js';
 
-export const VERSION = '0.4.3';
+export const VERSION = '0.4.4';
 export const DEFAULT_BASE_URL = 'https://api.rightnowai.co/v1';
 export type Fetch = typeof globalThis.fetch;
 
@@ -31,7 +31,7 @@ export interface ClientOptions {
 
 export interface RequestOptions {
   /** Select the state token class explicitly. Native long classes accept no attachments. */
-  dangerZone?: 'accept' | 'long_context_64k' | 'long_context_128k';
+  dangerZone?: 'accept' | 'long_context_64k' | 'long_context_128k' | 'long_context_1m';
   idempotencyKey?: string;
   clientRequestId?: string;
   /** Extra headers, including x-mock-scenario in local tests. */
@@ -76,6 +76,12 @@ export function checkedBaseURL(value: string): string {
     throw new TypeError('baseURL must be an HTTPS or loopback HTTP URL without credentials, query or fragment.');
   }
   return url.href.replace(/\/+$/u, '');
+}
+
+function longContextUnavailable(param: string): never {
+  throw new LongContextNotAvailableError('This request shape is not available for the selected long context class.', {
+    status: 404, type: 'not_found_error', code: 'long_context_not_available', param,
+  });
 }
 
 function requestHeaders(value?: HeadersInit): Headers {
@@ -190,6 +196,15 @@ export class SystemZeroClient {
   }
 
   decide(request: DecideRequest | EnabledDecideRequest | VideoRequest, options: RequestOptions = {}): APIPromise<DecideReply> {
+    if (options.dangerZone === 'long_context_1m') {
+      if (typeof request.state !== 'string') longContextUnavailable('state');
+      if (!request.questions || Object.keys(request.questions).length !== 1) throw responseError(413, new Headers(), {
+        error: { code: 'questions_too_large', type: 'invalid_request_error', message: 'The 1M class requires exactly one question.', param: 'questions' },
+      }, false);
+      for (const name of ['policy', 'mode', 'route', 'session_id', 'prompt_cache_key']) {
+        if (Object.hasOwn(request, name)) longContextUnavailable(name);
+      }
+    }
     return this.#request<DecideReply>('POST', '/system-zero/decide', JSON.stringify(request), options);
   }
 
@@ -200,18 +215,27 @@ export class SystemZeroClient {
     const context = retryContexts.get(options);
     const maxRetries = Math.min(this.options.maxRetries, context?.maxRetries ?? this.options.maxRetries);
     const headers = requestHeaders(options.headers);
-    if (headers.has('SZ-Danger-Zone') || (options.dangerZone !== undefined && !['accept', 'long_context_64k', 'long_context_128k'].includes(options.dangerZone))) {
-      throw new InvalidRequestError('Use dangerZone with accept, long_context_64k or long_context_128k; do not supply its header.', {
+    if (headers.has('SZ-Danger-Zone') || (options.dangerZone !== undefined && !['accept', 'long_context_64k', 'long_context_128k', 'long_context_1m'].includes(options.dangerZone))) {
+      throw new InvalidRequestError('Use dangerZone with accept, long_context_64k, long_context_128k or long_context_1m; do not supply its header.', {
         status: 400, type: 'invalid_request_error', code: 'invalid_request', param: 'SZ-Danger-Zone',
       });
     }
     if (options.dangerZone !== undefined && method === 'POST' && path === '/system-zero/decide') {
-      if (options.dangerZone !== 'accept' && body !== undefined && JSON.parse(body).attachments?.length) {
-        throw new LongContextNotAvailableError('Long context classes require state without attachments.', {
-          status: 404, type: 'not_found_error', code: 'long_context_not_available', param: 'attachments',
-        });
+      if (options.dangerZone !== 'accept' && body !== undefined) {
+        const attachments: unknown = JSON.parse(body).attachments;
+        if (attachments != null && (Array.isArray(attachments) ? attachments.length > 0 : options.dangerZone === 'long_context_1m')) longContextUnavailable('attachments');
       }
       headers.set('SZ-Danger-Zone', options.dangerZone);
+    }
+    const oneMillion = options.dangerZone === 'long_context_1m';
+    if (oneMillion) {
+      const key = options.idempotencyKey ?? headers.get('idempotency-key');
+      if (key !== null && !key.trim()) throw new InvalidRequestError('The 1M class requires a nonblank Idempotency-Key.', {
+        status: 400, type: 'invalid_request_error', code: 'invalid_request', param: 'Idempotency-Key',
+      });
+      if (body !== undefined && Buffer.byteLength(body, 'utf8') > 8_388_608) throw responseError(413, new Headers(), {
+        error: { code: 'payload_too_large', type: 'invalid_request_error', message: 'The request body exceeds 8,388,608 bytes.', param: 'body' },
+      }, false);
     }
     try {
       headers.set('authorization', `Bearer ${this.#apiKey}`);
@@ -223,7 +247,7 @@ export class SystemZeroClient {
       const blankKey = headers.has('idempotency-key') && !headers.get('idempotency-key')!.trim();
       if (blankKey) headers.delete('idempotency-key');
       if (headers.has('x-client-request-id') && !headers.get('x-client-request-id')!.trim()) headers.delete('x-client-request-id');
-      if (method === 'POST' && !blankKey && maxRetries > 0 && retryBudget > 0 && !headers.has('idempotency-key')) headers.set('idempotency-key', `sz-sdk-${randomUUID()}`);
+      if (method === 'POST' && !blankKey && (oneMillion || maxRetries > 0 && retryBudget > 0) && !headers.has('idempotency-key')) headers.set('idempotency-key', `sz-sdk-${randomUUID()}`);
     } catch { throw new TypeError('Request headers are invalid.'); }
     const init: RequestInit = { method, headers, redirect: 'error' };
     if (body !== undefined) init.body = body;
@@ -294,9 +318,10 @@ export class SystemZeroClient {
       }
       let error = responseError(response.status, response.headers, body, false);
       const retryable = body !== null && typeof body === 'object' && 'error' in body && body.error !== null && typeof body.error === 'object' && 'retryable' in body.error && typeof body.error.retryable === 'boolean' ? body.error.retryable : undefined;
-      const retry = error.type !== 'authentication_error' && error.type !== 'permission_error' && (context?.workflowRecovery
+      const coldPool = new Headers(init.headers).get('sz-danger-zone') === 'long_context_1m' && response.status === 503 && error.code === 'service_unavailable';
+      const retry = error.type !== 'authentication_error' && error.type !== 'permission_error' && (coldPool || (context?.workflowRecovery
         ? shouldRecoverWorkflow(response.status, error.code, response.headers, retryable, error.details)
-        : shouldRetry(response.status, error.code, response.headers, retryable, this.#now()));
+        : shouldRetry(response.status, error.code, response.headers, retryable, this.#now())));
       if (retryable === undefined && retry) error = responseError(response.status, response.headers, body, true);
       if (externalRemaining() <= 0) { context?.onDeadline?.(); throw error; }
       if (!retry) throw error;

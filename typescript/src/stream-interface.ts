@@ -3,7 +3,7 @@ import type { Attachment, DecideReply, DecideRequest, ErrorEnvelope, JsonValue, 
 export type DecisionMode = 'on_change' | 'on_request';
 export type ReconnectPolicy = 'latest' | 'never';
 export type StreamRequest = DecideRequest;
-export interface StreamStartOptions { decisionMode?: DecisionMode; minIntervalMs?: number }
+export interface StreamStartOptions { dangerZone?: import('./client.js').RequestOptions['dangerZone']; decisionMode?: DecisionMode; minIntervalMs?: number }
 export interface StreamRateLimit { limit: number; remaining: number; reset_epoch_seconds: number }
 export interface StreamBase { stream_id: string; seq: number }
 export interface StreamHello extends StreamBase {
@@ -55,6 +55,7 @@ export interface StreamWebSocketConstructor {
   new(url: string, protocols: string[], options: { headers: Record<string, string>; perMessageDeflate: false; autoPong?: false }): StreamWebSocket;
 }
 export interface StreamClientOptions {
+  dangerZone?: import('./client.js').RequestOptions['dangerZone'];
   apiKey?: string; streamURL?: string; WebSocket?: StreamWebSocketConstructor;
   reconnectPolicy?: ReconnectPolicy;
   /** Total consecutive opening attempts, including the first. Defaults to 8. */

@@ -1,6 +1,6 @@
 import { Buffer } from 'node:buffer';
 import type { Readable, Writable } from 'node:stream';
-import { createToolHandler, TOOL_DEFINITIONS } from '../function-tools/index.js';
+import { createToolHandler, TOOL_DEFINITIONS, type ToolHandlerOptions } from '../function-tools/index.js';
 
 export const CURRENT_PROTOCOL_VERSION = '2026-07-28';
 export const LEGACY_PROTOCOL_VERSION = '2025-11-25';
@@ -8,7 +8,7 @@ export const SUPPORTED_PROTOCOL_VERSIONS = [CURRENT_PROTOCOL_VERSION, LEGACY_PRO
 // The HTTP caller cap is 3,665,920 bytes. JSON tool wrapping can escape that
 // content again; this transport bound leaves room for the complete caller body.
 export const MAX_FRAME_BYTES = 24 * 1024 * 1024;
-const SERVER_INFO = { name: 'system-zero', version: '0.4.3' } as const;
+const SERVER_INFO = { name: 'system-zero', version: '0.4.4' } as const;
 const CAPABILITIES = { tools: { listChanged: false } } as const;
 const CACHE = { ttlMs: 3_600_000, cacheScope: 'public' } as const;
 const VERSION_FIELD = 'io.modelcontextprotocol/protocolVersion';
@@ -26,6 +26,7 @@ export interface RpcReply {
 }
 
 export interface McpServerOptions {
+  dangerZone?: ToolHandlerOptions['dangerZone'];
   handleToolCall?: ToolHandler;
 }
 
@@ -71,7 +72,7 @@ function toolResult(id: RequestId, value: ToolResult, modern: boolean): RpcReply
  * handshake remains available for clients using the previous published era.
  */
 export function createMcpServer(options: McpServerOptions = {}): McpServer {
-  const handleToolCall = options.handleToolCall ?? createToolHandler({});
+  const handleToolCall = options.handleToolCall ?? createToolHandler({ dangerZone: options.dangerZone });
   let initialized = false;
   let initializationSent = false;
   const active = new Map<RequestId, { cancelled: boolean }>();

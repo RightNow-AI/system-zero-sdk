@@ -12,7 +12,7 @@ import { scoreReply, scoreRefusal, validateExpected, evaluate, type QuestionScor
 export interface BatchItem { id: string; request: DecideRequest | EnabledDecideRequest | VideoRequest; expected: Record<string, boolean | string | null> }
 interface Admission {
   schema: 1; run_id: string; id: string; request_hash: string; expected_hash: string; idempotency_key: string;
-  admitted_at_ms: number; target: string; danger_zone?: 'accept' | 'long_context_64k' | 'long_context_128k';
+  admitted_at_ms: number; target: string; danger_zone?: 'accept' | 'long_context_64k' | 'long_context_128k' | 'long_context_1m';
 }
 type BatchUsage = NonNullable<EvaluationRecord['usage']>;
 export interface BatchRecord extends Admission {
@@ -21,7 +21,7 @@ export interface BatchRecord extends Admission {
 }
 export interface BatchOptions {
   /** Explicit LongContextRequest option; workspace opt-in is also required. */
-  dangerZone?: 'accept' | 'long_context_64k' | 'long_context_128k';
+  dangerZone?: 'accept' | 'long_context_64k' | 'long_context_128k' | 'long_context_1m';
   runId: string; resultsPath: string; deadlineMs: number; concurrency?: number; maxRetries?: number;
   /** Admission count cap; defaults to 1,000 and includes durable admissions on resume. */
   maxDecideCalls?: number;
@@ -89,7 +89,7 @@ function readRows<T>(path: string): T[] {
 /** Offline persistence plus ordinary decide calls. Use one results path and API key per run. */
 export async function runBatch(client: Pick<SystemZeroClient, 'decide' | 'options'>, input: readonly BatchItem[], options: BatchOptions): Promise<BatchResult> {
   // One elapsed deadline includes preparation and is shared by every item.
-  if (options.dangerZone !== undefined && !['accept', 'long_context_64k', 'long_context_128k'].includes(options.dangerZone)) invalid('SZ-Danger-Zone');
+  if (options.dangerZone !== undefined && !['accept', 'long_context_64k', 'long_context_128k', 'long_context_1m'].includes(options.dangerZone)) invalid('SZ-Danger-Zone');
   const started = performance.now();
   const now = options.now ?? Date.now;
   const concurrency = options.concurrency ?? 2; const retries = options.maxRetries ?? client.options.maxRetries;

@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { checkedBaseURL, redactClientText, withRetryContext } from '../../client.js';
+import { checkedBaseURL, redactClientText, withRetryContext, type RequestOptions } from '../../client.js';
 import { SystemZeroClient } from '../../client.js';
 import { InvalidRequestError, SystemZeroError } from '../../errors.js';
 import type { DecideRequest, Question, StructuredJson } from '../../api-types.js';
@@ -31,7 +31,7 @@ export interface ToolResult {
   [key: string]: unknown;
 }
 export interface ToolHandlerOptions {
-  dangerZone?: 'accept';
+  dangerZone?: RequestOptions['dangerZone'];
   client?: Pick<SystemZeroClient, 'decide' | 'models'>;
   baseURL?: string;
   namespace?: string;
@@ -289,7 +289,7 @@ function success(data: Record<string, unknown>, requestId: string | null): ToolR
 }
 
 export function createToolHandler(options: ToolHandlerOptions = {}): ToolHandler {
-  if (options.dangerZone !== undefined && options.dangerZone !== 'accept') throw new InvalidRequestError('The request option must be accept.', { status: 400, type: 'invalid_request_error', code: 'invalid_request', param: 'SZ-Danger-Zone' });
+  if (options.dangerZone !== undefined && !['accept', 'long_context_64k', 'long_context_128k', 'long_context_1m'].includes(options.dangerZone)) throw new InvalidRequestError('The request option must be an explicit context class or accept.', { status: 400, type: 'invalid_request_error', code: 'invalid_request', param: 'SZ-Danger-Zone' });
   const namespace = options.namespace ?? 'system-zero-tools-v1';
   const maxCalls = options.maxDecideCalls ?? 100;
   if (typeof namespace !== 'string' || !namespace || !validString(namespace) || (!Number.isSafeInteger(maxCalls) || maxCalls < 0)) invalid();

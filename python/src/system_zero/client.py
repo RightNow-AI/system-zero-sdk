@@ -24,7 +24,7 @@ from .types import DecideReply, DecideRequest, ModelList
 from .enabled_types import EnabledDecideRequest, VideoRequest
 
 
-VERSION = "0.4.3"
+VERSION = "0.4.4"
 DEFAULT_BASE_URL = "https://api.rightnowai.co/v1"
 _MAX_TIMEOUT_SECONDS = 2_147_483_647 / 1000
 
@@ -94,6 +94,11 @@ class Models:
         return cast(ResponseResult[ModelList], self._client._request(
             "GET", "/models", client_request_id=client_request_id, headers=headers, retry_budget=retry_budget,
         ))
+
+
+def _long_context_unavailable(param: str) -> None:
+    raise LongContextNotAvailableError("This request shape is not available for the selected long context class.",
+        status=404, type="not_found_error", code="long_context_not_available", param=param)
 
 
 class SystemZero:
@@ -169,7 +174,7 @@ class SystemZero:
         idempotency_key: Optional[str] = None, client_request_id: Optional[str] = None,
         headers: Optional[Mapping[str, str]] = None,
         retry_budget: Optional[float] = None,
-        danger_zone: Optional[Literal["accept", "long_context_64k", "long_context_128k"]] = None,
+        danger_zone: Optional[Literal["accept", "long_context_64k", "long_context_128k", "long_context_1m"]] = None,
     ) -> DecideReply:
         return self.decide_with_response(request, idempotency_key=idempotency_key,
                                          client_request_id=client_request_id, headers=headers,
@@ -180,11 +185,20 @@ class SystemZero:
         idempotency_key: Optional[str] = None, client_request_id: Optional[str] = None,
         headers: Optional[Mapping[str, str]] = None,
         retry_budget: Optional[float] = None,
-        danger_zone: Optional[Literal["accept", "long_context_64k", "long_context_128k"]] = None,
+        danger_zone: Optional[Literal["accept", "long_context_64k", "long_context_128k", "long_context_1m"]] = None,
     ) -> ResponseResult[DecideReply]:
+        if danger_zone == "long_context_1m":
+            if not isinstance(request.get("state"), str):
+                _long_context_unavailable("state")
+            if not isinstance(request.get("questions"), Mapping) or len(request["questions"]) != 1:
+                raise InvalidRequestError("The 1M class requires exactly one question.", status=413,
+                    type="invalid_request_error", code="questions_too_large", param="questions")
+            for name in ("policy", "mode", "route", "session_id", "prompt_cache_key"):
+                if name in request:
+                    _long_context_unavailable(name)
         outgoing = httpx.Headers(headers)
-        if "SZ-Danger-Zone" in outgoing or (danger_zone is not None and danger_zone not in ("accept", "long_context_64k", "long_context_128k")):
-            raise InvalidRequestError("Use danger_zone with accept, long_context_64k or long_context_128k; do not supply its header.",
+        if "SZ-Danger-Zone" in outgoing or (danger_zone is not None and danger_zone not in ("accept", "long_context_64k", "long_context_128k", "long_context_1m")):
+            raise InvalidRequestError("Use danger_zone with accept, long_context_64k, long_context_128k or long_context_1m; do not supply its header.",
                                       status=400, type="invalid_request_error", code="invalid_request", param="SZ-Danger-Zone")
         return cast(ResponseResult[DecideReply], self._request(
             "POST", "/system-zero/decide", body=request,
@@ -198,7 +212,7 @@ class SystemZero:
         idempotency_key: Optional[str] = None, client_request_id: Optional[str] = None,
         headers: Optional[Mapping[str, str]] = None,
         generate_idempotency: bool = True, retries: Optional[int] = None,
-        _danger_zone: Optional[Literal["accept", "long_context_64k", "long_context_128k"]] = None,
+        _danger_zone: Optional[Literal["accept", "long_context_64k", "long_context_128k", "long_context_1m"]] = None,
         retry_budget: Optional[float] = None,
     ) -> ResponseResult[Any]:
         _checked_base_url(self.base_url)
@@ -216,13 +230,13 @@ class SystemZero:
         external_clock = context.get("remaining", lambda: float("inf"))
         on_deadline = context.get("on_deadline", lambda: None)
         outgoing = httpx.Headers(headers)
-        if "SZ-Danger-Zone" in outgoing or (_danger_zone is not None and _danger_zone not in ("accept", "long_context_64k", "long_context_128k")):
-            raise InvalidRequestError("Use danger_zone with accept, long_context_64k or long_context_128k; do not supply its header.",
+        if "SZ-Danger-Zone" in outgoing or (_danger_zone is not None and _danger_zone not in ("accept", "long_context_64k", "long_context_128k", "long_context_1m")):
+            raise InvalidRequestError("Use danger_zone with accept, long_context_64k, long_context_128k or long_context_1m; do not supply its header.",
                                       status=400, type="invalid_request_error", code="invalid_request", param="SZ-Danger-Zone")
         if _danger_zone is not None and method == "POST" and path == "/system-zero/decide":
-            if _danger_zone != "accept" and body is not None and body.get("attachments"):
-                raise LongContextNotAvailableError("Long context classes require state without attachments.",
-                    status=404, type="not_found_error", code="long_context_not_available", param="attachments")
+            if _danger_zone != "accept" and body is not None and (body.get("attachments") or
+                    _danger_zone == "long_context_1m" and body.get("attachments") is not None and body.get("attachments") != []):
+                _long_context_unavailable("attachments")
             outgoing["SZ-Danger-Zone"] = _danger_zone
         outgoing["Authorization"] = "Bearer " + reveal(self._api_key)
         outgoing["User-Agent"] = "system-zero-python/" + VERSION + " python/" + ".".join(map(str, sys.version_info[:3]))
@@ -231,10 +245,16 @@ class SystemZero:
             outgoing["Content-Type"] = "application/json"
         if client_request_id is not None:
             outgoing["X-Client-Request-Id"] = client_request_id
+        one_million = _danger_zone == "long_context_1m"
+        if one_million:
+            key = idempotency_key if idempotency_key is not None else outgoing.get("Idempotency-Key")
+            if key is not None and not key.strip():
+                raise InvalidRequestError("The 1M class requires a nonblank Idempotency-Key.", status=400,
+                    type="invalid_request_error", code="invalid_request", param="Idempotency-Key")
         if method == "POST" and generate_idempotency:
             if idempotency_key is None:
                 idempotency_key = outgoing.get("Idempotency-Key")
-            if idempotency_key is None and max_retries > 0:
+            if idempotency_key is None and (one_million or max_retries > 0):
                 idempotency_key = "sz-sdk-" + str(uuid4())
             if idempotency_key is not None:
                 outgoing["Idempotency-Key"] = idempotency_key
@@ -245,6 +265,9 @@ class SystemZero:
         used_key = outgoing.get("Idempotency-Key")
         # Python dict insertion order is preserved. Serialize once for all attempts.
         payload = json.dumps(body, ensure_ascii=False, separators=(",", ":")).encode("utf-8") if body is not None else None
+        if one_million and payload is not None and len(payload) > 8_388_608:
+            raise InvalidRequestError("The request body exceeds 8,388,608 bytes.", status=413,
+                type="invalid_request_error", code="payload_too_large", param="body")
         safe_replay = method in {"GET", "HEAD", "OPTIONS"} or bool(outgoing.get("Idempotency-Key", "").strip())
         started = self._monotonic()
         retry_deadline = started + budget if context.get("workflow_recovery") else float("inf")
@@ -316,11 +339,12 @@ class SystemZero:
                     marker = envelope_error.get("retryable") if isinstance(envelope_error, dict) else None
                     workflow_marker = marker if isinstance(marker, bool) else None
                     # No replay after an invalid JSON success: the server already answered.
+                    cold_pool = one_million and response.status_code == 503 and error.code == "service_unavailable"
                     should_retry = (safe_replay and not response.is_success and
                                     error.type not in {"authentication_error", "permission_error"} and
-                                    (_recover_workflow(response.status_code, error.code, response.headers, workflow_marker, error.details)
+                                    (cold_pool or (_recover_workflow(response.status_code, error.code, response.headers, workflow_marker, error.details)
                                      if context.get("workflow_recovery") else
-                                     _retry_response(response.status_code, error.code, response.headers, workflow_marker)))
+                                     _retry_response(response.status_code, error.code, response.headers, workflow_marker))))
                     if workflow_marker is None and should_retry:
                         error.retryable = True
                     retry_headers = response.headers

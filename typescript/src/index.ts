@@ -6,6 +6,7 @@ export type { Fetch, ClientOptions, RequestOptions, ResponseMetadata, ResponseRe
 export * from './decisions.js';
 export * from './retry.js';
 export { markResponseStarted } from './transport.js';
+export * from './tool-selection.js';
 export * from './flows.js';
 export * from './batch.js';
 export * from './evaluate.js';

@@ -31,7 +31,7 @@ GATEWAY_CODES = set("""
 """.split())
 
 
-EXPECTED = set("""
+EXPECTED = set("""tool_questions select_tool
     SystemZero VERSION __version__ Alternative Decision LegacyDecision QuestionRefusal
     decision_for decisions_for ErrorCode KNOWN_ERROR_CODES SYSTEM_ZERO_ERROR_CODES GATEWAY_ERROR_CODES
     RateLimitInfo ResponseMetadata ResponseResult MAX_FLOW_STEPS flow_idempotency_key flow_request_hash run_flow validate_flow idempotency_key

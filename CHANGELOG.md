@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.4.4
+
+Select which tool to call next with toolQuestions / tool_questions and selectTool / select_tool. The helpers return the choice and probabilities through ordinary decide; the caller runs the tool. Tool selection has not been measured.
+
+Select the 1M class explicitly with long_context_1m. Both SDKs keep its idempotency key across retries, generate a key even without retries, and check its request shape before sending. Workspace access is enabled in the Console.
+
+Legacy answers whose probabilities sum exactly at the tolerance edge are now read the same way by both SDKs and by every supported Python version.
+
+Reported and fixed by an outside contributor in pull request 5 of the SDK repository.
+
 ## 0.4.3
 
 Model listing now types optional `limits.long_context` entries with `header_value`, `min_state_tokens`, `state_tokens`, `rendered_tokens` and `attachments`; ordinary token limits describe the direct window. A cold audio pool can return HTTP 503 `system_zero_unavailable` with `Retry-After` up to 240 seconds. The SDK preserves the delay and idempotency key; a wait beyond the retry budget raises immediately. Wait for that delay and retry the same request and key, or explicitly raise both the retry budget and maximum wait to allow automatic recovery.

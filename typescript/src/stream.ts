@@ -218,7 +218,7 @@ export class SystemZeroStreamClient implements AsyncIterable<StreamEvent> {
   #resumeHint: { stream_id: string; resume_token: string; state_version: number; expiresAt: number } | undefined;
   #resuming: { stateVersion: number; result: Deferred<StreamDecision> } | undefined;
   #request: StreamRequest | undefined;
-  #startOptions: Required<StreamStartOptions> = { decisionMode: 'on_change', minIntervalMs: 0 };
+  #startOptions: Required<Omit<StreamStartOptions, 'dangerZone'>> = { decisionMode: 'on_change', minIntervalMs: 0 };
   #connectionMode: 'on_change' | 'on_request' = 'on_change';
   #everStarted = false;
   #accepted: StateSnapshot | undefined;
@@ -255,6 +255,7 @@ export class SystemZeroStreamClient implements AsyncIterable<StreamEvent> {
   #ambiguous = new Map<number, string>();
 
   constructor(options: StreamClientOptions = {}) {
+    if (options.dangerZone === 'long_context_1m') throw responseError(404, new Headers(), { error: { code: 'long_context_not_available', type: 'not_found_error', message: 'The 1M class requires ordinary HTTP calls.', param: 'SZ-Danger-Zone' } }, false);
     assertSafeNativeDebug();
     const key = options.apiKey ?? process.env.SYSTEM_ZERO_API_KEY;
     if (!key) throw new Error('Supply an apiKey or set SYSTEM_ZERO_API_KEY in the server environment.');
@@ -285,6 +286,7 @@ export class SystemZeroStreamClient implements AsyncIterable<StreamEvent> {
   }
 
   start(request: StreamRequest, options: StreamStartOptions = {}): Promise<StreamAck> {
+    if (options.dangerZone === 'long_context_1m') return Promise.reject(responseError(404, new Headers(), { error: { code: 'long_context_not_available', type: 'not_found_error', message: 'The 1M class requires ordinary HTTP calls.', param: 'SZ-Danger-Zone' } }, false));
     if (this.#request) return Promise.reject(new Error('start may be called only once; use a new client to change questions or model.'));
     const interval = options.minIntervalMs ?? 0;
     if (!integer(interval) || interval > 60_000) return Promise.reject(new RangeError('minIntervalMs must be an integer from 0 through 60000.'));
