@@ -48,6 +48,12 @@ availability and limits before sending an attachment. SDK types and encoders do
 not enable a held API class. Use the public `system-zero` model ID; an unavailable
 explicit model ID returns `model_not_found`.
 
+Audio is served like every other attachment kind. For any kind, a 503 with
+`Retry-After` is retried after that delay with the same `Idempotency-Key`;
+the SDK does this within its retry limit. If the delay exceeds that limit,
+wait for the reported delay, then retry the same request with the same key,
+exposed on the error.
+
 `attachments` is optional; `null` remains valid. Each inline attachment has a unique
 `name`, a `type` and a canonical base64 data URL in `data`. Names start with an
 ASCII letter and contain at most 64 letters, digits, `_` or `-`.
@@ -364,8 +370,8 @@ The SDK sends your `Idempotency-Key` or generates one even when retries are
 disabled; a blank key is refused locally as HTTP 400 `invalid_request`, param
 `Idempotency-Key`. Invalid shapes are refused locally as HTTP 404
 `long_context_not_available`; a question count other than one uses
-`questions_too_large`. Enable access per workspace in the Console: add funds
-with a saved card, then open Settings, Workspace, Context access. Before access,
+`questions_too_large`. Enable access per workspace in the Console: make one
+completed payment, then open Settings, Workspace, Context access. Before access,
 HTTP 404 `long_context_not_available` is uncharged; `details.eligibility` names
 the first unmet step and may contain new strings.
 
@@ -374,7 +380,9 @@ credit returns HTTP 402 `insufficient_credits` before work. A daily class limit
 returns HTTP 429 `long_context_daily_budget_exhausted` until the next UTC day;
 neither error is retried automatically. A cold pool returns HTTP 503
 `service_unavailable` before any hold or charge; the SDK retries within its
-normal budget using the same key. One reply runs at a time per pool; a concurrent
+normal budget using the same key. The first call
+after an idle period can take several minutes to become available: the answer
+names the wait in `Retry-After`; keep retrying for up to ten minutes. One reply runs at a time per pool; a concurrent
 second call returns HTTP 429 `capacity_exhausted` with `Retry-After`.
 
 No selector is sent by default. Do not supply the header

@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.4.5
+
+Audio is served like every other attachment kind; the on-demand note is removed.
+
+To access the largest context class, make one completed payment, then open Settings, Workspace, Context access.
+
+The first 1M call after an idle period can take several minutes to become available: the answer names the wait in `Retry-After`; keep retrying for up to ten minutes.
+
 ## 0.4.4
 
 Select which tool to call next with toolQuestions / tool_questions and selectTool / select_tool. The helpers return the choice and probabilities through ordinary decide; the caller runs the tool. Tool selection has not been measured.

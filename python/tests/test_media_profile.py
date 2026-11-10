@@ -24,7 +24,7 @@ def wav(codec=1, channels=1, rate=16000, bits=16, frames=160):
 AUDIO = {"name": "recording", "type": "audio", "data": url("audio/wav", wav())}
 
 def test_selected_registry_and_version():
-    assert sdk.VERSION == sdk.__version__ == "0.4.4"
+    assert sdk.VERSION == sdk.__version__ == "0.4.5"
     assert dict(sdk.MIMES) == {"image": ("image/jpeg", "image/png"), "audio": ("audio/wav",), "document": ("application/pdf",), "video": ("video/mp4",)}
     assert sdk.MEDIA_LIMITS["max_audio_duration_ms"] == 60_000
     spec = json.loads((Path(__file__).resolve().parents[2] / "openapi.json").read_text())
