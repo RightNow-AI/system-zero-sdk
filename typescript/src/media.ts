@@ -12,13 +12,13 @@ export const MEDIA_LIMITS = Object.freeze({
   "maxInlineBytes": 2621440,
   "maxBodyBytes": 3665920,
   "audioSampleRate": 16000,
-  "maxAudioDurationMs": 300000,
+  "maxAudioDurationMs": 60000,
   "maxAudioChannels": 64,
   "maxImagePixels": 16777216,
   "maxImageAspectRatio": 50
 });
 export const MEDIA_MIMES = Object.freeze({
-  image: Object.freeze(["image/png", "image/jpeg"]),
+  image: Object.freeze(["image/jpeg", "image/png"]),
   audio: Object.freeze(["audio/wav"]),
   document: Object.freeze(["application/pdf"]),
   video: Object.freeze(["video/mp4"]),
@@ -44,11 +44,15 @@ const errors = {
   "media_unpriced": [
     403,
     "This input type is not supported."
+  ],
+  "audio_not_available": [
+    404,
+    "Audio is unavailable. Send the request without the audio attachment."
   ]
 } as const;
 function refusal(code: keyof typeof errors, param: string): SystemZeroError {
   const [status, message] = errors[code];
-  return responseError(status, new Headers(), { error: { code, message, param, type: 'invalid_request_error', retryable: false } }, false);
+  return responseError(status, new Headers(), { error: { code, message, param, type: status === 404 ? 'not_found_error' : 'invalid_request_error', retryable: false } }, false);
 }
 const namePattern = /^[A-Za-z][A-Za-z0-9_-]{0,63}$/u;
 const fields = new Set(['name', 'type', 'data']);
@@ -113,9 +117,11 @@ function audioFrames(b: Buffer): number {
 function content(type: MediaKind, mime: string, data: Uint8Array, param: string): void {
   if (type === 'audio') {
     if (mime !== 'audio/wav') throw refusal('media_unsupported', param);
-    audioFrames(Buffer.from(data.buffer, data.byteOffset, data.byteLength));
+    const frames = audioFrames(Buffer.from(data.buffer, data.byteOffset, data.byteLength));
+    if (frames > MEDIA_LIMITS.maxAudioDurationMs * MEDIA_LIMITS.audioSampleRate / 1000) throw refusal('media_too_large', 'attachments');
     return;
   }
+
   // These two formats pass the initial MIME screen but cannot be admitted for billing.
   if (mime === 'image/gif' || mime === 'image/webp') {
     if (!signatureMatches(mime, data)) throw refusal('media_decode_failed', param);
@@ -139,6 +145,7 @@ export function inlineAttachment(input: MediaInput): InlineAttachment {
 /** Explicit preflight; availability, references and complete image decoding belong to the API. */
 export function validateAttachments<T extends readonly Attachment[]>(attachments: T): T {
   if (!Array.isArray(attachments)) throw refusal('invalid_request', 'attachments');
+  if (attachments.some(item => item?.type === 'audio') && attachments.some(item => item?.type !== 'audio')) throw refusal('audio_not_available', 'attachments');
   // Preserve the API's availability/referral precedence for untyped callers.
   if ((attachments as readonly unknown[]).some(item => item !== null && typeof item === 'object'
     && ('upload' in item || 'type' in item && (item.type === 'document' || item.type === 'video')))) return attachments;

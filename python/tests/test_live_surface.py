@@ -8,7 +8,7 @@ import system_zero
 
 
 API_CODES = set("""
-  attachment_too_large audio_not_available capacity_exhausted committee_not_available
+  attachment_too_large audio_not_available capacity_exhausted committee_not_available concurrency_limit_exceeded
   daily_dispatch_limit deliberate_not_available long_context_daily_budget_exhausted output_limit_exceeded document_controls_not_available document_decode_failed
   document_not_available document_pictures_not_available document_too_large document_unsupported
   https_required idempotency_key_reuse image_not_available injection_suspected
@@ -19,6 +19,7 @@ API_CODES = set("""
   media_decode_failed media_too_large media_unpriced media_unsupported
   payload_too_large question_not_grounded question_too_large questions_too_large
   rate_limit_exceeded request_refused service_unavailable staging_attempt_ceiling
+  starter_attempt_limit starter_concurrency_limit starter_credit_held starter_rate_limit starter_spend_limit starter_unavailable
   stream_limit_exceeded state_too_large state_too_large_unguarded system_zero_timeout system_zero_unavailable
   upload_in_use upload_not_found upload_not_ready video_not_available
   workspace_limit_exceeded workspace_quarantined
@@ -26,7 +27,7 @@ API_CODES = set("""
 GATEWAY_CODES = set("""
     auth_error account_suspended model_not_found unknown_endpoint method_not_allowed invalid_trace_header invalid_api_key invalid_idempotency_key
     idempotency_conflict idempotency_replay_unavailable idempotency_replayed_error idempotency_unavailable limiter_unavailable
-    maintenance internal_error concurrency_limit_exceeded monthly_cap_reached
+    maintenance internal_error monthly_cap_reached
 """.split())
 
 
@@ -55,8 +56,8 @@ EXPECTED.update(['Attachment', 'ByteData', 'MAX_ATTACHMENTS', 'MAX_INLINE_BYTES'
 
 class PublicSurfaceTests(unittest.TestCase):
     def test_error_conveniences_equal_the_api_catalog(self):
-        self.assertEqual(len(API_CODES), 57)
-        self.assertEqual(len(GATEWAY_CODES), 17)
+        self.assertEqual(len(API_CODES), 64)
+        self.assertEqual(len(GATEWAY_CODES), 16)
         self.assertEqual(set(system_zero.SYSTEM_ZERO_ERROR_CODES), API_CODES)
         self.assertEqual(len(system_zero.SYSTEM_ZERO_ERROR_CODES), len(API_CODES))
         self.assertEqual(set(system_zero.GATEWAY_ERROR_CODES), GATEWAY_CODES)

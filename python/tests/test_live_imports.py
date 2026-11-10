@@ -26,8 +26,14 @@ class LiveImportTests(unittest.TestCase):
                 for path in PACKAGE.iterdir():
                     if path.suffix in {".py", ".json"} or path.name == "py.typed":
                         output.writestr("system_zero/" + path.name, path.read_bytes())
-            script = "import sys; sys.path.insert(0, sys.argv[1]); import system_zero.tools as tools; assert len(tools.NESTED_FUNCTION_TOOLS) == len(tools.INPUT_SCHEMA_TOOLS) == 2"
-            result = subprocess.run([sys.executable, "-I", "-B", "-c", script, str(archive)],
+            dependency_paths = set()
+            for name in RUNTIME_ROOTS:
+                found = importlib.util.find_spec(name)
+                if found is not None and found.origin is not None:
+                    origin = Path(found.origin).resolve()
+                    dependency_paths.add(str(origin.parent.parent if found.submodule_search_locations else origin.parent))
+            script = "import json, sys; sys.path[:0] = [sys.argv[1], *json.loads(sys.argv[2])]; import system_zero.tools as tools; assert len(tools.NESTED_FUNCTION_TOOLS) == len(tools.INPUT_SCHEMA_TOOLS) == 2"
+            result = subprocess.run([sys.executable, "-I", "-B", "-c", script, str(archive), json.dumps(sorted(dependency_paths))],
                                     capture_output=True, text=True, timeout=30, check=False)
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 

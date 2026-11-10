@@ -57,7 +57,8 @@ def test_typed_eligibility_and_refusal_envelope(rule):
     assert (error.status, error.code, str(error), error.request_id, error.eligibility, error.retryable) == (404, "long_context_not_available", "This route is not available.", "req_held", rule, False)
     assert len(seen) == 1
 
-def test_batch_forwards_and_validates_option(tmp_path):
+@pytest.mark.parametrize("selected", ["accept", "long_context_64k", "long_context_128k"])
+def test_batch_forwards_and_validates_option(tmp_path, selected):
     seen = []
     def send(request):
         seen.append(request)
@@ -65,14 +66,15 @@ def test_batch_forwards_and_validates_option(tmp_path):
     with SystemZero(api_key="synthetic", timeout=1, max_retries=0, transport=httpx.MockTransport(send)) as client:
         items = [{"id": "one", "request": REQUEST, "expected": {"q": True}}]
         options = dict(run_id="enabled", results_path=tmp_path / "rows.jsonl", deadline_ms=10000, concurrency=1)
-        result = run_batch(client, items, danger_zone="accept", **options)
+        result = run_batch(client, items, danger_zone=selected, **options)
         assert result["records"][0]["outcome"] == "held"
-        assert seen[0].headers["SZ-Danger-Zone"] == "accept"
+        assert seen[0].headers["SZ-Danger-Zone"] == selected
         with pytest.raises(InvalidRequestError):
             run_batch(client, items, danger_zone="wrong", **options)
     assert len(seen) == 1
 
-def test_flow_forwards_option():
+@pytest.mark.parametrize("selected", ["accept", "long_context_64k", "long_context_128k"])
+def test_flow_forwards_option(selected):
     seen = []
     def send(request):
         seen.append(request)
@@ -80,8 +82,8 @@ def test_flow_forwards_option():
     flow = {"version": 1, "request": {"model": REQUEST["model"], "state": REQUEST["state"]}, "steps": [{"id": "one", "questions": REQUEST["questions"], "next": {"rules": [], "default": None}}]}
     with SystemZero(api_key="synthetic", timeout=1, max_retries=0, transport=httpx.MockTransport(send)) as client:
         with pytest.raises(LongContextNotAvailableError):
-            run_flow(client, flow, run_id="enabled", deadline_ms=10000, danger_zone="accept")
-    assert seen[0].headers["SZ-Danger-Zone"] == "accept"
+            run_flow(client, flow, run_id="enabled", deadline_ms=10000, danger_zone=selected)
+    assert seen[0].headers["SZ-Danger-Zone"] == selected
 
 def test_enabled_request_requiredness():
     from typing import get_args
@@ -120,3 +122,53 @@ def test_ordinary_inline_pdf_and_video_use_exported_request_types_without_opt_in
         client.decide(video)
     assert [json.loads(request.content) for request in seen] == [pdf, video]
     assert all("SZ-Danger-Zone" not in request.headers for request in seen)
+
+@pytest.mark.parametrize("selected", ["long_context_64k", "long_context_128k"])
+def test_native_class_survives_retry_and_exposes_response_class(selected):
+    seen = []
+    def send(request):
+        seen.append(request)
+        if len(seen) == 1:
+            return httpx.Response(503, json={"error": {"code": "system_zero_unavailable", "retryable": True}}, headers={"Retry-After-Ms": "1"})
+        return httpx.Response(200, json={"answers": {}, "usage": {"long_input_tokens": 48000}}, headers={"sz-danger-zone": selected})
+    with SystemZero(api_key="SYNTHETIC", transport=httpx.MockTransport(send), random=lambda: 0, sleep=lambda _: None) as client:
+        result = client.decide_with_response(REQUEST, danger_zone=selected)
+    assert [request.headers["sz-danger-zone"] for request in seen] == [selected, selected]
+    assert seen[0].headers["idempotency-key"] == seen[1].headers["idempotency-key"]
+    assert result.data["usage"]["long_input_tokens"] == 48000
+    assert result.metadata.danger_zone == [selected]
+
+@pytest.mark.parametrize("selected", ["long_context_64k", "long_context_128k"])
+def test_native_class_refuses_attachments_before_transport(selected):
+    seen = []
+    with SystemZero(api_key="SYNTHETIC", transport=httpx.MockTransport(lambda request: seen.append(request) or httpx.Response(200, json={}))) as client:
+        with pytest.raises(LongContextNotAvailableError) as caught:
+            client.decide({**REQUEST, "attachments": [{"name": "paper", "type": "document", "data": "data:application/pdf;base64,JVBERi0="}]}, danger_zone=selected)
+    assert (caught.value.status, caught.value.code) == (404, "long_context_not_available")
+    assert not seen
+
+def test_discovery_keeps_direct_window_and_optional_long_bands():
+    band = {"header_value": "long_context_64k", "min_state_tokens": 38001,
+            "state_tokens": 65536, "rendered_tokens": 69632, "attachments": 0}
+    direct = {"id": "system-zero", "limits": {"state_tokens": 38000, "rendered_tokens": 40960}}
+    payload = {"object": "list", "data": [direct, {**direct, "limits": {**direct["limits"], "long_context": [band]}}]}
+    def send(request):
+        assert request.method == "GET" and request.url.path == "/v1/models"
+        assert "sz-danger-zone" not in request.headers
+        return httpx.Response(200, json=payload)
+    with SystemZero(api_key="SYNTHETIC", transport=httpx.MockTransport(send), max_retries=0) as client:
+        result = client.models.list()
+    assert result == payload
+    assert "long_context" not in result["data"][0]["limits"]
+    assert result["data"][1]["limits"]["long_context"] == [band]
+
+
+def test_model_long_bands_have_typed_required_fields():
+    from typing import List, Literal, get_type_hints
+    from system_zero.types import ModelLimits, ModelLongContextLimits
+    assert "long_context" in ModelLimits.__optional_keys__
+    assert get_type_hints(ModelLimits)["long_context"] == List[ModelLongContextLimits]
+    expected = {"header_value": str, "min_state_tokens": int, "state_tokens": int,
+                "rendered_tokens": int, "attachments": Literal[0]}
+    assert get_type_hints(ModelLongContextLimits) == expected
+    assert ModelLongContextLimits.__required_keys__ == set(expected)

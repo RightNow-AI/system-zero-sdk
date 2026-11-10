@@ -51,7 +51,7 @@
     "code": "rate_limit",
     "retryable": true,
     "headers": {},
-    "retry": true
+    "retry": false
   },
   {
     "name": "rate limit exceeded",
@@ -188,6 +188,14 @@
     "retry": false
   },
   {
+    "name": "held feature unknown endpoint 404 is final",
+    "status": 404,
+    "code": "unknown_endpoint",
+    "retryable": false,
+    "headers": {},
+    "retry": false
+  },
+  {
     "name": "status 408 cannot force retry",
     "status": 408,
     "code": "request_timeout",
@@ -235,7 +243,7 @@
     "headers": {
       "x-should-retry": "true"
     },
-    "retry": false
+    "retry": true
   },
   {
     "name": "status 504 cannot force retry",
@@ -255,7 +263,7 @@
     "headers": {
       "x-should-retry": "true"
     },
-    "retry": false
+    "retry": true
   },
   {
     "name": "whitespace false header veto",

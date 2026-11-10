@@ -1,4 +1,4 @@
-import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
+import { createServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
 import { existsSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
@@ -18,6 +18,7 @@ type ObservedRequest = { method: string; headers: IncomingMessage['headers']; by
 async function withServer(
   handle: (request: IncomingMessage, response: ServerResponse, count: number) => void,
   run: (baseURL: string, seen: ObservedRequest[]) => Promise<void>,
+  prepare: (server: Server) => void = () => {},
 ): Promise<void> {
   const seen: ObservedRequest[] = [];
   const server = createServer((request, response) => {
@@ -28,6 +29,7 @@ async function withServer(
       handle(request, response, seen.length);
     });
   });
+  prepare(server);
   await new Promise<void>((resolve, reject) => { server.once('error', reject); server.listen(0, host, resolve); });
   const address = server.address();
   if (!address || typeof address === 'string') throw new Error('Expected a TCP listening address.');
@@ -47,6 +49,33 @@ function client(baseURL: string, maxRetries = 1, timeout = 300): SystemZeroClien
 }
 
 describe('default HTTP transport', () => {
+  it('reuses an idle connection past the 5 s limit of Node, and lets go when the server asks', async () => {
+    const callers: (number | undefined)[] = [];
+    const pause = (ms: number) => new Promise<void>(resolve => { setTimeout(resolve, ms); });
+    // The server keeps an idle connection 300 s and says so, as the service does for minutes; Node's process-wide
+    // agents would still drop it after 5 s.
+    let hint: string | undefined;
+    await withServer((request, response) => {
+      callers.push(request.socket.remotePort);
+      if (hint) response.setHeader('keep-alive', hint);
+      response.setHeader('content-type', 'application/json');
+      response.end(JSON.stringify(models));
+    }, async baseURL => {
+      // A client per call, as many callers write it: the connection is shared by the process, not by the client.
+      await client(baseURL).models.list();
+      await pause(6_000);
+      await client(baseURL).models.list();
+      expect(callers[1]).toBe(callers[0]);
+      // A server that allows less is obeyed: after its one second the connection is gone and the next call opens one.
+      hint = 'timeout=1';
+      await client(baseURL).models.list();
+      expect(callers[2]).toBe(callers[0]);
+      await pause(1_600);
+      await client(baseURL).models.list();
+      expect(callers[3]).not.toBe(callers[0]);
+    }, server => { server.keepAliveTimeout = 300_000; });
+  }, 20_000);
+
   it('sends decide and models with explicit JSON body length', async () => {
     await withServer((request, response) => {
       response.setHeader('content-type', 'application/json');

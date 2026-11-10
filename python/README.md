@@ -2,6 +2,8 @@
 
 RightNow is the model name; System Zero is its category. The full name is RightNow System Zero.
 
+The API has no tool calling: its request schema is strict and rejects tool-calling fields. The SDK provides "RightNow as a tool" for other models through the function-tool helpers and the MCP server adapter (the server ships in the TypeScript package).
+
 Synchronous server-side Python client for the RightNow System Zero API.
 
 Requires Python 3.10 or later.
@@ -13,19 +15,19 @@ Set `SYSTEM_ZERO_API_KEY` in the server environment, then call the API:
 ```python
 from system_zero import SystemZero
 
-with SystemZero() as client:
-    reply = client.decide({
-        "model": "system-zero",
-        "state": {"order_total": 42},
-        "questions": {
-            "eligible": {
-                "type": "boolean",
-                "instructions": "Is the order total at least 25?",
-            },
+client = SystemZero()  # Reuse for the process lifetime; close at shutdown.
+reply = client.decide({
+    "model": "system-zero",
+    "state": {"order_total": 42},
+    "questions": {
+        "eligible": {
+            "type": "boolean",
+            "instructions": "Is the order total at least 25?",
         },
-    })
-    print(reply["answers"])
-    print(client.models.list()["data"])
+    },
+})
+print(reply["answers"])
+print(client.models.list()["data"])
 ```
 
 The client calls `POST /system-zero/decide` and authenticated `GET /models`.
@@ -43,41 +45,52 @@ manager to release the HTTP transport.
 
 ## Media on decide
 
+Check `models.list()` or the documented models endpoint for current input
+availability and limits before sending an attachment. SDK types and encoders do
+not enable a held API class. Use the public `system-zero` model ID; an unavailable
+explicit model ID returns `model_not_found`.
+
 `attachments` is optional; `null` remains valid. Each inline attachment has a unique
-`name`, a `type` of `image`, `audio`, `document` or `video`, and a canonical base64 data URL in `data`.
-Names start with an ASCII letter and contain at most 64 letters, digits, `_` or `-`.
-Function tools and the MCP adapter carry the image and audio forms.
-Send PDF and video through the ordinary client request form shown below.
+`name`, a `type` and a canonical base64 data URL in `data`. Names start with an
+ASCII letter and contain at most 64 letters, digits, `_` or `-`.
+Function tools and the MCP adapter carry the inline forms listed by their schema,
+including PDF and MP4. They use the same attachment kinds as the published request;
+check model discovery for current API availability.
 
 - Images: static PNG (`image/png`) and JPEG (`image/jpeg`), at most 4 images,
   16,777,216 pixels each, with an aspect ratio no greater than 50:1.
-- Audio: at most 1 audio attachment, inline RIFF WAV (`audio/wav`) at exactly
-  16,000 Hz. Integer PCM with 1-64 bits per sample or IEEE float with 32 or 64 bits
-  is supported, including the extensible WAV form; 1-64 channels are allowed.
-  The duration limit is 300 seconds (4,800,000 frames); the separate long-recording
-  cutoff is 300.5 seconds. The byte limit can be reached earlier.
+- Audio: one inline WAV (`audio/wav`) per request, with integer PCM or IEEE float
+  samples at exactly 16,000 Hz, mono or multichannel. The decoded-duration limit
+  is 60 seconds inclusive (60,000 ms), one pass per request; byte limits can be reached earlier.
+  Audio must be the only attachment. A mixed request is refused locally with HTTP 404
+  `audio_not_available`, param `attachments`.
+  Audio answers currently report `calibrated: false`. Read `models.list()` for
+  current availability and limits. Other audio formats, sample rates and upload
+  references are not supported by this SDK's public audio preflight.
 - All decoded inline bytes together: at most 2,621,440 bytes. The entire JSON
   request, including base64, is at most 3,665,920 bytes. The schema has a 16-entry
-  attachment guard; the served image and audio counts are stricter.
+  attachment guard; individual kind counts can be stricter.
 
-The helpers check MIME types, signatures, canonical encoding, counts, byte limits,
-and WAV structure/rate. Preflight is explicit; complete image decoding, dimensions,
-availability and other request checks remain with the API. Signatures alone do not
-prove a complete image is valid.
+The helpers check supported MIME types, signatures, canonical encoding, counts,
+byte limits and WAV structure, sample rate and decoded duration. Preflight is explicit; complete decoding, dimensions,
+availability and other request checks remain with the API. Signatures alone do
+not prove a complete file is valid. PDF and video validation remains with the API.
 
 GIF (`image/gif`), WebP (`image/webp`), animated PNG and images outside the decoded
-profile are refused with `media_unpriced`. A mismatched image signature uses
-`media_decode_failed`; other unsupported image MIME types use `media_unsupported`.
-Other audio formats, rates, malformed WAV and audio upload
-references use `media_unsupported`. Image upload references are unavailable and
-return `service_unavailable` in the listed service. Send bytes inline.
+profile are not yet supported by this SDK version. The image preflight uses
+`media_unpriced`, `media_decode_failed` or `media_unsupported` for unsupported or
+mismatched inputs. Upload references are not served: a request naming one answers
+HTTP 400 `media_unsupported` at `attachments[i].upload`. Send bytes inline.
 
 PDF is supported through ordinary inline attachments.
 Text PDFs and readable scans are read as text.
-Only PDF is supported; other document formats are unavailable.
+Only PDF is supported by this SDK version; consult discovery for document formats.
+Send an unencrypted PDF of at most 500 pages within the common 2,621,440-byte
+decoded limit. Other document formats answer HTTP 415 `document_unsupported`.
+Put plain text in `state`.
 Use `type: "document"` and a canonical `data:application/pdf;base64,...` URL.
-The image and audio helpers do not encode PDF; construct its inline attachment directly.
-
+`inlineAttachment` and `inline_attachment` can encode a PDF, or construct its
+ordinary inline request directly as shown below.
 
 Video is supported through ordinary inline attachments. Send one silent H.264 MP4 video as an inline base64 data URL. Maximum duration: 10 seconds. Maximum dimensions: 1920 x 1080. Maximum decoded file size: 2,621,440 bytes (2.5 MiB). The complete JSON request must fit 3,665,920 bytes, including base64 and questions. Rotated videos, soundtracks, separate attachments and video upload references are not supported.
 
@@ -89,24 +102,23 @@ from system_zero import SystemZero, inline_attachment, validate_attachments
 
 attachments = validate_attachments([
     inline_attachment(name="picture", type="image", mime="image/png", data=Path("picture.png").read_bytes()),
-    inline_attachment(name="speech", type="audio", mime="audio/wav", data=Path("speech-16khz.wav").read_bytes()),
 ])
-with SystemZero() as client:
-    reply = client.decide({
-        "model": "system-zero", "state": "Use the picture and recording.", "attachments": attachments,
-        "questions": {"ready": {"type": "boolean", "instructions": "Is the item ready?"}},
-    })
-    print(reply["answers"])
-    # PDF uses the ordinary inline request form.
-    client.decide({
-        "model": "system-zero", "state": "Read the PDF.",
-        "questions": {"ready": {"type": "boolean", "instructions": "Is the item ready?"}},
-        "attachments": [{"name": "document", "type": "document",
-            "data": "data:application/pdf;base64," + b64encode(Path("document.pdf").read_bytes()).decode("ascii")}],
-    })
+client = SystemZero()  # Create once; reuse across calls and close at process shutdown.
+reply = client.decide({
+    "model": "system-zero", "state": "Use the picture.", "attachments": attachments,
+    "questions": {"ready": {"type": "boolean", "instructions": "Is the item ready?"}},
+})
+print(reply["answers"])
+# PDF uses the ordinary inline request form.
+client.decide({
+    "model": "system-zero", "state": "Read the PDF.",
+    "questions": {"ready": {"type": "boolean", "instructions": "Is the item ready?"}},
+    "attachments": [{"name": "document", "type": "document",
+        "data": "data:application/pdf;base64," + b64encode(Path("document.pdf").read_bytes()).decode("ascii")}],
+})
 ```
 
-`MIMES`, `MEDIA_LIMITS` and `attachment_magic_matches` expose the served registry,
+`MIMES`, `MEDIA_LIMITS` and `attachment_magic_matches` expose the SDK encoding registry,
 limits and signature screen. `inline_attachment` encodes one input;
 `validate_attachments` also checks aggregate counts and decoded bytes.
 
@@ -116,8 +128,8 @@ limits and signature screen. `inline_attachment` encodes one input;
 
 The defaults are five retries, 150 seconds per attempt, a 60-second total retry
 budget and a 60-second maximum wait. The retry count is capped at five, so one
-call makes at most six attempts. The budget starts with the first attempt and
-includes requests and waits. The first attempt keeps its normal timeout; later
+call makes at most six attempts. The recovery budget starts at the first failure and
+includes retry requests and waits. The first attempt keeps its normal timeout; later
 attempts are limited by the remaining budget. A wait above the maximum wait, or
 one that exhausts the remaining budget, raises the last error without waiting.
 A retry needs at least one millisecond remaining.
@@ -130,17 +142,14 @@ zero disables retries.
 
 Ordinary HTTP calls retry these marked responses:
 
-- HTTP 429: `capacity_exhausted`, `rate_limit`, `rate_limit_exceeded`,
+- HTTP 429: `capacity_exhausted`, `rate_limit_exceeded`,
   `concurrency_limit_exceeded` or `workspace_limit_exceeded`.
-- HTTP 503: `service_unavailable` or `system_zero_unavailable`.
+- HTTP 5xx except 504 and `maintenance`, including `service_unavailable` and `system_zero_unavailable`.
 - HTTP 409: `idempotency_conflict`.
 
 Marked means `error.retryable` is `true` or the `x-should-retry` header is `true`.
-An explicit `false` in either marker vetoes retry. A 503 warm-up response also
-qualifies when its code is `starting`, or when the service's warm-up header is
-`true` or `1` with `service_unavailable` or no code, and a valid retry delay is
-present. That warm-up case does not require a true retry marker; a false marker
-still vetoes it.
+An explicit `false` in either marker vetoes retry. A cold pool answers marked
+503 `system_zero_unavailable` with its wait in `Retry-After`.
 
 A qualifying connection failure or timeout before any response byte can also
 retry, even if the request was sent. Failures after a response byte never retry.
@@ -197,8 +206,7 @@ HTTP refusal messages are preserved with credential redaction.
 ## Response metadata
 
 SDK errors and response metadata expose the request's idempotency key as
-`idempotency_key` (`None` when no key was sent). `RateLimitError` and
-`OverloadedError` expose the response's retry delay as `retry_after_ms` in
+`idempotency_key` (`None` when no key was sent). All HTTP errors expose the response's retry delay as `retry_after_ms` in
 milliseconds, or `None` when no valid retry delay is available.
 
 Every HTTP attempt sends `X-SDK-Retry-Count`, starting at `0`, and a
@@ -208,6 +216,16 @@ A blank or whitespace-only `client_request_id` omits the
 
 Keep API keys on trusted servers. Don't enable DEBUG logging for the HTTP or WebSocket libraries in production; it can record request headers, including your API key. See [the security policy](https://github.com/RightNow-AI/system-zero-sdk/blob/main/SECURITY.md)
 for private vulnerability reporting.
+
+## Latency
+
+Create one client per process and reuse it across calls. Do not create a client per call.
+Close it at process shutdown. Default clients share a process-wide connection
+pool; closing one client does not close the pool. The transport keeps idle connections
+for up to 240 seconds, subject to the server closing sooner, so calls after a pause
+can skip connection setup. The first call after a long pause opens a new connection.
+An open stream skips connection setup for subsequent decisions; reuse it while
+sending state changes. A context manager should span the application lifetime.
 
 ## Function tool formats
 
@@ -291,16 +309,51 @@ usage and request identifier when reconciling completed work.
 
 ## LongContextRequest opt-in
 
-The SDK publishes the `LongContextRequest` type as an opt-in surface. It is unavailable until the API enables it for the workspace; workspace opt-in through the console's Settings is also required. Once available, give explicit per-request consent with `dangerZone: 'accept'` in TypeScript or `danger_zone="accept"` in Python. The option sends exactly `SZ-Danger-Zone: accept`; it is never sent by default or inferred from state size. Until availability, the API ignores or refuses this option. Do not supply this header through custom headers. Retries retain the option. The same explicit option is supported by batch and flow helpers.
+Select the class for the state size explicitly. In TypeScript:
 
-Until workspace enablement, the expected result is HTTP 404 `long_context_not_available`, surfaced as `LongContextNotAvailableError`. The same refusal applies without workspace opt-in. When the API supplies `details.eligibility`, `LongContextNotAvailableError.eligibility` exposes the rule: `billing`, `opt_in`, `class`, `deny_list`, `global_switch` or `account_deleted`, with a string fallback for future rules. A generic held-route refusal can omit the rule. Status, code, message and request ID remain intact. Held routes are never retried.
-
-`LongContextRequest`, `EnabledDecideRequest`, `OrdinaryRequest`, `MediaRequest` and their question types describe the separate enabled request contract in `enabled.openapi.json`. `LongContextLimits` describes its discovery limits. `openapi.json` remains the served contract. The API selects the request band and checks bounds: a `LongContextRequest` takes at most 32 questions, choices with 2 to 25 options, and scores with 2 to 4 levels. Only inline document attachments fit its document branch. The API validates document admission separately.
-
-```typescript
-await client.decide(request, { dangerZone: 'accept' });
+```ts
+await client.decide(request, { dangerZone: 'long_context_64k' });
+await client.decide(request, { dangerZone: 'long_context_128k' });
 ```
+
+In Python:
 
 ```python
-client.decide(request, danger_zone="accept")
+client.decide(request, danger_zone="long_context_64k")
+client.decide(request, danger_zone="long_context_128k")
 ```
+
+`long_context_64k` covers 38,001 to 65,536 state tokens;
+`long_context_128k` covers 65,537 to 131,072. The option sends
+`SZ-Danger-Zone` with that exact value. State size never selects a class by itself.
+Send the text in `state` with no attachments. A nonempty attachment list with
+either class is refused locally as HTTP 404 `long_context_not_available`.
+`LongContextRequest` excludes attachments. At most 32 questions are allowed,
+with 2 to 25 choice options or 2 to 4 score levels. The API checks token bounds.
+
+Use the exact class values above. With `accept`, text answers HTTP 400
+`invalid_request`, param `SZ-Danger-Zone`, when more than one native class is served.
+
+With `accept`, PDF answers HTTP 404 `long_context_not_available`; image, audio or
+video drops the long grants and runs as an ordinary request.
+The 1M class is not yet supported by this SDK version. No selector is sent by default. Do not supply the header
+through custom SDK headers. Retries, batch, flow and their resume paths retain
+the exact selected class.
+
+Check `models.list()` and the documented models endpoint for current classes and
+workspace requirements. Ordinary `limits.state_tokens` / `rendered_tokens` are
+the direct window (38,000 / 40,960). Optional `limits.long_context` lists each
+served band with `header_value`, `min_state_tokens`, `state_tokens`,
+`rendered_tokens` and `attachments`. An ordinary over-length refusal names the
+direct window and a selector that covers the state, if available. A selected
+class with state outside its band returns non-retryable HTTP 404
+`long_context_not_available`, param `state`, naming that band; it is not charged.
+A held or ineligible class, or missing workspace opt-in,
+can return HTTP 404 `long_context_not_available`, raised as
+`LongContextNotAvailableError`. Its `eligibility` preserves `details.eligibility`
+when supplied, including future rule strings. Held routes are never retried.
+
+Replies type `usage.long_input_tokens`. Response metadata exposes the server's
+`sz-danger-zone` values as `dangerZone` in TypeScript and `danger_zone` in Python.
+`LongContextLimits` describes discovery limits; `openapi.json` describes the
+served contract and `enabled.openapi.json` contains the additional request shapes.

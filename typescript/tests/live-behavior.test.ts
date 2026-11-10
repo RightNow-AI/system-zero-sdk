@@ -48,7 +48,7 @@ describe('live HTTP and local helper behavior', () => {
     expect(result.data).toEqual(reply);
     expect(Object.keys(result.data)).toEqual(Object.keys(reply));
     expect(result.metadata).toEqual({
-      requestId: 'req_synthetic', clientRequestId: 'client-synthetic', latencyMs: 12.5, replayed: true, idempotencyKey: 'stable-synthetic-key',
+      requestId: 'req_synthetic', clientRequestId: 'client-synthetic', latencyMs: 12.5, replayed: true, dangerZone: [], idempotencyKey: 'stable-synthetic-key',
       rateLimit: { limit: 100, remaining: 99, reset: 1800000000 },
     });
     expect(result.response).toBe(response);
@@ -77,7 +77,7 @@ describe('live HTTP and local helper behavior', () => {
   });
 
   it('refuses local call admission before transport without an API error code', async () => {
-    expect(Object.keys(SYSTEM_ZERO_ERRORS)).toHaveLength(74);
+    expect(Object.keys(SYSTEM_ZERO_ERRORS)).toHaveLength(80);
     expect(Object.hasOwn(SYSTEM_ZERO_ERRORS, 'call_limit_reached')).toBe(false);
     const transport = vi.fn(async () => Response.json({ answers: {} }));
     const client = new sdk.SystemZeroClient({ apiKey: 'SYNTHETIC', fetch: transport, maxRetries: 0 });
@@ -328,11 +328,11 @@ describe('live HTTP and local helper behavior', () => {
     const transport = vi.fn(async () => Response.json({
       error: { code: 'future_refusal', type, message: 'Synthetic refusal.', retryable },
     }, { status }));
-    const client = new sdk.SystemZeroClient({ apiKey: 'SYNTHETIC', fetch: transport });
+    const client = new sdk.SystemZeroClient({ apiKey: 'SYNTHETIC', fetch: transport, maxRetries: 2, random: () => 0, sleep: async () => {} });
     const failure = await client.decide(request).catch((error: unknown) => error);
     expect(failure).toBeInstanceOf(sdk[className]);
     expect(failure).toMatchObject({ code: 'future_refusal', status, retryable });
-    expect(transport).toHaveBeenCalledOnce();
+    expect(transport).toHaveBeenCalledTimes(retryable ? 3 : 1);
   });
 
   it('rejects insecure remote bases before transport and accepts HTTPS', () => {

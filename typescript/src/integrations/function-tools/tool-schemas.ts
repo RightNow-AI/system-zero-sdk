@@ -235,12 +235,14 @@ export default [
                     "type": "string",
                     "enum": [
                       "image",
-                      "audio"
+                      "audio",
+                      "document",
+                      "video"
                     ]
                   },
                   "data": {
                     "type": "string",
-                    "description": "Image PNG/JPEG or 16,000 Hz WAV audio."
+                    "description": "Canonical base64 data URL for a kind supported by this tool schema."
                   }
                 },
                 "required": [
@@ -249,7 +251,7 @@ export default [
                   "data"
                 ],
                 "additionalProperties": false,
-                "description": "Inline image or audio as a canonical base64 data URL."
+                "description": "Inline input as a canonical base64 data URL. Read the type enum for supported SDK argument kinds and model discovery for API availability."
               }
             },
             {

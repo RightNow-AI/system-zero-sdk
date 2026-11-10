@@ -117,7 +117,7 @@ describe('HTTP per-call capacity budget', () => {
     expect(new Headers(fetch.mock.calls[1]![1]?.headers).get('idempotency-key')).toBe(first);
   });
 
-  it('counts elapsed attempts and backoff against one request budget', async () => {
+  it('counts recovery attempts and backoff against one request budget', async () => {
     let now = 0;
     const sleep = vi.fn(async (wait: number) => { now += wait; });
     const fetch = vi.fn(async () => { now += 200; return capacity(); });
@@ -135,13 +135,13 @@ describe('HTTP per-call capacity budget', () => {
     expect(sleep).not.toHaveBeenCalled();
   });
 
-  it('does not retry an initial answer that exhausted the recovery budget', async () => {
+  it('retries after a slow initial answer inside a fresh recovery budget', async () => {
     let now = 0;
     const sleep = vi.fn(async () => {});
     const fetch = vi.fn(async () => { now += 1000; return capacity(); });
     await expect(makeClient(fetch, { monotonic: () => now, sleep, retryBudget: 500 }).decide(request)).rejects.toMatchObject({ code: 'capacity_exhausted' });
-    expect(fetch).toHaveBeenCalledOnce();
-    expect(sleep).not.toHaveBeenCalled();
+    expect(fetch).toHaveBeenCalledTimes(2);
+    expect(sleep).toHaveBeenCalledOnce();
   });
 
   it('checks the budget again after an oversleep before dispatching', async () => {

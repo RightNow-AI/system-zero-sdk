@@ -1,5 +1,5 @@
 """Generated enabled request types; the API checks bounds and availability."""
-from typing import Annotated, Any, Dict, List, Literal, TypeAlias, TypedDict, Union
+from typing import Annotated, Any, Dict, List, Literal, NoReturn, TypeAlias, TypedDict, Union
 
 StructuredJson: TypeAlias = Union[str, Dict[str, Any], List[Any]]
 
@@ -134,18 +134,30 @@ _MediaRequestOptional = TypedDict('_MediaRequestOptional', {'questions': Annotat
 class MediaRequest(_MediaRequestOptional):
     attachments: List[Any]
 
-__Shape350ItemOptional = TypedDict('__Shape350ItemOptional', {'data': str, 'text': str, 'mime': str}, total=False)
-
-class _Shape350Item(__Shape350ItemOptional):
-    name: str
-    type: Literal['document', 'image', 'audio', 'video']
-
-_LongContextRequestOptional = TypedDict('_LongContextRequestOptional', {'attachments': Union[Annotated[List[_Shape350Item], ('maxItems', 16)], None], 'session_id': Annotated[str, ('minLength', 1), ('maxLength', 256)], 'prompt_cache_key': Annotated[str, ('minLength', 1), ('maxLength', 256)], 'route': Literal['standard', 'committee'], 'mode': Literal['standard', 'deliberate']}, total=False)
+_LongContextRequestOptional = TypedDict('_LongContextRequestOptional', {'attachments': NoReturn, 'session_id': Annotated[str, ('minLength', 1), ('maxLength', 256)], 'prompt_cache_key': Annotated[str, ('minLength', 1), ('maxLength', 256)], 'route': Literal['standard', 'committee'], 'mode': Literal['standard', 'deliberate']}, total=False)
 
 class LongContextRequest(_LongContextRequestOptional):
     model: Annotated[str, ('minLength', 1), ('maxLength', 200)]
     state: StructuredJson
     questions: Annotated[Dict[str, LongContextQuestion], ('minProperties', 1), ('maxProperties', 32)]
+
+class _Shape43_text(TypedDict):
+    min: int
+    max: int
+
+class _Shape43_media(TypedDict):
+    min: int
+    max: int
+
+class _Shape43_long_context(TypedDict):
+    min: int
+    max: int
+
+__Shape43Optional = TypedDict('__Shape43Optional', {'long_context': _Shape43_long_context}, total=False)
+
+class _Shape43(__Shape43Optional):
+    text: _Shape43_text
+    media: _Shape43_media
 
 class _Shape44_text(TypedDict):
     min: int
@@ -155,27 +167,9 @@ class _Shape44_media(TypedDict):
     min: int
     max: int
 
-class _Shape44_long_context(TypedDict):
-    min: int
-    max: int
-
-__Shape44Optional = TypedDict('__Shape44Optional', {'long_context': _Shape44_long_context}, total=False)
-
-class _Shape44(__Shape44Optional):
+class _Shape44(TypedDict):
     text: _Shape44_text
     media: _Shape44_media
-
-class _Shape45_text(TypedDict):
-    min: int
-    max: int
-
-class _Shape45_media(TypedDict):
-    min: int
-    max: int
-
-class _Shape45(TypedDict):
-    text: _Shape45_text
-    media: _Shape45_media
 
 _LongContextLimitsOptional = TypedDict('_LongContextLimitsOptional', {'images': int, 'audio': int}, total=False)
 
@@ -185,18 +179,18 @@ class LongContextLimits(_LongContextLimitsOptional):
     questions: int
     question_tokens: int
     question_bytes: int
-    choice_options: _Shape44
-    score_levels: _Shape45
+    choice_options: _Shape43
+    score_levels: _Shape44
     attachments: int
     body_bytes: int
     inline_attachment_bytes: int
 
-__Shape5101ItemOptional = TypedDict('__Shape5101ItemOptional', {'type': Literal['video']}, total=False)
+__Shape5001ItemOptional = TypedDict('__Shape5001ItemOptional', {'type': Literal['video']}, total=False)
 
-class _Shape5101Item(__Shape5101ItemOptional):
+class _Shape5001Item(__Shape5001ItemOptional):
     pass
 
-__EnabledOrdinaryRequestOptional = TypedDict('__EnabledOrdinaryRequestOptional', {'attachments': Union[Union[List[Any], Annotated[List[_Shape5101Item], ('maxItems', 1)]], None], 'session_id': Annotated[str, ('minLength', 1), ('maxLength', 256)], 'prompt_cache_key': Annotated[str, ('minLength', 1), ('maxLength', 256)], 'route': Literal['standard', 'committee'], 'mode': Literal['standard', 'deliberate']}, total=False)
+__EnabledOrdinaryRequestOptional = TypedDict('__EnabledOrdinaryRequestOptional', {'attachments': Union[Union[List[Any], Annotated[List[_Shape5001Item], ('maxItems', 1)]], None], 'session_id': Annotated[str, ('minLength', 1), ('maxLength', 256)], 'prompt_cache_key': Annotated[str, ('minLength', 1), ('maxLength', 256)], 'route': Literal['standard', 'committee'], 'mode': Literal['standard', 'deliberate']}, total=False)
 
 class _EnabledOrdinaryRequest(__EnabledOrdinaryRequestOptional):
     model: Annotated[str, ('minLength', 1), ('maxLength', 200)]

@@ -68,14 +68,11 @@ def _retry_response(status: int, code: Optional[str], headers: Mapping[str, str]
     if code and any(token in code.lower() for token in ("spend", "budget", "auth", "api_key")):
         return False
     if retryable is True or hint == "true":
-        if (status == 429 and code in {"capacity_exhausted", "rate_limit", "rate_limit_exceeded", "concurrency_limit_exceeded", "workspace_limit_exceeded"} or
-                status == 503 and code in {"service_unavailable", "system_zero_unavailable"} or
+        if (status == 429 and code in {"capacity_exhausted", "rate_limit_exceeded", "concurrency_limit_exceeded", "workspace_limit_exceeded"} or
+                500 <= status < 600 and status != 504 and code not in {"maintenance", "starting"} or
                 status == 409 and code == "idempotency_conflict"):
             return True
-    starting = code == "starting" or (
-        code in {None, "service_unavailable"} and normalized.get(("x-sz-" + "starting")) in {"true", "1"}
-    )
-    return status == 503 and starting and _retry_after_seconds(normalized) is not None
+    return code is None and status in {502, 503}
 
 
 def _recover_workflow(status: int, code: Optional[str], headers: Mapping[str, str],

@@ -54,7 +54,7 @@ it('keeps the typed input refusal', async () => {
   await expect(client.decide(request)).rejects.toBeInstanceOf(VideoNotAvailableError);
 });
 
-it('batch forwards the option and refuses an invalid option before admission', async () => {
+it.each(['accept', 'long_context_64k', 'long_context_128k'] as const)('batch forwards the option and refuses an invalid option before admission (%s)', async selected => {
   const folder = mkdtempSync(join(tmpdir(), 'sdk-enablement-'));
   const seen: Headers[] = [];
   const client = new SystemZeroClient({ apiKey: 'synthetic', timeout: 1000, maxRetries: 0, fetch: async (_url, init) => {
@@ -64,26 +64,26 @@ it('batch forwards the option and refuses an invalid option before admission', a
   const items = [{ id: 'one', request, expected: { q: true } }];
   try {
     const common = { runId: 'enabled', resultsPath: join(folder, 'rows.jsonl'), deadlineMs: 10000, concurrency: 1 as const };
-    const result = await runBatch(client, items, { ...common, dangerZone: 'accept' });
+    const result = await runBatch(client, items, { ...common, dangerZone: selected });
     expect(result.records[0]?.outcome).toBe('held');
-    expect(seen[0]?.get('SZ-Danger-Zone')).toBe('accept');
+    expect(seen[0]?.get('SZ-Danger-Zone')).toBe(selected);
     await expect(runBatch(client, items, { ...common, dangerZone: 'wrong' as 'accept' })).rejects.toBeInstanceOf(InvalidRequestError);
     expect(seen).toHaveLength(1);
   } finally { rmSync(folder, { recursive: true, force: true }); }
 });
-it('flow forwards its explicit request option', async () => {
+it.each(['accept', 'long_context_64k', 'long_context_128k'] as const)('flow forwards its explicit request option (%s)', async selected => {
   const seen: Headers[] = [];
   const client = new SystemZeroClient({ apiKey: 'synthetic', timeout: 1000, maxRetries: 0, fetch: async (_url, init) => {
     seen.push(new Headers(init?.headers));
     return Response.json({ error: { code: 'long_context_not_available', type: 'not_found_error', message: 'This route is not available.' } }, { status: 404 });
   } });
   const flow = { version: 1, request: { model: request.model, state: request.state }, steps: [{ id: 'one', questions: request.questions, next: { rules: [], default: null } }] };
-  await expect(runFlow(client, flow, { run_id: 'enabled', deadline_ms: 10000, dangerZone: 'accept' })).rejects.toBeInstanceOf(LongContextNotAvailableError);
-  expect(seen[0]?.get('SZ-Danger-Zone')).toBe('accept');
+  await expect(runFlow(client, flow, { run_id: 'enabled', deadline_ms: 10000, dangerZone: selected })).rejects.toBeInstanceOf(LongContextNotAvailableError);
+  expect(seen[0]?.get('SZ-Danger-Zone')).toBe(selected);
 });
 
-it('types the required request fields, document branch and bounded score levels', () => {
-  const filename = fileURLToPath(new URL('enabled-typecheck.ts', import.meta.url));
+it('types the required request fields, state-only long classes and bounded score levels', () => {
+  const filename = fileURLToPath(new URL('enabled-typecheck.ts', import.meta.url)).replaceAll('\\', '/');
   const source = `import type { LongContextRequest, EnabledDecideRequest, VideoRequest, Model } from '../src/index.js';
 import { videoAttachment } from '../src/index.js';
 const request: LongContextRequest = { model: 'system-zero', state: 'sample', questions: { q: { type: 'score', instructions: 'Rate it.', criteria: ['low', 'high'] } } };
@@ -93,8 +93,8 @@ declare const client: import('../src/index.js').SystemZeroClient;
 client.decide(pdf);
 // @ts-expect-error model, state and questions are required
 const missing: LongContextRequest = {};
-// @ts-expect-error the long context document branch excludes image inputs
-request.attachments = [{ name: 'picture', type: 'image', data: 'data:image/png;base64,AA==' }];
+// @ts-expect-error native long classes exclude all attachments
+request.attachments = [{ name: 'paper', type: 'document', data: 'data:application/pdf;base64,JVBERi0=' }];
 // @ts-expect-error long context scores have at most four levels
 request.questions.q = { type: 'score', instructions: 'Rate it.', criteria: ['a','b','c','d','e'] };
 const video: VideoRequest = { model: 'system-zero', state: 'sample', questions: { q: { type: 'boolean', instructions: 'Ready?' } }, attachments: [videoAttachment({ name: 'clip', data: new Uint8Array() })] };
@@ -102,6 +102,17 @@ const video: VideoRequest = { model: 'system-zero', state: 'sample', questions: 
 const incomplete: VideoRequest = { attachments: [] };
 declare const model: Model;
 const bound: number | undefined = model.limits.choice_options.long_context?.max;
+const bands: Model['limits']['long_context'] = [{ header_value: 'long_context_64k', min_state_tokens: 38001, state_tokens: 65536, rendered_tokens: 69632, attachments: 0 }];
+const header: string | undefined = model.limits.long_context?.[0]?.header_value;
+const minimum: number | undefined = model.limits.long_context?.[0]?.min_state_tokens;
+const state: number | undefined = model.limits.long_context?.[0]?.state_tokens;
+const rendered: number | undefined = model.limits.long_context?.[0]?.rendered_tokens;
+const attachments: 0 | undefined = model.limits.long_context?.[0]?.attachments;
+// @ts-expect-error every long band requires its lower bound
+const incompleteBand: NonNullable<Model['limits']['long_context']>[number] = { header_value: 'long_context_64k', state_tokens: 65536, rendered_tokens: 69632, attachments: 0 };
+// @ts-expect-error long bands exclude attachments
+const mediaBand: NonNullable<Model['limits']['long_context']>[number] = { ...bands[0], attachments: 1 };
+void bands; void header; void minimum; void state; void rendered; void attachments; void incompleteBand; void mediaBand;
 void bound; void enabled; void missing; void video; void incomplete;
 `;
   const options: ts.CompilerOptions = { strict: true, skipLibCheck: true, noEmit: true, types: ['node'], typeRoots: [fileURLToPath(new URL('../node_modules/@types/', import.meta.url)), join(process.cwd(), 'node_modules/@types')], target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.NodeNext, moduleResolution: ts.ModuleResolutionKind.NodeNext };
@@ -133,4 +144,43 @@ it('sends ordinary inline PDF and video through exported request types without o
   await client.decide(pdf); await client.decide(video);
   expect(seen.map(entry => entry.body)).toEqual([pdf, video]);
   expect(seen.every(entry => !entry.headers.has('SZ-Danger-Zone'))).toBe(true);
+});
+
+for (const selected of ['long_context_64k', 'long_context_128k'] as const) {
+  it(`retains ${selected} through retries and exposes the response class`, async () => {
+    const seen: Headers[] = [];
+    const client = new SystemZeroClient({ apiKey: 'SYNTHETIC', random: () => 0, sleep: async () => {},
+      fetch: async (_url, init) => {
+        seen.push(new Headers(init?.headers));
+        return seen.length === 1 ? Response.json({ error: { code: 'system_zero_unavailable', retryable: true } }, { status: 503, headers: { 'Retry-After-Ms': '1' } })
+          : Response.json({ answers: {}, usage: { long_input_tokens: 48000 } }, { headers: { 'sz-danger-zone': selected } });
+      } });
+    const result = await client.decide(request, { dangerZone: selected }).withResponse();
+    expect(seen.map(headers => headers.get('sz-danger-zone'))).toEqual([selected, selected]);
+    expect(seen[0]?.get('idempotency-key')).toBe(seen[1]?.get('idempotency-key'));
+    expect(result.data.usage.long_input_tokens).toBe(48000);
+    expect(result.metadata.dangerZone).toEqual([selected]);
+  });
+  it(`refuses attachments with ${selected} before transport`, () => {
+    let calls = 0;
+    const client = new SystemZeroClient({ apiKey: 'SYNTHETIC', fetch: async () => { calls++; return Response.json({}); } });
+    expect(() => client.decide({ ...request, attachments: [{ name: 'paper', type: 'document', data: 'data:application/pdf;base64,JVBERi0=' }] }, { dangerZone: selected }))
+      .toThrow(expect.objectContaining({ status: 404, code: 'long_context_not_available' }));
+    expect(calls).toBe(0);
+  });
+}
+
+it('preserves direct model limits and optional long class bands through discovery', async () => {
+  const band = { header_value: 'long_context_64k', min_state_tokens: 38001, state_tokens: 65536, rendered_tokens: 69632, attachments: 0 };
+  const direct = { id: 'system-zero', limits: { state_tokens: 38000, rendered_tokens: 40960 } };
+  const payload = { object: 'list', data: [direct, { ...direct, limits: { ...direct.limits, long_context: [band] } }] };
+  const client = new SystemZeroClient({ apiKey: 'SYNTHETIC', maxRetries: 0, fetch: async (url, init) => {
+    expect(new URL(String(url)).pathname).toBe('/v1/models');
+    expect(new Headers(init?.headers).has('sz-danger-zone')).toBe(false);
+    return Response.json(payload);
+  } });
+  const result = await client.models.list();
+  expect(result).toEqual(payload);
+  expect(result.data[0]!.limits.long_context).toBeUndefined();
+  expect(result.data[1]!.limits.long_context).toEqual([band]);
 });

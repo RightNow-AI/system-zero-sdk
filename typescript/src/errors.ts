@@ -26,6 +26,7 @@ export class SystemZeroError extends Error {
   readonly request_id: string | null;
   idempotencyKey: string | null;
   readonly headers: Headers;
+  readonly retryAfterMs: number | null;
 
   constructor(message: string, fields: ErrorFields = {}) {
     message = redactText(message); fields = redact(fields);
@@ -40,6 +41,7 @@ export class SystemZeroError extends Error {
     this.request_id = fields.request_id ?? null;
     this.idempotencyKey = fields.idempotencyKey ?? null;
     this.headers = new Headers(fields.headers);
+    this.retryAfterMs = retryAfterMs(this.headers);
   }
 }
 
@@ -47,9 +49,7 @@ export class InvalidRequestError extends SystemZeroError {}
 export class AuthenticationError extends SystemZeroError {}
 export class PermissionError extends SystemZeroError {}
 export class NotFoundError extends SystemZeroError {}
-export class RateLimitError extends SystemZeroError {
-  get retryAfterMs(): number | null { return retryAfterMs(this.headers); }
-}
+export class RateLimitError extends SystemZeroError {}
 export class StreamLimitError extends RateLimitError {
   readonly limit: number | null;
   readonly retry_after: string | null;
@@ -73,9 +73,7 @@ export class StreamLimitError extends RateLimitError {
     this.should_retry = hint === 'true' || (hint !== 'false' && this.retryable);
   }
 }
-export class OverloadedError extends SystemZeroError {
-  get retryAfterMs(): number | null { return retryAfterMs(this.headers); }
-}
+export class OverloadedError extends SystemZeroError {}
 export class APIError extends SystemZeroError {}
 export class ServerError extends SystemZeroError {}
 export interface ConnectionErrorFields extends ErrorFields {

@@ -15,16 +15,16 @@ from urllib.parse import urlsplit
 
 import httpx
 
-from ._transport import AttemptState, DeadlineTransport, attempt_state
+from ._transport import AttemptState, default_transport, attempt_state
 from ._connection import ResponseCloseGuard, connection_error, is_transport_error
 from ._retry import _recover_workflow, _retry_context, _retry_response, _retry_wait
-from .errors import APIConnectionError, APIError, APITimeoutError, InvalidRequestError, SystemZeroError, error_class
+from .errors import APIConnectionError, APIError, APITimeoutError, InvalidRequestError, LongContextNotAvailableError, SystemZeroError, error_class
 from .response import ResponseResult, response_metadata
 from .types import DecideReply, DecideRequest, ModelList
 from .enabled_types import EnabledDecideRequest, VideoRequest
 
 
-VERSION = "0.4.2"
+VERSION = "0.4.3"
 DEFAULT_BASE_URL = "https://api.rightnowai.co/v1"
 _MAX_TIMEOUT_SECONDS = 2_147_483_647 / 1000
 
@@ -100,7 +100,8 @@ class SystemZero:
     """Server-side client. Do not ship API keys to a browser.
 
     Timeouts and retry waits are seconds. The client owns its HTTPX client and
-    transport (including an injected transport); close it or use a context manager.
+    injected transport; close it or use a context manager. Default clients share
+    a process-wide connection pool that remains open until process shutdown.
     The sleep/random/now hooks let tests control pacing without real delays.
     """
 
@@ -139,7 +140,7 @@ class SystemZero:
         self._monotonic = monotonic
         self._closed = False
         self._http = httpx.Client(
-            transport=transport if transport is not None else DeadlineTransport(),
+            transport=transport if transport is not None else default_transport(),
             timeout=timeout, follow_redirects=False, trust_env=False,
         )
         self.models = Models(self)
@@ -168,7 +169,7 @@ class SystemZero:
         idempotency_key: Optional[str] = None, client_request_id: Optional[str] = None,
         headers: Optional[Mapping[str, str]] = None,
         retry_budget: Optional[float] = None,
-        danger_zone: Optional[Literal["accept"]] = None,
+        danger_zone: Optional[Literal["accept", "long_context_64k", "long_context_128k"]] = None,
     ) -> DecideReply:
         return self.decide_with_response(request, idempotency_key=idempotency_key,
                                          client_request_id=client_request_id, headers=headers,
@@ -179,11 +180,11 @@ class SystemZero:
         idempotency_key: Optional[str] = None, client_request_id: Optional[str] = None,
         headers: Optional[Mapping[str, str]] = None,
         retry_budget: Optional[float] = None,
-        danger_zone: Optional[Literal["accept"]] = None,
+        danger_zone: Optional[Literal["accept", "long_context_64k", "long_context_128k"]] = None,
     ) -> ResponseResult[DecideReply]:
         outgoing = httpx.Headers(headers)
-        if "SZ-Danger-Zone" in outgoing or (danger_zone is not None and danger_zone != "accept"):
-            raise InvalidRequestError("Use danger_zone with the exact value accept; do not supply its header.",
+        if "SZ-Danger-Zone" in outgoing or (danger_zone is not None and danger_zone not in ("accept", "long_context_64k", "long_context_128k")):
+            raise InvalidRequestError("Use danger_zone with accept, long_context_64k or long_context_128k; do not supply its header.",
                                       status=400, type="invalid_request_error", code="invalid_request", param="SZ-Danger-Zone")
         return cast(ResponseResult[DecideReply], self._request(
             "POST", "/system-zero/decide", body=request,
@@ -197,7 +198,7 @@ class SystemZero:
         idempotency_key: Optional[str] = None, client_request_id: Optional[str] = None,
         headers: Optional[Mapping[str, str]] = None,
         generate_idempotency: bool = True, retries: Optional[int] = None,
-        _danger_zone: Optional[Literal["accept"]] = None,
+        _danger_zone: Optional[Literal["accept", "long_context_64k", "long_context_128k"]] = None,
         retry_budget: Optional[float] = None,
     ) -> ResponseResult[Any]:
         _checked_base_url(self.base_url)
@@ -215,11 +216,14 @@ class SystemZero:
         external_clock = context.get("remaining", lambda: float("inf"))
         on_deadline = context.get("on_deadline", lambda: None)
         outgoing = httpx.Headers(headers)
-        if "SZ-Danger-Zone" in outgoing or (_danger_zone is not None and _danger_zone != "accept"):
-            raise InvalidRequestError("Use danger_zone with the exact value accept; do not supply its header.",
+        if "SZ-Danger-Zone" in outgoing or (_danger_zone is not None and _danger_zone not in ("accept", "long_context_64k", "long_context_128k")):
+            raise InvalidRequestError("Use danger_zone with accept, long_context_64k or long_context_128k; do not supply its header.",
                                       status=400, type="invalid_request_error", code="invalid_request", param="SZ-Danger-Zone")
-        if _danger_zone == "accept" and method == "POST" and path == "/system-zero/decide":
-            outgoing["SZ-Danger-Zone"] = "accept"
+        if _danger_zone is not None and method == "POST" and path == "/system-zero/decide":
+            if _danger_zone != "accept" and body is not None and body.get("attachments"):
+                raise LongContextNotAvailableError("Long context classes require state without attachments.",
+                    status=404, type="not_found_error", code="long_context_not_available", param="attachments")
+            outgoing["SZ-Danger-Zone"] = _danger_zone
         outgoing["Authorization"] = "Bearer " + reveal(self._api_key)
         outgoing["User-Agent"] = "system-zero-python/" + VERSION + " python/" + ".".join(map(str, sys.version_info[:3]))
         outgoing["Accept"] = "application/json"
@@ -231,7 +235,7 @@ class SystemZero:
             if idempotency_key is None:
                 idempotency_key = outgoing.get("Idempotency-Key")
             if idempotency_key is None and max_retries > 0:
-                idempotency_key = "szsdk_" + uuid4().hex
+                idempotency_key = "sz-sdk-" + str(uuid4())
             if idempotency_key is not None:
                 outgoing["Idempotency-Key"] = idempotency_key
         if "Idempotency-Key" in outgoing and not outgoing["Idempotency-Key"].strip():
@@ -243,7 +247,7 @@ class SystemZero:
         payload = json.dumps(body, ensure_ascii=False, separators=(",", ":")).encode("utf-8") if body is not None else None
         safe_replay = method in {"GET", "HEAD", "OPTIONS"} or bool(outgoing.get("Idempotency-Key", "").strip())
         started = self._monotonic()
-        retry_deadline = started + budget
+        retry_deadline = started + budget if context.get("workflow_recovery") else float("inf")
         external_deadline = started + external_clock()
 
         def external_remaining() -> float:
@@ -316,8 +320,8 @@ class SystemZero:
                                     error.type not in {"authentication_error", "permission_error"} and
                                     (_recover_workflow(response.status_code, error.code, response.headers, workflow_marker, error.details)
                                      if context.get("workflow_recovery") else
-                                     _retry_response(response.status_code, error.code, response.headers, error.retryable)))
-                    if context.get("workflow_recovery") and workflow_marker is None and should_retry:
+                                     _retry_response(response.status_code, error.code, response.headers, workflow_marker)))
+                    if workflow_marker is None and should_retry:
                         error.retryable = True
                     retry_headers = response.headers
             except httpx.DecodingError:
@@ -390,6 +394,8 @@ class SystemZero:
                 raise error
             if not should_retry or attempt >= max_retries:
                 raise error
+            if attempt == 0 and not context.get("workflow_recovery"):
+                retry_deadline = self._monotonic() + budget
             wait = _retry_wait(retry_headers, attempt, self._now, draw)
             if wait > self.max_retry_wait:
                 raise error

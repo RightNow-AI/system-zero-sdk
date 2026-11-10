@@ -71,6 +71,21 @@ class StreamError(TypedDict):
     fatal: bool
 
 
+class _ReplayResume(TypedDict):
+    supported: Literal[False]
+    action: Literal["reconnect_and_replay"]
+    retry_after_ms: int
+
+
+class _TokenResume(TypedDict):
+    supported: Literal[True]
+    action: Literal["redeem_resume_token"]
+    resume_token: str
+    state_version: int
+    expires_in_ms: int
+    retry_after_ms: int
+
+
 class StreamGoodbye(TypedDict):
     type: Literal["goodbye"]
     stream_id: str
@@ -78,7 +93,7 @@ class StreamGoodbye(TypedDict):
     reason: Optional[str]
     state_version: int
     last_decision_state_version: int
-    resume: dict[str, Any]
+    resume: Union[_ReplayResume, _TokenResume]
 
 
 class PossiblyDecided(TypedDict):

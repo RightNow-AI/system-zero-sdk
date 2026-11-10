@@ -1,6 +1,6 @@
 """Response metadata is separate from parsed JSON, including on errors."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import math
 import re
 from typing import Generic, Mapping, Optional, TypeVar
@@ -28,6 +28,7 @@ class ResponseMetadata:
     replayed: bool
     replay_header: Optional[str]
     idempotency_key: Optional[str] = None
+    danger_zone: list[str] = field(default_factory=list)
 
 
 @dataclass(frozen=True)
@@ -60,4 +61,5 @@ def response_metadata(headers: Mapping[str, str], idempotency_key: Optional[str]
         client_request_id=headers.get("x-client-request-id"),
         rate_limit=rates, latency_ms=_number(headers.get("x-latency-ms")),
         replayed=replay == "true", replay_header=replay,
+        danger_zone=[value.strip() for value in headers.get("sz-danger-zone", "").split(",") if value.strip()],
     )

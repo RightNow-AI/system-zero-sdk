@@ -109,3 +109,63 @@ for (const method of ['GET', 'POST'] as const) {
     }
   });
 }
+
+for (const status of [429, 503]) {
+  for (const milliseconds of [true, false]) {
+    it(`exposes and bounds server waits (${status}, milliseconds=${milliseconds})`, async () => {
+      let attempts = 0;
+      const sleeps: number[] = [];
+      const headers = milliseconds ? { 'Retry-After-Ms': '240000', 'Retry-After': '1' } : { 'Retry-After': '180' };
+      const client = new SystemZeroClient({ apiKey: 'SYNTHETIC', random: () => 0,
+        sleep: async ms => { sleeps.push(ms); }, fetch: async () => {
+          attempts++;
+          return Response.json({ error: { code: status === 429 ? 'rate_limit_exceeded' : 'system_zero_unavailable', retryable: true } }, { status, headers });
+        } });
+      const error = await client.decide(request).catch(error => error);
+      expect(error).toMatchObject({ status, retryAfterMs: milliseconds ? 240000 : 180000 });
+      expect(attempts).toBe(1);
+      expect(sleeps).toEqual([]);
+    });
+  }
+  it(`honors a server wait within the remaining budget (${status})`, async () => {
+    let attempts = 0, clock = 0;
+    const sleeps: number[] = [];
+    const client = new SystemZeroClient({ apiKey: 'SYNTHETIC', retryBudget: 2000, monotonic: () => clock, random: () => 0,
+      sleep: async ms => { sleeps.push(ms); clock += ms; }, fetch: async () => {
+        attempts++;
+        return attempts === 1 ? Response.json({ error: { code: status === 429 ? 'rate_limit_exceeded' : 'system_zero_unavailable', retryable: true } }, { status, headers: { 'Retry-After-Ms': '500', 'Retry-After': '180' } }) : Response.json({ answers: {} });
+      } });
+    await client.decide(request);
+    expect(sleeps).toEqual([500]);
+    expect(attempts).toBe(2);
+  });
+}
+
+it.each([
+  [503, 'idempotency_unavailable'], [503, 'limiter_unavailable'],
+  [500, 'internal_error'], [503, 'starter_unavailable'], [502, null], [503, null],
+] as const)('recovers a safe server refusal %i/%s using the original key', async (status, code) => {
+  const seen: Array<string | null> = [];
+  const client = new SystemZeroClient({ apiKey: 'SYNTHETIC', random: () => 0, sleep: async () => {},
+    fetch: async (_url, init) => {
+      seen.push(new Headers(init?.headers).get('idempotency-key'));
+      return seen.length > 1 ? Response.json({ answers: {} }) : code === null ? new Response('upstream unavailable', { status })
+        : Response.json({ error: { code, retryable: true } }, { status });
+    } });
+  await client.decide(request, { idempotencyKey: 'same-recovery-key' });
+  expect(seen).toEqual(['same-recovery-key', 'same-recovery-key']);
+});
+
+it('starts the recovery budget after the first failure', async () => {
+  let clock = 0, attempts = 0;
+  const client = new SystemZeroClient({ apiKey: 'SYNTHETIC', monotonic: () => clock,
+    random: () => 0, sleep: async () => {}, fetch: async () => {
+      if (++attempts === 1) {
+        clock += 70000;
+        return Response.json(refusal, { status: 503 });
+      }
+      return Response.json({ answers: {} });
+    } });
+  await client.decide(request);
+  expect(attempts).toBe(2);
+});

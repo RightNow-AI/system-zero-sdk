@@ -383,6 +383,10 @@ class SystemZeroStreamClient(AsyncIterator[StreamEvent]):
         self._min_interval_ms = 0
         self._hello: Optional[StreamHello] = None
         self._stream_id: Optional[str] = None
+        self._resume_hint: Optional[dict[str, Any]] = None
+        self._resuming: Optional[asyncio.Future] = None
+        self._resume_version = 0
+        self._resume_inflight = False
         self._seq = 0
         self._version = 0
         self._last_decision_version = 0
@@ -1115,6 +1119,18 @@ class SystemZeroStreamClient(AsyncIterator[StreamEvent]):
         return cast(EventLatency, await asyncio.shield(timing.future))
 
     async def _replay(self) -> None:
+        resumed = False
+        hint, self._resume_hint = self._resume_hint, None
+        if hint is not None and hint["expires_at"] > self._monotonic():
+            self._resuming = _future()
+            self._resume_version = hint["state_version"]
+            self._resume_inflight = True
+            await self._send({"type": "resume", "resume_token": hint["resume_token"],
+                              "stream_id": hint["stream_id"], "state_version": hint["state_version"]})
+            await asyncio.wait_for(asyncio.shield(self._resuming), self.receipt_timeout)
+            self._resuming = None
+            self._resume_inflight = False
+            resumed = True
         request = {**cast(dict, self._request), "state": deepcopy(self._desired_state)}
         if self._desired_attachments is not None:
             request["attachments"] = deepcopy(self._desired_attachments)
@@ -1127,6 +1143,8 @@ class SystemZeroStreamClient(AsyncIterator[StreamEvent]):
                self._accepted_idempotency_key)
         if not isinstance(key, str) or not key.strip():
             raise StreamProtocolError("Cannot replay stream work without its original idempotency key.")
+        if resumed and not self._replay_included:
+            self._refused_idempotency_key = key
         self._replay_on_request = (key == self._refused_idempotency_key and self._decision_mode == "on_change"
                                    and self.reconnect_policy == "latest")
         self._effective_mode = (self._decision_mode if self.reconnect_policy == "latest" and not self._replay_on_request
@@ -1218,7 +1236,7 @@ class SystemZeroStreamClient(AsyncIterator[StreamEvent]):
                                if self._socket.close_code == 1006 else
                                StreamDisconnectedError(close_code=self._socket.close_code))
                     self._idle = self._socket.close_code == 1000
-                    terminal = not self._idle and self._socket.close_code not in _RETRYABLE_CLOSE_CODES
+                    terminal = not self._idle and self._socket.close_code not in _RETRYABLE_CLOSE_CODES and not (self._socket.close_code == 1009 and self._resume_hint)
                 except asyncio.CancelledError:
                     raise
                 except StreamProtocolError as error:
@@ -1228,13 +1246,13 @@ class SystemZeroStreamClient(AsyncIterator[StreamEvent]):
                 except StreamDisconnectedError as error:
                     failure = error
                     self._idle = error.close_code == 1000
-                    terminal = error.close_code is not None and not self._idle and error.close_code not in _RETRYABLE_CLOSE_CODES
+                    terminal = error.close_code is not None and not self._idle and error.close_code not in _RETRYABLE_CLOSE_CODES and not (error.close_code == 1009 and self._resume_hint)
                 except ConnectionClosed as error:
                     code = error.rcvd.code if error.rcvd is not None else 1006
                     failure = (self._transport_error(error) if code == 1006 else
                                StreamDisconnectedError(close_code=code))
                     self._idle = code == 1000
-                    terminal = not self._idle and code not in _RETRYABLE_CLOSE_CODES
+                    terminal = not self._idle and code not in _RETRYABLE_CLOSE_CODES and not (code == 1009 and self._resume_hint)
                 except InvalidStatus as error:
                     delay = retry_after_delay(dict(error.response.headers), self._now())
                     self._retry_not_before = max(self._retry_not_before, self._monotonic() + delay)
@@ -1257,6 +1275,13 @@ class SystemZeroStreamClient(AsyncIterator[StreamEvent]):
                         failure, terminal = StreamProtocolError("Invalid stream server data."), True
                 finally:
                     self._cleaning_connection = True
+                    if self._resume_inflight:
+                        terminal = True
+                        failure = failure or StreamDisconnectedError("The retained stream response was lost; resume cannot be repeated safely.")
+                        if self._resuming is not None and not self._resuming.done():
+                            self._resuming.cancel()
+                        self._resuming = None
+                        self._resume_inflight = False
                     ready = cast(asyncio.Future, self._ready)
                     if self._idle and not ready.done():
                         ready.set_exception(failure or StreamDisconnectedError(close_code=1000))
@@ -1509,13 +1534,28 @@ class SystemZeroStreamClient(AsyncIterator[StreamEvent]):
                     self._pending_schedule_prior_work = False
                     self._outstanding.add(frame["state_version"])
                 elif kind == "decision":
-                    self._decision(frame)
+                    if self._resuming is not None:
+                        if frame.get("state_version") != self._resume_version or frame.get("http_status") != 200 or not isinstance(frame.get("reply"), dict) or not isinstance(frame.get("covered_event_ids"), list):
+                            raise StreamProtocolError("Invalid retained stream decision.")
+                        if not self._resuming.done():
+                            self._resuming.set_result(frame)
+                    else:
+                        self._decision(frame)
                 elif kind == "error":
+                    if self._resuming is not None and not self._resuming.done():
+                        self._resuming.set_exception(stream_error(frame))
                     self._error(frame)
                 elif kind == "goodbye":
                     resume = frame.get("resume")
                     if not isinstance(resume, dict) or not _integer(resume.get("retry_after_ms")):
                         raise StreamProtocolError("Invalid goodbye retry hint.")
+                    if resume.get("supported") is True:
+                        if (resume.get("action") != "redeem_resume_token" or not isinstance(resume.get("resume_token"), str)
+                                or re.fullmatch(r"[A-Za-z0-9_-]{43}", resume["resume_token"]) is None
+                                or not _integer(resume.get("state_version"), 1) or not _integer(resume.get("expires_in_ms"), 1)):
+                            raise StreamProtocolError("Invalid stream resume hint.")
+                        self._resume_hint = {"stream_id": self._stream_id, "resume_token": resume["resume_token"],
+                                             "state_version": resume["state_version"], "expires_at": self._monotonic() + min(resume["expires_in_ms"], 300000) / 1000}
                     self._retry_not_before = max(self._retry_not_before,
                                                  self._monotonic() + resume["retry_after_ms"] / 1000)
                 fatal_error = None

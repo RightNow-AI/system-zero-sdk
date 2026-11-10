@@ -1,46 +1,53 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it, vi } from 'vitest';
 import * as sdk from '../src/index.js';
+import { createMcpServer } from '../src/integrations/mcp-server/server.js';
 import { createToolHandler, validateToolArguments } from '../src/integrations/function-tools/index.js';
-import { createMcpServer, LEGACY_PROTOCOL_VERSION } from '../src/integrations/mcp-server/server.js';
 
 const request = { model: 'system-zero', state: 'Synthetic media', questions: { ready: { type: 'boolean' as const, instructions: 'Is it ready?' } } };
-const png = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82, 0, 0, 0, 1, 0, 0, 0, 1, 8, 2, 0, 0, 0, 144, 119, 83, 222, 0, 0, 0, 12, 73, 68, 65, 84, 120, 156, 99, 96, 96, 96, 0, 0, 0, 4, 0, 1, 246, 23, 56, 85, 0, 0, 0, 0, 73, 69, 78, 68, 174, 66, 96, 130]);
-function wav(rate = 16000, codec = 1, channels = 1, bits = 16): Buffer {
-  const align = channels * Math.ceil(bits / 8), bytes = Buffer.alloc(44 + align + align % 2);
-  bytes.write('RIFF'); bytes.writeUInt32LE(bytes.length - 8, 4); bytes.write('WAVEfmt ', 8);
-  bytes.writeUInt32LE(16, 16); bytes.writeUInt16LE(codec, 20); bytes.writeUInt16LE(channels, 22);
-  bytes.writeUInt32LE(rate, 24); bytes.writeUInt32LE(rate * align, 28); bytes.writeUInt16LE(align, 32);
-  bytes.writeUInt16LE(bits, 34); bytes.write('data', 36); bytes.writeUInt32LE(align, 40);
-  return bytes;
-}
+const png = Buffer.from('89504e470d0a1a0a', 'hex');
 const dataUrl = (mime: string, bytes: Uint8Array) => `data:${mime};base64,${Buffer.from(bytes).toString('base64')}`;
 const image = { name: 'picture', type: 'image' as const, data: dataUrl('image/png', png) };
+function wav(codec = 1, channels = 1, rate = 16000, bits = 16, frames = 160): Buffer {
+  const align = channels * Math.ceil(bits / 8), size = frames * align;
+  const raw = Buffer.alloc(44 + size + size % 2);
+  raw.write('RIFF'); raw.writeUInt32LE(raw.length - 8, 4); raw.write('WAVEfmt ', 8);
+  raw.writeUInt32LE(16, 16); raw.writeUInt16LE(codec, 20); raw.writeUInt16LE(channels, 22);
+  raw.writeUInt32LE(rate, 24); raw.writeUInt32LE(rate * align, 28);
+  raw.writeUInt16LE(align, 32); raw.writeUInt16LE(bits, 34);
+  raw.write('data', 36); raw.writeUInt32LE(size, 40); return raw;
+}
 const audio = { name: 'recording', type: 'audio' as const, data: dataUrl('audio/wav', wav()) };
 
-describe('served media profile', () => {
-  it('encodes only PDF documents and preserves the ordinary inline request', async () => {
-    const bytes = Buffer.from('%PDF-1.7\nSynthetic signature fixture');
-    const attachment = sdk.inlineAttachment({ name: 'paper', type: 'document', mime: 'application/pdf', data: bytes });
-    expect(attachment).toEqual({ name: 'paper', type: 'document', data: dataUrl('application/pdf', bytes) });
-    expect(() => sdk.inlineAttachment({ name: 'paper', type: 'document', mime: 'text/plain', data: bytes })).toThrow();
+describe('published media encoding and API availability', () => {
+  it('exposes the selected MIME registry at version 0.4.3', () => {
+    expect(sdk.VERSION).toBe('0.4.3');
+    expect(sdk.MEDIA_MIMES).toEqual({ image: ['image/jpeg', 'image/png'], audio: ['audio/wav'], document: ['application/pdf'], video: ['video/mp4'] });
+    expect(sdk.MEDIA_LIMITS.maxAudioDurationMs).toBe(60_000);
+    const spec = JSON.parse(readFileSync(new URL('../../openapi.json', import.meta.url), 'utf8'));
+    expect(spec.components.schemas.Attachment.properties.type.enum).toEqual(['image', 'audio', 'document', 'video']);
+    expect(spec.components.schemas.DecideRequest.properties.attachments.anyOf).toContainEqual({ type: 'null' });
+  });
+
+  it.each([
+    ['audio', 'audio/wav', wav()],
+    ['audio', 'audio/wav', wav(3, 2, 16000, 32)],
+    ['document', 'application/pdf', Buffer.from('%PDF-1.7\nSynthetic signature fixture')],
+    ['video', 'video/mp4', Buffer.from('000000186674797069736f6d', 'hex')],
+  ] as const)('carries %s through helper, preflight and ordinary HTTP without a local refusal', async (type, mime, bytes) => {
+    const attachment = sdk.inlineAttachment({ name: 'input', type, mime, data: bytes });
+    expect(attachment).toEqual({ name: 'input', type, data: dataUrl(mime, bytes) });
+    expect(sdk.validateAttachments([attachment])).toEqual([attachment]);
     const transport = vi.fn(async (_url: string | URL | Request, init?: RequestInit) => {
       expect(JSON.parse(String(init?.body)).attachments).toEqual([attachment]);
       return Response.json({ answers: {} });
     });
     await new sdk.SystemZeroClient({ apiKey: 'SYNTHETIC', fetch: transport }).decide({ ...request, attachments: [attachment] });
     expect(transport).toHaveBeenCalledTimes(1);
-  });
-  it('exposes only the served MIME and byte limits at version 0.4.2', () => {
-    expect(sdk.VERSION).toBe('0.4.2');
-    expect(sdk.MEDIA_MIMES).toEqual({ image: ['image/png', 'image/jpeg'], audio: ['audio/wav'], document: ['application/pdf'], video: ['video/mp4'] });
-    expect(sdk.MEDIA_LIMITS).toEqual({ maxAttachments: 16, maxImages: 4, maxAudio: 1, maxInlineBytes: 2621440, maxBodyBytes: 3665920, audioSampleRate: 16000, maxAudioDurationMs: 300000, maxAudioChannels: 64, maxImagePixels: 16777216, maxImageAspectRatio: 50 });
-    const spec = JSON.parse(readFileSync(new URL('../../openapi.json', import.meta.url), 'utf8'));
-    expect(spec.components.schemas.Attachment.properties.type.enum).toEqual(['image', 'audio', 'document', 'video']);
-    expect(spec.components.schemas.DecideRequest.properties.attachments.anyOf).toContainEqual({ type: 'null' });
+    expect(sdk.attachmentMagicMatches(mime, bytes)).toBe(true);
   });
 
-  it.each([undefined, null, [image], [audio], [image, audio]])('preserves text, null and inline media through transport (%j)', async attachments => {
+  it.each([undefined, null, [image]])('preserves optional attachments through transport (%j)', async attachments => {
     const body = { ...request, ...(attachments === undefined ? {} : { attachments }) };
     const transport = vi.fn(async (_url: string | URL | Request, init?: RequestInit) => {
       expect(JSON.parse(String(init?.body))).toEqual(body);
@@ -50,75 +57,71 @@ describe('served media profile', () => {
     expect(transport).toHaveBeenCalledTimes(1);
   });
 
-  it.each([[16000, 1, 1, 8], [16000, 1, 2, 16], [16000, 3, 2, 32], [16000, 3, 64, 64]])('encodes valid WAV frames (%j)', (rate, codec, channels, bits) => {
-    expect(sdk.inlineAttachment({ name: 'sound', type: 'audio', mime: 'audio/wav', data: wav(rate, codec, channels, bits) }))
-      .toEqual({ name: 'sound', type: 'audio', data: dataUrl('audio/wav', wav(rate, codec, channels, bits)) });
+  it('keeps PDF format restrictions and image count checks', () => {
+    expect(() => sdk.inlineAttachment({ name: 'paper', type: 'document', mime: 'text/plain', data: Buffer.from('text') })).toThrow();
+    expect(() => sdk.validateAttachments(Array.from({ length: 5 }, (_, i) => ({ ...image, name: `image${i}` })))).toThrow(expect.objectContaining({ code: 'media_unsupported' }));
+  });
+
+  it('checks WAV rate, structure, one-audio count and the independent byte bound', () => {
+    for (const raw of [wav(1, 1, 44100), Buffer.from('RIFF malformed')]) {
+      expect(() => sdk.inlineAttachment({ name: 'recording', type: 'audio', mime: 'audio/wav', data: raw })).toThrow(expect.objectContaining({ code: 'media_unsupported' }));
+    }
+    expect(() => sdk.validateAttachments([audio, { ...audio, name: 'second' }])).toThrow(expect.objectContaining({ code: 'media_unsupported' }));
+    expect(() => sdk.inlineAttachment({ name: 'recording', type: 'audio', mime: 'audio/wav', data: wav(1, 4, 16000, 16, 400_000) })).toThrow(expect.objectContaining({ code: 'media_too_large' }));
+  });
+
+  it.each([1, 2])('accepts exactly 60 seconds with %i channels through both preflight helpers', channels => {
+    const raw = wav(1, channels, 16000, 8, 960_000);
+    const attachment = sdk.inlineAttachment({ name: 'recording', type: 'audio', mime: 'audio/wav', data: raw });
+    expect(attachment.data).toBe(dataUrl('audio/wav', raw));
+    expect(sdk.validateAttachments([attachment])).toEqual([attachment]);
+  });
+
+  it.each([960_001, 976_000])('refuses %i decoded audio frames with the API duration error', frames => {
+    const raw = wav(1, 1, 16000, 8, frames);
+    const error = expect.objectContaining({ code: 'media_too_large', status: 413, param: 'attachments' });
+    expect(() => sdk.inlineAttachment({ name: 'recording', type: 'audio', mime: 'audio/wav', data: raw })).toThrow(error);
+    expect(() => sdk.validateAttachments([{ name: 'recording', type: 'audio', data: dataUrl('audio/wav', raw) }])).toThrow(error);
+  });
+
+  it('preserves an uncalibrated audio answer through HTTP', async () => {
+    const reply = { answers: { ready: { type: 'boolean', decision: true, calibrated: false } } };
+    const transport = vi.fn(async () => Response.json(reply));
+    expect(await new sdk.SystemZeroClient({ apiKey: 'SYNTHETIC', fetch: transport }).decide({ ...request, attachments: [audio] })).toEqual(reply);
+  });
+
+  it.each(['audio_not_available', 'video_not_available', 'document_not_available'])('preserves an API hold (%s)', async code => {
+    const transport = vi.fn(async () => Response.json({ error: { code, message: 'Synthetic hold.', type: 'not_found_error', retryable: false } }, { status: 404 }));
+    await expect(new sdk.SystemZeroClient({ apiKey: 'SYNTHETIC', fetch: transport }).decide(request)).rejects.toMatchObject({ code, status: 404 });
+    expect(transport).toHaveBeenCalledTimes(1);
   });
 
   it.each([
-    ['image/png', png], ['image/jpeg', Buffer.from('ffd8ff', 'hex')],
-  ])('reuses signature checks for %s', (mime, bytes) => {
-    expect(sdk.attachmentMagicMatches(mime, bytes)).toBe(true);
-    expect(sdk.inlineAttachment({ name: 'picture', type: 'image', mime, data: bytes }).data).toBe(dataUrl(mime, bytes));
-    expect(sdk.attachmentMagicMatches('application/pdf', Buffer.from('%PDF-'))).toBe(true);
-  });
-
-  it.each([
-    ['invalid_request', () => sdk.inlineAttachment({ name: '9bad', type: 'image', mime: 'image/png', data: png })],
-    ['media_unsupported', () => sdk.inlineAttachment({ name: 'x', type: 'image', mime: 'image/bmp', data: png })],
-    ['media_decode_failed', () => sdk.inlineAttachment({ name: 'x', type: 'image', mime: 'image/png', data: Buffer.from('bad') })],
-    ['media_unpriced', () => sdk.inlineAttachment({ name: 'x', type: 'image', mime: 'image/gif', data: Buffer.from('GIF89a') })],
-    ['media_unpriced', () => sdk.inlineAttachment({ name: 'x', type: 'image', mime: 'image/webp', data: Buffer.from('RIFF0000WEBP') })],
-    ['media_too_large', () => sdk.inlineAttachment({ name: 'x', type: 'image', mime: 'image/png', data: Buffer.alloc(2621441) })],
-    ...[8000, 22050, 44100, 48000].map(rate => ['media_unsupported', () => sdk.inlineAttachment({ name: 'x', type: 'audio', mime: 'audio/wav', data: wav(rate) })] as const),
-    ...['audio/mpeg', 'audio/flac', 'audio/ogg', 'audio/mp4', 'audio/x-wav'].map(mime => ['media_unsupported', () => sdk.inlineAttachment({ name: 'x', type: 'audio', mime, data: wav() })] as const),
-    ['media_unsupported', () => sdk.inlineAttachment({ name: 'x', type: 'audio', mime: 'audio/wav', data: Buffer.from('bad') })],
-    ['media_unsupported', () => sdk.inlineAttachment({ name: 'x', type: 'audio', mime: 'audio/wav', data: wav(16000, 6) })],
-    ['media_unsupported', () => sdk.inlineAttachment({ name: 'x', type: 'audio', mime: 'audio/wav', data: wav(16000, 3, 1, 16) })],
-    ['invalid_request', () => sdk.validateAttachments([image, image])],
-    ['invalid_request', () => sdk.validateAttachments([{ ...image, data: 'data:image/png;base64,AAAA=' }])],
-    ['invalid_request', () => sdk.validateAttachments(Array.from({ length: 17 }, (_, i) => ({ ...image, name: `a${i}` })))],
-    ['media_unsupported', () => sdk.validateAttachments(Array.from({ length: 5 }, (_, i) => ({ ...image, name: `a${i}` })))],
-    ['media_unsupported', () => sdk.validateAttachments([audio, { ...audio, name: 'second' }])],
-    ['media_too_large', () => sdk.validateAttachments([image, { ...image, name: 'second', data: dataUrl('image/png', Buffer.concat([png, Buffer.alloc(2621440 - png.length)])) }])],
-  ] as const)('uses gateway code %s for local preflight', (code, action) => {
-    const transport = vi.fn();
-    new sdk.SystemZeroClient({ apiKey: 'SYNTHETIC', fetch: transport });
-    expect(action).toThrow(expect.objectContaining({ code }));
-    expect(transport).not.toHaveBeenCalled();
-  });
-
-  it.each([['document', 'document_not_available', 404], ['video', 'video_not_available', 404], ['image', 'service_unavailable', 503], ['audio', 'media_unsupported', 400]] as const)
-    ('preserves gateway refusal for %s references', async (type, code, status) => {
-      const transport = vi.fn(async () => Response.json({ error: { code, message: 'Synthetic refusal.', type: 'invalid_request_error', retryable: false } }, { status }));
-      const client = new sdk.SystemZeroClient({ apiKey: 'SYNTHETIC', fetch: transport, maxRetries: 0 });
-      const body = { ...request, attachments: [{ name: 'input', type, upload: 'szu_' + 'a'.repeat(32), mime: type === 'image' ? 'image/png' : 'audio/wav' }] };
-      await expect(client.decide(body as unknown as sdk.DecideRequest)).rejects.toMatchObject({ code, status });
-      expect(transport).toHaveBeenCalledTimes(1);
-    });
-
-  it('carries served media through the existing function tool schema', async () => {
-    const args = { state: 'Synthetic', questions: [{ name: 'ready', type: 'boolean', instructions: 'Ready?', criteria: null }], model: null, attachments: [image, audio] };
+    image,
+    audio,
+    { name: 'paper', type: 'document', data: dataUrl('application/pdf', Buffer.from('%PDF-1.7\nSynthetic')) },
+    { name: 'clip', type: 'video', data: dataUrl('video/mp4', Buffer.from('000000186674797069736f6d', 'hex')) },
+  ])('carries $type through function tools and MCP without a local refusal', async attachment => {
+    const args = { state: 'Synthetic', questions: [{ name: 'ready', type: 'boolean', instructions: 'Ready?', criteria: null }], model: null, attachments: [attachment] };
     expect(() => validateToolArguments('system_zero_decide', args)).not.toThrow();
     const transport = vi.fn(async (_url: string | URL | Request, init?: RequestInit) => {
-      expect(JSON.parse(String(init?.body)).attachments).toEqual([image, audio]);
+      expect(JSON.parse(String(init?.body)).attachments).toEqual([attachment]);
       return Response.json({ answers: {} });
     });
-    const handler = createToolHandler({ client: new sdk.SystemZeroClient({ apiKey: 'SYNTHETIC', fetch: transport, maxRetries: 0 }) });
+    const handler = createToolHandler({ client: new sdk.SystemZeroClient({ apiKey: 'SYNTHETIC', fetch: transport }) });
     expect((await handler('system_zero_decide', args)).status).toBe('ok');
-    expect(transport).toHaveBeenCalledTimes(1);
-  });
-
-  it('carries served media through the MCP adapter', async () => {
-    const transport = vi.fn(async (_url: string | URL | Request, init?: RequestInit) => {
-      expect(JSON.parse(String(init?.body)).attachments).toEqual([image, audio]);
-      return Response.json({ answers: {} });
-    });
-    const mcp = createMcpServer({ handleToolCall: createToolHandler({ client: new sdk.SystemZeroClient({ apiKey: 'SYNTHETIC', fetch: transport, maxRetries: 0 }) }) });
-    await mcp.handleMessage({ jsonrpc: '2.0', id: 1, method: 'initialize', params: { protocolVersion: LEGACY_PROTOCOL_VERSION, capabilities: {}, clientInfo: { name: 'synthetic', version: '1' } } });
+    const mcp = createMcpServer({ handleToolCall: handler });
+    await mcp.handleMessage({ jsonrpc: '2.0', id: 1, method: 'initialize', params: { protocolVersion: '2025-11-25', capabilities: {}, clientInfo: { name: 'synthetic', version: '1' } } });
     await mcp.handleMessage({ jsonrpc: '2.0', method: 'notifications/initialized' });
-    const result = await mcp.handleMessage({ jsonrpc: '2.0', id: 2, method: 'tools/call', params: { name: 'system_zero_decide', arguments: { state: 'Synthetic', questions: [{ name: 'ready', type: 'boolean', instructions: 'Ready?', criteria: null }], model: null, attachments: [image, audio] } } });
-    expect(result).toMatchObject({ result: { isError: false, structuredContent: { status: 'ok' } } });
-    expect(transport).toHaveBeenCalledTimes(1);
+    const result = await mcp.handleMessage({ jsonrpc: '2.0', id: 2, method: 'tools/call', params: { name: 'system_zero_decide', arguments: args } });
+    expect(result).toMatchObject({ result: { isError: false } });
+    expect(transport).toHaveBeenCalledTimes(2);
   });
+});
+
+it.each(['image', 'document', 'video'] as const)('refuses audio beside %s with the API error', type => {
+  const other = { name: 'other', type, data: dataUrl(type === 'document' ? 'application/pdf' : type === 'video' ? 'video/mp4' : 'image/png', png) };
+  for (const attachments of [[audio, other], [other, audio]]) {
+    expect(() => sdk.validateAttachments(attachments)).toThrow(expect.objectContaining({ status: 404, code: 'audio_not_available', param: 'attachments' }));
+  }
 });

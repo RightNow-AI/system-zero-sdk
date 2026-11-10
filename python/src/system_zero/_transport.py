@@ -9,6 +9,8 @@ from contextlib import contextmanager
 from contextvars import ContextVar
 from dataclasses import dataclass
 import time
+import atexit
+from threading import Lock
 from typing import Any, Iterator, Optional
 
 import httpcore
@@ -128,6 +130,11 @@ class _ResponseStream(httpx.SyncByteStream):
         self._stream.close()
 
 
+# Seconds an idle connection stays in the pool. The service keeps a caller's idle connection open for minutes, so a
+# caller that pauses between calls reuses it instead of paying a new TCP and TLS handshake. It was 5.
+KEEPALIVE_EXPIRY_SECONDS = 240
+
+
 class DeadlineTransport(httpx.BaseTransport):
     """Default synchronous transport; injected HTTPX transports also work.
 
@@ -139,7 +146,7 @@ class DeadlineTransport(httpx.BaseTransport):
     def __init__(self):
         self._pool = httpcore.ConnectionPool(
             ssl_context=httpcore.default_ssl_context(), network_backend=_TrackedBackend(),
-            max_connections=100, max_keepalive_connections=20, keepalive_expiry=5,
+            max_connections=100, max_keepalive_connections=20, keepalive_expiry=KEEPALIVE_EXPIRY_SECONDS,
             http1=True, http2=False, retries=0,
         )
 
@@ -164,3 +171,28 @@ class DeadlineTransport(httpx.BaseTransport):
 
     def close(self) -> None:
         self._pool.close()
+
+
+_shared_transport: Optional[DeadlineTransport] = None
+_shared_lock = Lock()
+
+
+class _SharedTransport(httpx.BaseTransport):
+    def __init__(self, transport: DeadlineTransport):
+        self._transport = transport
+
+    def handle_request(self, request: httpx.Request) -> httpx.Response:
+        return self._transport.handle_request(request)
+
+    def close(self) -> None:
+        # A client's lifetime must not close another client's connections.
+        pass
+
+
+def default_transport() -> httpx.BaseTransport:
+    global _shared_transport
+    with _shared_lock:
+        if _shared_transport is None:
+            _shared_transport = DeadlineTransport()
+            atexit.register(_shared_transport.close)
+        return _SharedTransport(_shared_transport)

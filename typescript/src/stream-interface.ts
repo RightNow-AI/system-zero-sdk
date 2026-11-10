@@ -29,7 +29,8 @@ export interface StreamError extends StreamBase {
 export interface StreamGoodbye extends StreamBase {
   type: 'goodbye'; reason: 'shutdown' | 'max_lifetime' | 'idle' | 'maintenance' | 'lease_lost' | 'slow_reader' | 'store_unavailable' | 'overload' | 'auth' | 'policy' | null;
   state_version: number; last_decision_state_version: number;
-  resume: { supported: false; action: 'reconnect_and_replay'; retry_after_ms: number };
+  resume: { supported: false; action: 'reconnect_and_replay'; retry_after_ms: number }
+    | { supported: true; action: 'redeem_resume_token'; resume_token: string; state_version: number; expires_in_ms: number; retry_after_ms: number };
 }
 /** Conservative scheduled/sent work whose completion cannot be known after a lost connection. */
 export interface PossiblyDecided { type: 'possibly_decided'; stream_id: string; state_versions: number[]; event_ids: string[] }

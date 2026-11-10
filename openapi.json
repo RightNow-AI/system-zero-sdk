@@ -109,12 +109,34 @@
       "post": {
         "operationId": "decide",
         "summary": "Answer questions about a state.",
+        "x-system-zero-served-ranges": {
+          "text": {
+            "options": {
+              "min": 2,
+              "max": 10
+            },
+            "levels": {
+              "min": 2,
+              "max": 4
+            }
+          },
+          "media": {
+            "options": {
+              "min": 2,
+              "max": 26
+            },
+            "levels": {
+              "min": 2,
+              "max": 10
+            }
+          }
+        },
         "parameters": [
           {
             "name": "Idempotency-Key",
             "in": "header",
             "required": false,
-            "description": "Sends the request at most once: the same key and body replays the stored answer for 24 hours.",
+            "description": "The same key and body replays a stored answer for 24 hours. A successful key identity stays bound for 30 more days: an expired answer returns 409 idempotency_replay_unavailable; a different body returns 400 idempotency_key_reuse. Use a new key for new work. Cached request fingerprints expire after 24 hours plus about a minute; only the content-free key binding remains for the extra 30 days.",
             "schema": {
               "type": "string",
               "minLength": 1,
@@ -132,6 +154,20 @@
               "minLength": 1,
               "maxLength": 512,
               "pattern": "^[\\x20-\\x7E]+$"
+            }
+          },
+          {
+            "name": "SZ-Danger-Zone",
+            "in": "header",
+            "required": false,
+            "description": "Selects a long context class for this request. long_context_64k answers a state of 38,001 to 65,536 tokens; long_context_128k answers a state of 65,537 to 131,072 tokens. Send the text in state with no attachments. Any attachment with a native long class answers 404 long_context_not_available and is not charged. A class that is not available answers 404 long_context_not_available and is not charged. A state outside the selected band answers a nonretryable 404 long_context_not_available with param state and the class bounds, without a retry delay, and is not charged. With multiple native classes, accept answers 400 invalid_request with param SZ-Danger-Zone. Without this header, the request uses the direct window. Header names are case-insensitive.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "accept",
+                "long_context_64k",
+                "long_context_128k"
+              ]
             }
           }
         ],
@@ -169,6 +205,9 @@
               },
               "Server-Timing": {
                 "$ref": "#/components/headers/Server-Timing"
+              },
+              "sz-danger-zone": {
+                "$ref": "#/components/headers/sz-danger-zone"
               }
             },
             "content": {
@@ -188,8 +227,8 @@
                     "summary": "A high-confidence false decision, with calibration unattested.",
                     "value": {
                       "id": "szd_00000000000000000000000000000001",
-                      "model": "system-zero-1.0.0",
-                      "served_by": "system-zero-1.0.0",
+                      "model": "system-zero-3.0.0",
+                      "served_by": "system-zero-3.0.0",
                       "created": 1792144800,
                       "context": {
                         "route": "direct",
@@ -225,8 +264,8 @@
                     "summary": "A choice and all remaining outcomes, with calibration unattested.",
                     "value": {
                       "id": "szd_00000000000000000000000000000002",
-                      "model": "system-zero-1.0.0",
-                      "served_by": "system-zero-1.0.0",
+                      "model": "system-zero-3.0.0",
+                      "served_by": "system-zero-3.0.0",
                       "created": 1792144800,
                       "context": {
                         "route": "direct",
@@ -271,8 +310,8 @@
                     "summary": "A selected level distinct from the expected score, with calibration unattested.",
                     "value": {
                       "id": "szd_00000000000000000000000000000003",
-                      "model": "system-zero-1.0.0",
-                      "served_by": "system-zero-1.0.0",
+                      "model": "system-zero-3.0.0",
+                      "served_by": "system-zero-3.0.0",
                       "created": 1792144800,
                       "context": {
                         "route": "direct",
@@ -470,19 +509,19 @@
         }
       },
       "X-RateLimit-Limit": {
-        "description": "The key's requests a minute.",
+        "description": "The lower of the key's and workspace's requests-per-minute limits.",
         "schema": {
           "type": "integer"
         }
       },
       "X-RateLimit-Remaining": {
-        "description": "Requests left in the key's minute.",
+        "description": "The lower remaining allowance in the key's and workspace's minute windows.",
         "schema": {
           "type": "integer"
         }
       },
       "X-RateLimit-Reset": {
-        "description": "The unix second the key's window reopens.",
+        "description": "The Unix reset second for the tighter remaining key or workspace allowance.",
         "schema": {
           "type": "integer"
         }
@@ -525,6 +564,12 @@
       },
       "Server-Timing": {
         "description": "The gateway's stages and their durations, on answers to a proven key.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "sz-danger-zone": {
+        "description": "Comma-separated long context classes that served this request: long_context_64k, long_context_128k. Present only when a class was used.",
         "schema": {
           "type": "string"
         }
@@ -635,7 +680,7 @@
           "questions"
         ],
         "additionalProperties": false,
-        "description": "Send one silent H.264 MP4 video as an inline base64 data URL. Maximum duration: 10 seconds. Maximum dimensions: 1920 x 1080. Maximum decoded file size: 2,621,440 bytes (2.5 MiB). The complete JSON request must fit 3,665,920 bytes, including base64 and questions. Frames are sampled at 2 per second from time zero, up to 20 frames. Rotated videos, soundtracks, separate attachments and video upload references are not supported.",
+        "description": "Send one silent H.264 MP4 video as an inline base64 data URL. Maximum duration: 10 seconds. Maximum dimensions: 1920 x 1080. Maximum decoded file size: 2,621,440 bytes (2.5 MiB). The complete JSON request must fit 3,665,920 bytes, including base64 and questions. Frames are sampled at 2 per second from time zero, up to 20 frames. Rotated videos, soundtracks, separate attachments and video upload references are not supported. On system-zero-3.0.0, send at most 1 audio attachment per request. Short audio has an inclusive decoded-duration limit of 60000 milliseconds. A longer clip answers 413 media_too_large. Send audio on its own: one WAV file and no other attachment. A mixed set answers 404 audio_not_available.",
         "allOf": [
           {
             "if": {
@@ -804,7 +849,7 @@
           },
           "data": {
             "type": "string",
-            "description": "Served MIME types: image/png, image/jpeg, audio/wav. Aggregate decoded bytes at most 2,621,440. Documents use application/pdf, at most 500 pages. Encrypted PDFs and document references are not supported. Video uses video/mp4, up to 10 seconds and 1920 x 1080. Soundtracks and rotation are refused."
+            "description": "Selected MIME types: image/jpeg, image/png, audio/wav, application/pdf, video/mp4. Aggregate decoded bytes at most 2,621,440. Documents use application/pdf, at most 500 pages. Encrypted PDFs and document references are not supported. Audio uses one inline audio/wav with PCM or IEEE float samples at 16,000 Hz, mono or multichannel, up to 60 seconds inclusive (60,000 ms), one pass per request. Video uses video/mp4, up to 10 seconds and 1920 x 1080. Soundtracks and rotation are refused."
           }
         },
         "required": [
@@ -813,7 +858,7 @@
           "data"
         ],
         "additionalProperties": false,
-        "description": "Inline media as a canonical base64 data URL: static PNG or JPEG images and 16,000 Hz PCM or float WAV audio. PDF is supported through ordinary inline attachments. Only PDF is supported; other document formats are unavailable. One silent H.264 MP4 video may be sent as the only attachment."
+        "description": "Inline media as a canonical base64 data URL. Check the models endpoint for current input availability. PDF is supported through ordinary inline attachments. Only PDF is supported by this SDK version; consult discovery for document formats. Read models.list() for audio availability. Audio answers currently report calibrated: false. One silent H.264 MP4 video may be sent as the only attachment."
       },
       "StructuredJson": {
         "description": "Text, or a JSON object or array; every number finite (an integer past 2^53 - 1 reaches the node digit for digit).",
@@ -1034,7 +1079,7 @@
                   "minimum": 0,
                   "maximum": 1
                 },
-                "description": "The complete released distribution in integer millionths, totaling exactly 1000000 units. Confidence equals probabilities[decision]; JSON floating-point sums may use absolute tolerance 0.000001."
+                "description": "The complete released distribution in integer millionths. The gateway preserves its validated distribution without renormalizing: a multi-outcome total may be 999999, 1000000 or 1000001 units. Confidence equals the selected outcome's released probability."
               },
               "confidence": {
                 "type": "number",
@@ -1108,7 +1153,7 @@
               },
               "score": {
                 "type": "number",
-                "description": "Expected level index, rounded to six decimals; it can be fractional. Decision confidence describes exact-level correctness, not distance from this expected score."
+                "description": "Diagnostic expected level index preserved from the validated node answer. It may differ from the expectation of released probabilities by the gateway's 0.000001 tolerance plus weighted probability-rounding error (at most 1e-12 per input probability). Decision confidence describes exact-level correctness, not distance from this diagnostic score."
               },
               "legend": {
                 "type": "object",
@@ -1123,7 +1168,7 @@
                   "minimum": 0,
                   "maximum": 1
                 },
-                "description": "The complete released distribution in integer millionths, totaling exactly 1000000 units. Confidence equals probabilities[decision]; JSON floating-point sums may use absolute tolerance 0.000001."
+                "description": "The complete released distribution in integer millionths. The gateway preserves its validated distribution without renormalizing: a multi-outcome total may be 999999, 1000000 or 1000001 units. Confidence equals the selected outcome's released probability."
               },
               "confidence": {
                 "type": "number",
@@ -1519,6 +1564,25 @@
             ],
             "description": "The version the alias system-zero resolves to; null for a version."
           },
+          "input_routes": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "audio": {
+                "type": "string"
+              },
+              "document": {
+                "type": "string"
+              },
+              "image": {
+                "type": "string"
+              },
+              "video": {
+                "type": "string"
+              }
+            },
+            "description": "Optional fresh alias input routes. Each kind uses the named version and its full limits and pricing; explicit versions never cross."
+          },
           "released_at": {
             "type": [
               "string",
@@ -1554,11 +1618,44 @@
             "properties": {
               "state_tokens": {
                 "type": "integer",
-                "description": "The longest state one request answers, counted in state tokens. A longer state is refused with 404 long_context_not_available while long_context is held."
+                "description": "The ordinary direct window in state tokens, without an SZ-Danger-Zone class selector. Available longer windows are listed in long_context."
               },
               "rendered_tokens": {
                 "type": "integer",
-                "description": "The longest rendered context one request answers, counted in rendered tokens: the state with each question rendered beside it. A longer one is refused with 404 long_context_not_available while long_context is held. Body bytes and the HTTP answer bound still apply independently."
+                "description": "The ordinary direct window in rendered tokens: the state with each question rendered beside it. Body bytes and the HTTP answer bound still apply independently."
+              },
+              "long_context": {
+                "type": "array",
+                "description": "Available long context classes for this model. Send the entry's header_value in SZ-Danger-Zone to select that window. Text state only; no attachments.",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "header_value",
+                    "min_state_tokens",
+                    "state_tokens",
+                    "rendered_tokens",
+                    "attachments"
+                  ],
+                  "properties": {
+                    "header_value": {
+                      "type": "string"
+                    },
+                    "min_state_tokens": {
+                      "type": "integer"
+                    },
+                    "state_tokens": {
+                      "type": "integer"
+                    },
+                    "rendered_tokens": {
+                      "type": "integer"
+                    },
+                    "attachments": {
+                      "type": "integer",
+                      "const": 0
+                    }
+                  }
+                }
               },
               "questions": {
                 "type": "integer",
@@ -1675,7 +1772,8 @@
             "type": "array",
             "items": {
               "type": "string"
-            }
+            },
+            "description": "Routes not served by this model. A long_context hold refers to the 1M route; available native long classes remain listed in limits.long_context with their header values."
           }
         }
       },
@@ -1699,7 +1797,8 @@
             ],
             "properties": {
               "message": {
-                "type": "string"
+                "type": "string",
+                "description": "An ordinary text length refusal names the direct window and the served state-token bands with their SZ-Danger-Zone selector values, or states that no served class covers the state."
               },
               "type": {
                 "enum": [
@@ -1732,7 +1831,7 @@
               },
               "details": {
                 "type": "object",
-                "description": "The refusal's machine-readable extras: its cause on a 429, a reset, a limit. A stateless text request refused with 404 long_context_not_available names the served bound in max_state_tokens and max_rendered_tokens."
+                "description": "The refusal's machine-readable extras: its cause on a 429, a reset, a limit. An ordinary stateless text length refusal with 404 long_context_not_available names the direct window in max_state_tokens and max_rendered_tokens."
               }
             }
           },

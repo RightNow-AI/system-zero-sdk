@@ -64,6 +64,12 @@ class ErrorCode(str, Enum):
     REQUEST_REFUSED = 'request_refused'
     SERVICE_UNAVAILABLE = 'service_unavailable'
     STAGING_ATTEMPT_CEILING = 'staging_attempt_ceiling'
+    STARTER_ATTEMPT_LIMIT = 'starter_attempt_limit'
+    STARTER_CONCURRENCY_LIMIT = 'starter_concurrency_limit'
+    STARTER_CREDIT_HELD = 'starter_credit_held'
+    STARTER_RATE_LIMIT = 'starter_rate_limit'
+    STARTER_SPEND_LIMIT = 'starter_spend_limit'
+    STARTER_UNAVAILABLE = 'starter_unavailable'
     STATE_TOO_LARGE = 'state_too_large'
     STATE_TOO_LARGE_UNGUARDED = 'state_too_large_unguarded'
     STREAM_LIMIT_EXCEEDED = 'stream_limit_exceeded'
@@ -82,6 +88,7 @@ SYSTEM_ZERO_ERROR_CODES = (
     'audio_not_available',
     'capacity_exhausted',
     'committee_not_available',
+    'concurrency_limit_exceeded',
     'daily_dispatch_limit',
     'deliberate_not_available',
     'document_controls_not_available',
@@ -124,6 +131,12 @@ SYSTEM_ZERO_ERROR_CODES = (
     'request_refused',
     'service_unavailable',
     'staging_attempt_ceiling',
+    'starter_attempt_limit',
+    'starter_concurrency_limit',
+    'starter_credit_held',
+    'starter_rate_limit',
+    'starter_spend_limit',
+    'starter_unavailable',
     'state_too_large',
     'state_too_large_unguarded',
     'stream_limit_exceeded',
@@ -140,7 +153,6 @@ SYSTEM_ZERO_ERROR_CODES = (
 GATEWAY_ERROR_CODES = (
     'account_suspended',
     'auth_error',
-    'concurrency_limit_exceeded',
     'idempotency_conflict',
     'idempotency_replay_unavailable',
     'idempotency_replayed_error',

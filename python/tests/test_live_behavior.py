@@ -76,7 +76,7 @@ class LiveBehaviorTests(unittest.TestCase):
 
     def test_local_call_admission_refuses_before_transport(self):
         catalog = json.loads(Path(tools.__file__).with_name("error-catalog.json").read_text(encoding="utf-8"))
-        self.assertEqual(len(catalog), 74)
+        self.assertEqual(len(catalog), 80)
         self.assertNotIn("call_limit_reached", catalog)
         seen = []
         with sdk.SystemZero(api_key="SYNTHETIC", max_retries=0, transport=httpx.MockTransport(
@@ -163,12 +163,13 @@ class LiveBehaviorTests(unittest.TestCase):
                     return httpx.Response(status, json={"error": {
                         "code": "future_refusal", "type": kind,
                         "message": "Synthetic refusal.", "retryable": retryable}})
-                with sdk.SystemZero(api_key="SYNTHETIC", transport=httpx.MockTransport(send_future)) as client:
+                with sdk.SystemZero(api_key="SYNTHETIC", transport=httpx.MockTransport(send_future),
+                                    max_retries=2, random=lambda: 0, sleep=lambda _: None) as client:
                     with self.assertRaises(getattr(sdk, class_name)) as caught:
                         client.decide(REQUEST)
                     self.assertEqual((caught.exception.code, caught.exception.status, caught.exception.retryable),
                                      ("future_refusal", status, retryable))
-                    self.assertEqual(len(seen), 1)
+                    self.assertEqual(len(seen), 3 if retryable else 1)
 
     def test_secure_base_is_accepted_and_insecure_remote_base_is_refused(self):
         with self.assertRaises(ValueError):

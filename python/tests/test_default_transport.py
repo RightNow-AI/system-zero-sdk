@@ -1,11 +1,12 @@
 """Loopback checks for the HTTP transport used without dependency injection."""
 
 from contextlib import contextmanager
-from http.server import BaseHTTPRequestHandler, HTTPServer
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
 from pathlib import Path
 import tempfile
-from threading import Thread
+import socket
+from threading import Thread, current_thread
 import time
 
 import httpx
@@ -27,10 +28,16 @@ DECISION = {"id": "szd_synthetic", "model": "system-zero", "served_by": "synthet
 
 @contextmanager
 def server_for(respond):
-    seen = []
+    seen, connections, handlers = [], [], []
 
     class Handler(BaseHTTPRequestHandler):
         protocol_version = "HTTP/1.1"
+        timeout = 0.5
+
+        def setup(self):
+            super().setup()
+            connections.append(self.connection)
+            handlers.append(current_thread())
 
         def log_message(self, *args):
             pass
@@ -43,7 +50,7 @@ def server_for(respond):
         do_GET = handle_request
         do_POST = handle_request
 
-    server = HTTPServer((HOST, 0), Handler)
+    server = ThreadingHTTPServer((HOST, 0), Handler)
     worker = Thread(target=server.serve_forever, kwargs={"poll_interval": 0.01}, daemon=True)
     worker.start()
     try:
@@ -51,6 +58,15 @@ def server_for(respond):
     finally:
         server.shutdown()
         server.server_close()
+        for connection in connections:
+            try:
+                connection.shutdown(socket.SHUT_RDWR)
+            except OSError:
+                pass
+            connection.close()
+        for handler in handlers:
+            handler.join(timeout=2)
+            assert not handler.is_alive()
         worker.join(timeout=2)
         assert not worker.is_alive()
 
@@ -83,6 +99,39 @@ def test_default_transport_decide_and_models_framing():
         assert "Transfer-Encoding" not in seen[0]["headers"]
         assert json.loads(seen[0]["body"]) == REQUEST
         assert seen[1]["body"] == b""
+
+
+def test_default_transport_keeps_an_idle_connection_for_four_minutes(monkeypatch):
+    """A caller that pauses between calls reuses its connection for four minutes, then opens a new one."""
+    ports, skew, real = [], [0.0], time.monotonic
+    monkeypatch.setattr(time, "monotonic", lambda: real() + skew[0])
+
+    def respond(handler, _):
+        ports.append(handler.client_address[1])
+        reply(handler, MODELS)
+
+    with server_for(respond) as (base_url, _):
+        with client(base_url) as sdk:
+            sdk.models.list()
+            skew[0] += 120
+            sdk.models.list()
+            skew[0] += 300
+            sdk.models.list()
+    assert ports[0] == ports[1]
+    assert ports[2] != ports[1]
+
+
+def test_default_clients_reuse_a_connection_after_one_client_closes():
+    ports = []
+    def respond(handler, _):
+        ports.append(handler.client_address[1])
+        reply(handler, MODELS)
+    with server_for(respond) as (base_url, _):
+        with client(base_url) as first:
+            assert first.models.list() == MODELS
+        with client(base_url) as second:
+            assert second.models.list() == MODELS
+    assert ports[0] == ports[1]
 
 
 @pytest.mark.parametrize("method", ["GET", "POST"])

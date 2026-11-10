@@ -99,7 +99,7 @@ class FlowDefinition(TypedDict):
 
 
 class _FlowOptionsOptional(TypedDict, total=False):
-    danger_zone: Literal["accept"]
+    danger_zone: Literal["accept", "long_context_64k", "long_context_128k"]
     include_content: bool
     now: Optional[Callable[[], float]]
     max_decide_calls: int
@@ -295,7 +295,7 @@ class BatchRecord(TypedDict):
 
 
 class _BatchOptionsOptional(TypedDict, total=False):
-    danger_zone: Literal["accept"]
+    danger_zone: Literal["accept", "long_context_64k", "long_context_128k"]
     concurrency: int
     max_retries: int
     now_ms: Callable[[], float]

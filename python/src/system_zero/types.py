@@ -205,9 +205,20 @@ class TextMediaChoiceRange(TextMediaRange, _LongContextChoiceOptional):
     pass
 
 
+class ModelLongContextLimits(TypedDict):
+    """One served text-state band, selected by its exact request header value."""
+
+    header_value: str
+    min_state_tokens: int
+    state_tokens: int
+    rendered_tokens: int
+    attachments: Literal[0]
+
+
 class _ModelLimitsOptional(TypedDict, total=False):
     images: int
     audio: int
+    long_context: List[ModelLongContextLimits]
 
 
 class ModelLimits(_ModelLimitsOptional):
@@ -226,7 +237,18 @@ class ModelLimits(_ModelLimitsOptional):
 HeldRoute: TypeAlias = str
 
 
-class Model(TypedDict):
+class ModelInputRoutes(TypedDict, total=False):
+    audio: str
+    document: str
+    image: str
+    video: str
+
+
+class _ModelOptional(TypedDict, total=False):
+    input_routes: ModelInputRoutes
+
+
+class Model(_ModelOptional):
     id: str
     object: Literal["model"]
     alias_for: Union[str, None]

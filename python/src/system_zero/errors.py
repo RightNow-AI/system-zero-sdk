@@ -22,6 +22,8 @@ class SystemZeroError(Exception):
         self.request_id = request_id
         self.idempotency_key = idempotency_key
         self.headers = MappingProxyType(dict(headers or {}))
+        seconds = _retry_after_seconds(self.headers)
+        self.retry_after_ms = None if seconds is None else seconds * 1000
 
     def __reduce__(self):
         state = dict(redact(vars(self)))
@@ -116,16 +118,16 @@ class LongRecordingNotAvailableError(RouteNotAvailableError):
     """Long recordings are held independently of short audio."""
 
 class VideoNotAvailableError(RouteNotAvailableError):
-    """Video is held."""
+    """The API reported video unavailable for this request; read models.list()."""
 
 class ImageNotAvailableError(RouteNotAvailableError):
-    """Images are held."""
+    """The API reported images unavailable for this request; read models.list()."""
 
 class AudioNotAvailableError(RouteNotAvailableError):
-    """Short audio is held."""
+    """The API reported audio unavailable for this request; read models.list()."""
 
 class DocumentNotAvailableError(RouteNotAvailableError):
-    """Documents are held."""
+    """The API reported documents unavailable for this request; read models.list()."""
 
 class CommitteeNotAvailableError(RouteNotAvailableError):
     """The committee route is held."""

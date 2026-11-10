@@ -85,6 +85,12 @@ type SocketListener = (...args: any[]) => void;
 function forwardSocketEvent(cell: { callback: SocketListener | undefined }): SocketListener {
   return (...args) => cell.callback?.(...args);
 }
+/**
+ * A native or EventTarget WebSocket hides why an opening was refused (its HTTP status and Retry-After), so the stream
+ * stops instead of retrying blind. The error says so and names the way to read the refusal.
+ */
+const OPAQUE_OPENING_FAILURE = 'Stream connection failed before it opened. This WebSocket hides the HTTP refusal, such as 401 invalid_api_key or 429 rate_limit_exceeded with its Retry-After; pass the ws package as the WebSocket option to read it.';
+
 function socketHandlers(socket: StreamWebSocket) {
   const remove = socket.on ? (socket.off ?? socket.removeListener)?.bind(socket) : socket.removeEventListener?.bind(socket);
   const entries: Array<{ type: string; listener: SocketListener; cell: { callback: SocketListener | undefined } }> = [];
@@ -209,6 +215,8 @@ export class SystemZeroStreamClient implements AsyncIterable<StreamEvent> {
   #version = 0;
   #lastDecision = 0;
   #streamId = '';
+  #resumeHint: { stream_id: string; resume_token: string; state_version: number; expiresAt: number } | undefined;
+  #resuming: { stateVersion: number; result: Deferred<StreamDecision> } | undefined;
   #request: StreamRequest | undefined;
   #startOptions: Required<StreamStartOptions> = { decisionMode: 'on_change', minIntervalMs: 0 };
   #connectionMode: 'on_change' | 'on_request' = 'on_change';
@@ -497,7 +505,7 @@ export class SystemZeroStreamClient implements AsyncIterable<StreamEvent> {
         if (cause instanceof StreamProtocolError || cause instanceof StreamDisconnectedError || cause instanceof SystemZeroError && !(cause instanceof APIConnectionError)) {
           this.#stop(cause, cause instanceof StreamProtocolError ? 1002 : 1008); return;
         }
-        const failure = this.#transportError('Stream connection failed.', cause);
+        const failure = this.#transportError(opaqueOpening ? OPAQUE_OPENING_FAILURE : 'Stream connection failed.', cause);
         if (opaqueOpening) this.#stop(failure, 1008);
         else this.#disconnect(failure, 1006);
         try { if (socket.terminate) socket.terminate(); else socket.close(); } catch {}
@@ -574,11 +582,26 @@ export class SystemZeroStreamClient implements AsyncIterable<StreamEvent> {
         this.#fallbackReceiptTimeout = STREAM_RECEIPT_TIMEOUT_MS;
       }
       this.#armHeartbeat(hello.limits.heartbeat_interval_ms!);
+      let resumed = false;
+      const hint = this.#resumeHint;
+      this.#resumeHint = undefined;
+      if (hint && hint.expiresAt > this.#now()) {
+        const result = deferred<StreamDecision>();
+        this.#resuming = { stateVersion: hint.state_version, result };
+        await this.#paceSend(false, () => {
+          this.#armWatchdog(true);
+          this.#send({ type: 'resume', resume_token: hint.resume_token, stream_id: hint.stream_id, state_version: hint.state_version });
+        });
+        await result.promise;
+        this.#resuming = undefined;
+        resumed = true;
+      }
       if (this.#everStarted && this.#request) {
         const pending = [...this.#mutations];
         const state = copy(this.#desired!);
         const key = pending.at(-1)?.key ?? this.#acceptedKey;
         if (typeof key !== 'string' || !key.trim()) throw new StreamProtocolError('Cannot replay stream work without its original idempotency key.');
+        if (resumed && pending.length === 0) this.#refusedKey = key;
         this.#replayOnRequest = key === this.#refusedKey && this.#startOptions.decisionMode === 'on_change' && this.options.reconnectPolicy !== 'never';
         const ack = await this.#sendMutation({ type: 'start', event_id: 'evt_1', request: { ...this.#request, ...state } as StreamRequest, idempotency_key: key, decision_mode: this.options.reconnectPolicy === 'never' || this.#replayOnRequest ? 'on_request' : this.#startOptions.decisionMode, min_interval_ms: this.#startOptions.minIntervalMs }, pending);
         this.#accepted = state;
@@ -822,6 +845,13 @@ export class SystemZeroStreamClient implements AsyncIterable<StreamEvent> {
       this.#scheduledPriorWork = false;
       const pending = this.#scheduled; this.#scheduled = undefined; this.#clearWatchdog(); pending.resolve(raw as unknown as StreamScheduled);
     } else if (raw.type === 'decision') {
+      if (this.#resuming) {
+        if (raw.state_version !== this.#resuming.stateVersion || raw.http_status !== 200 || !object(raw.reply) || !Array.isArray(raw.covered_event_ids)) { this.#stop(new StreamProtocolError('Retained stream decision is invalid.'), 1002); return; }
+        this.#clearWatchdog();
+        this.#resuming.result.resolve(raw as unknown as StreamDecision);
+        this.#publish(raw as unknown as StreamDecision);
+        return;
+      }
       if (!integer(raw.state_version, 1) || raw.state_version > this.#version || raw.state_version < this.#lastDecision || raw.http_status !== 200 || !object(raw.reply) || !Array.isArray(raw.covered_event_ids)) { this.#stop(new StreamProtocolError('Server decision watermark is invalid.'), 1002); return; }
       const decision = raw as unknown as StreamDecision;
       this.#lastDecision = decision.state_version;
@@ -842,6 +872,12 @@ export class SystemZeroStreamClient implements AsyncIterable<StreamEvent> {
         if (this.#explicitIntentVersion !== undefined && decision.state_version >= this.#explicitIntentVersion) this.#explicitIntentVersion = undefined;
       }
     } else if (raw.type === 'error') {
+      if (this.#resuming) {
+        const error = responseError(typeof raw.http_status === 'number' ? raw.http_status : 409, new Headers(), raw.envelope, false);
+        this.#resuming.result.reject(error);
+        this.#clearWatchdog();
+        return;
+      }
       if (!object(raw.retry) || typeof raw.retry.should_retry !== 'boolean' || !(raw.retry.retry_after_ms === null || (typeof raw.retry.retry_after_ms === 'number' && Number.isFinite(raw.retry.retry_after_ms) && raw.retry.retry_after_ms >= 0)) || !(raw.retry.retry_after === null || typeof raw.retry.retry_after === 'string') || !object(raw.envelope) || !object(raw.envelope.error) || typeof raw.envelope.error.message !== 'string' || !integer(raw.http_status, 400) || raw.http_status > 599) { this.#stop(new StreamProtocolError('Server error envelope is invalid.'), 1002); return; }
       const error = raw as unknown as StreamError;
       this.#rememberRetry(error.retry.retry_after_ms, error.retry.retry_after);
@@ -894,6 +930,11 @@ export class SystemZeroStreamClient implements AsyncIterable<StreamEvent> {
       return;
     } else if (raw.type === 'goodbye') {
       if (!object(raw.resume) || !integer(raw.resume.retry_after_ms)) { this.#stop(new StreamProtocolError('Server goodbye is invalid.'), 1002); return; }
+      if (raw.resume.supported === true) {
+        if (raw.resume.action !== 'redeem_resume_token' || typeof raw.resume.resume_token !== 'string' || !/^[A-Za-z0-9_-]{43}$/u.test(raw.resume.resume_token)
+          || !integer(raw.resume.state_version, 1) || !integer(raw.resume.expires_in_ms, 1)) { this.#stop(new StreamProtocolError('Server resume hint is invalid.'), 1002); return; }
+        this.#resumeHint = { stream_id: this.#streamId, resume_token: raw.resume.resume_token, state_version: raw.resume.state_version, expiresAt: this.#now() + Math.min(raw.resume.expires_in_ms, 300_000) };
+      }
       this.#rememberRetry(raw.resume.retry_after_ms, null);
     } else { this.#stop(new StreamProtocolError('Unknown server frame type.'), 1002); return; }
     this.#publish(raw as unknown as StreamEvent);
@@ -1055,7 +1096,12 @@ export class SystemZeroStreamClient implements AsyncIterable<StreamEvent> {
       this.#socket = undefined; this.#connecting = false; ++this.#generation;
       this.#hello?.reject(failure);
       const exhausted = this.#openingDeadline !== undefined && (this.#openingAttempts >= this.options.maxReconnectAttempts || this.#now() >= this.#openingDeadline);
-      const fatal = exhausted || this.#closed || this.#terminal !== undefined || (code !== 1000 && !retryableCodes.has(code));
+      if (this.#resuming && !this.#resuming.result.settled) {
+        this.#terminal ??= new StreamDisconnectedError('The retained stream response was lost; resume cannot be repeated safely.');
+        this.#resuming.result.reject(this.#terminal);
+        this.#resuming = undefined;
+      }
+      const fatal = exhausted || this.#closed || this.#terminal !== undefined || (code !== 1000 && !retryableCodes.has(code) && !(code === 1009 && this.#resumeHint));
       if (fatal) {
         this.#terminal ??= failure instanceof ConnectionLost ? new StreamDisconnectedError(`Stream closed permanently (${code}).`) : failure;
         this.#stopped = true;

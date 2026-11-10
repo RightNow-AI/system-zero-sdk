@@ -3,11 +3,11 @@ import { randomUUID } from 'node:crypto';
 import { isIP } from 'node:net';
 import type { DecideRequest, DecideReply, ModelList } from './api-types.js';
 import type { EnabledDecideRequest, VideoRequest } from './enabled-types.js';
-import { APIConnectionError, APIError, APITimeoutError, InvalidRequestError, responseError, SystemZeroError } from './errors.js';
+import { APIConnectionError, APIError, APITimeoutError, InvalidRequestError, LongContextNotAvailableError, responseError, SystemZeroError } from './errors.js';
 import { retryWaitMs, shouldRecoverWorkflow, shouldRetry } from './retry.js';
 import { hasResponseStarted, nodeFetch, requestSent } from './transport.js';
 
-export const VERSION = '0.4.2';
+export const VERSION = '0.4.3';
 export const DEFAULT_BASE_URL = 'https://api.rightnowai.co/v1';
 export type Fetch = typeof globalThis.fetch;
 
@@ -30,8 +30,8 @@ export interface ClientOptions {
 }
 
 export interface RequestOptions {
-  /** Explicit consent once LongContextRequest is available for the workspace; never sent by default. Until then the API ignores or refuses it. Workspace opt-in is also required. */
-  dangerZone?: 'accept';
+  /** Select the state token class explicitly. Native long classes accept no attachments. */
+  dangerZone?: 'accept' | 'long_context_64k' | 'long_context_128k';
   idempotencyKey?: string;
   clientRequestId?: string;
   /** Extra headers, including x-mock-scenario in local tests. */
@@ -96,6 +96,7 @@ export interface ResponseMetadata {
   rateLimit: { limit: number | null; remaining: number | null; reset: number | null };
   latencyMs: number | null;
   replayed: boolean;
+  dangerZone: string[];
 }
 
 export interface ResponseResult<T> {
@@ -145,6 +146,7 @@ function metadata(headers: Headers, idempotencyKey: string | null): ResponseMeta
     },
     latencyMs: headerNumber(headers, 'x-latency-ms'),
     replayed: headers.get('x-rightnow-idempotent-replay') === 'true',
+    dangerZone: (headers.get('sz-danger-zone') ?? '').split(',').map(value => value.trim()).filter(Boolean),
   };
 }
 
@@ -198,12 +200,19 @@ export class SystemZeroClient {
     const context = retryContexts.get(options);
     const maxRetries = Math.min(this.options.maxRetries, context?.maxRetries ?? this.options.maxRetries);
     const headers = requestHeaders(options.headers);
-    if (headers.has('SZ-Danger-Zone') || (options.dangerZone !== undefined && options.dangerZone !== 'accept')) {
-      throw new InvalidRequestError('Use the dangerZone option with the exact value accept; do not supply its header.', {
+    if (headers.has('SZ-Danger-Zone') || (options.dangerZone !== undefined && !['accept', 'long_context_64k', 'long_context_128k'].includes(options.dangerZone))) {
+      throw new InvalidRequestError('Use dangerZone with accept, long_context_64k or long_context_128k; do not supply its header.', {
         status: 400, type: 'invalid_request_error', code: 'invalid_request', param: 'SZ-Danger-Zone',
       });
     }
-    if (options.dangerZone === 'accept' && method === 'POST' && path === '/system-zero/decide') headers.set('SZ-Danger-Zone', 'accept');
+    if (options.dangerZone !== undefined && method === 'POST' && path === '/system-zero/decide') {
+      if (options.dangerZone !== 'accept' && body !== undefined && JSON.parse(body).attachments?.length) {
+        throw new LongContextNotAvailableError('Long context classes require state without attachments.', {
+          status: 404, type: 'not_found_error', code: 'long_context_not_available', param: 'attachments',
+        });
+      }
+      headers.set('SZ-Danger-Zone', options.dangerZone);
+    }
     try {
       headers.set('authorization', `Bearer ${this.#apiKey}`);
       headers.set('user-agent', `system-zero-typescript/${VERSION} node/${process.versions.node}`);
@@ -235,7 +244,8 @@ export class SystemZeroClient {
     // Pin the admission lifetime to monotonic time. A wall clock rollback
     // cannot extend either the batch deadline or the original key's lifetime.
     const externalRemaining = () => Math.min(initialExternalRemaining - elapsed(), context?.remaining?.() ?? Infinity);
-    const remaining = () => Math.min(retryBudget - elapsed(), externalRemaining());
+    let recoveryStarted: number | undefined = context?.workflowRecovery ? started : undefined;
+    const remaining = () => Math.min(retryBudget - (recoveryStarted === undefined ? 0 : Math.max(0, this.#monotonic() - recoveryStarted)), externalRemaining());
     const random = context?.random ?? this.#random;
     const sleep = context?.sleep ?? this.#sleep;
     const safeToRetry = init.method === 'GET' || Boolean(new Headers(init.headers).get('idempotency-key')?.trim());
@@ -243,6 +253,7 @@ export class SystemZeroClient {
     const waitToRetry = async (error: SystemZeroError, headers: Headers, attempt: number): Promise<void> => {
       if (externalRemaining() <= 0) { context?.onDeadline?.(); throw error; }
       if (!safeToRetry || attempt >= maxRetries || retryBudget === 0) throw error;
+      recoveryStarted ??= this.#monotonic();
       const wait = retryWaitMs(headers, attempt, random, this.#now());
       if (wait > this.options.maxRetryWait) throw error;
       if (wait >= remaining()) {

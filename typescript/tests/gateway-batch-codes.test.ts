@@ -1,6 +1,6 @@
 import { mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
-import { expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { AuthenticationError, InvalidRequestError, NotFoundError, PermissionError, ServerError,
   SystemZeroClient, SystemZeroError, SYSTEM_ZERO_ERROR_CODES, GATEWAY_ERROR_CODES,
   evaluate, runBatch, runFlow, type DecideRequest, type FlowError } from '../src/index.js';
@@ -35,44 +35,49 @@ const flow = {
   steps: [{ id: 'first', questions: request.questions, next: { rules: [], default: null } }],
 };
 
-it('batch preserves open codes, falls back for unusable codes, and keeps known outcomes on resume', async () => {
-  const scratch = join(process.cwd(), 'tmp');
-  mkdirSync(scratch, { recursive: true });
-  const folder = mkdtempSync(join(scratch, 'batch-open-codes-'));
-  try {
-    for (const [index, { code, savedCode, status }] of workflowCodeCases.entries()) {
-      let calls = 0;
-      const client = new SystemZeroClient({
-        apiKey: 'synthetic', timeout: 1000, maxRetries: 0,
-        fetch: async () => {
-          calls++;
-          return Response.json({ error: {
-            message: 'Synthetic response.', type: 'api_error', code, retryable: false,
-          } }, { status });
-        },
-      });
-      const items = [{ id: 'one', request, expected: { q: true } }];
-      const options = { runId: 'open-codes', resultsPath: join(folder, `${index}.jsonl`),
-        deadlineMs: 10000, concurrency: 1, now: () => 1000 };
-      const result = await runBatch(client, items, options);
-      const saved = JSON.parse(readFileSync(options.resultsPath, 'utf8'));
-      const outcome = status === 404 && heldCodes.has(savedCode) ? 'held'
-        : status === 422 && refusedCodes.has(savedCode) ? 'refused' : 'error';
-      expect(saved).toMatchObject({ code: savedCode, outcome, attempts: 1, usage: null });
-      expect(saved.questions).toEqual(outcome === 'refused' ? [{
-        question_id: 'q', type: 'boolean', outcome: 'refused', expected_refusal: false,
-        correct: false, confidence: null, choice_expected: null, choice_actual: null,
-        choice_schema: null, code: savedCode,
-      }] : []);
-      expect(result.records).toEqual([saved]);
-      expect(evaluate(result.records).records[0]!.code).toBe(savedCode);
-      expect((await runBatch(client, items, options)).records).toEqual([saved]);
-      expect(calls).toBe(1);
-    }
-  } finally {
-    rmSync(folder, { recursive: true, force: true });
-  }
-}, 30000);
+describe('batch preserves open codes, falls back for unusable codes, and keeps known outcomes on resume', () => {
+  let folder: string;
+  beforeAll(() => {
+    const scratch = join(process.cwd(), 'tmp');
+    mkdirSync(scratch, { recursive: true });
+    folder = mkdtempSync(join(scratch, 'batch-open-codes-'));
+  });
+  afterAll(() => { if (folder) rmSync(folder, { recursive: true, force: true }); });
+
+  // Each independent case performs real file writes and resume. Give each its
+  // own failure boundary so shared-runner disk latency cannot exhaust a single
+  // timeout for the entire growing error-code matrix.
+  it.each(workflowCodeCases.map((entry, index) => ({ ...entry, index })))
+  ('case $index: $savedCode at HTTP $status', async ({ code, savedCode, status, index }) => {
+    let calls = 0;
+    const client = new SystemZeroClient({
+      apiKey: 'synthetic', timeout: 1000, maxRetries: 0,
+      fetch: async () => {
+        calls++;
+        return Response.json({ error: {
+          message: 'Synthetic response.', type: 'api_error', code, retryable: false,
+        } }, { status });
+      },
+    });
+    const items = [{ id: 'one', request, expected: { q: true } }];
+    const options = { runId: 'open-codes', resultsPath: join(folder, `${index}.jsonl`),
+      deadlineMs: 10000, concurrency: 1, now: () => 1000 };
+    const result = await runBatch(client, items, options);
+    const saved = JSON.parse(readFileSync(options.resultsPath, 'utf8'));
+    const outcome = status === 404 && heldCodes.has(savedCode) ? 'held'
+      : status === 422 && refusedCodes.has(savedCode) ? 'refused' : 'error';
+    expect(saved).toMatchObject({ code: savedCode, outcome, attempts: 1, usage: null });
+    expect(saved.questions).toEqual(outcome === 'refused' ? [{
+      question_id: 'q', type: 'boolean', outcome: 'refused', expected_refusal: false,
+      correct: false, confidence: null, choice_expected: null, choice_actual: null,
+      choice_schema: null, code: savedCode,
+    }] : []);
+    expect(result.records).toEqual([saved]);
+    expect(evaluate(result.records).records[0]!.code).toBe(savedCode);
+    expect((await runBatch(client, items, options)).records).toEqual([saved]);
+    expect(calls).toBe(1);
+  }, 30000);
+});
 
 it('flow preserves open codes, falls back for unusable codes, and keeps known outcomes', async () => {
   for (const { code, savedCode, status } of workflowCodeCases) {

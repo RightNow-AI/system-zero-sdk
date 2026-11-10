@@ -88,7 +88,8 @@ def test_transport_failure(kind, caplog, capsys):
         if kind == 'programmer':
             raise ValueError(KEY)
         if kind == 'deadline':
-            time.sleep(0.005)
+            # Cross multiple Windows monotonic-clock ticks before the 1 ms check.
+            time.sleep(0.05)
             return httpx.Response(200, json={'ok': True}, headers=headers())
         if kind == 'malformed':
             return httpx.Response(200, content=('{"' + KEY + '":').encode(), headers=headers())

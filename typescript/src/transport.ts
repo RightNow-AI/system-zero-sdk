@@ -1,8 +1,22 @@
 import { assertSafeNativeDebug } from './redaction.js';
-import { request as requestHttp } from 'node:http';
-import { request as requestHttps } from 'node:https';
+import { Agent as HttpAgent, request as requestHttp } from 'node:http';
+import { Agent as HttpsAgent, request as requestHttps } from 'node:https';
 import { Readable } from 'node:stream';
 import { APIError } from './errors.js';
+
+/**
+ * How long an idle connection stays open for reuse, in milliseconds. Node's process-wide agents drop an idle connection
+ * after 5 s whatever the server allows, so a caller that paused longer paid a new TCP and TLS handshake on its next
+ * call. The service closes a caller's idle connection at 300 s, so 240 s lets go first. A shorter Keep-Alive hint from
+ * the server still wins: Node lowers a connection's idle time to the hint.
+ */
+const IDLE_CONNECTION_MS = 240_000;
+const AGENT_OPTIONS = { keepAlive: true, scheduling: 'lifo', timeout: IDLE_CONNECTION_MS } as const;
+/**
+ * One pair of agents for the process, not one per client, so a client created per call reuses connections too. Node
+ * unreferences an idle socket and sends TCP keepalive probes on it: it never holds the process open.
+ */
+const connectionAgents = { http: new HttpAgent(AGENT_OPTIONS), https: new HttpsAgent(AGENT_OPTIONS) } as const;
 
 const started = new WeakSet<AbortSignal>();
 const sent = new WeakMap<AbortSignal, boolean | null>();
@@ -32,7 +46,9 @@ export const nodeFetch: typeof globalThis.fetch = (input, init = {}) => new Prom
     delete headers['transfer-encoding'];
   }
   if (init.signal) sent.set(init.signal, false);
-  const request = (url.protocol === 'https:' ? requestHttps : requestHttp)(url, { method: init.method ?? 'GET', headers });
+  const request = url.protocol === 'https:'
+    ? requestHttps(url, { method: init.method ?? 'GET', headers, agent: connectionAgents.https })
+    : requestHttp(url, { method: init.method ?? 'GET', headers, agent: connectionAgents.http });
   let stopWatching: (() => void) | undefined;
   let cleanAbort: (() => void) | undefined;
 

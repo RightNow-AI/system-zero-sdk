@@ -1,16 +1,16 @@
-const capacityCodes = new Set(['capacity_exhausted', 'rate_limit', 'rate_limit_exceeded', 'concurrency_limit_exceeded', 'workspace_limit_exceeded']);
+const capacityCodes = new Set(['capacity_exhausted', 'rate_limit_exceeded', 'concurrency_limit_exceeded', 'workspace_limit_exceeded']);
 
- 
-export function shouldRetry(status: number, code: string | null, headers: Headers, retryable?: boolean, nowMs: number = Date.now()): boolean {
+/** Keyed calls and safe reads can recover marked server failures inside their budget. */
+export function shouldRetry(status: number, code: string | null, headers: Headers, retryable?: boolean, _nowMs: number = Date.now()): boolean {
   const hint = headers.get('x-should-retry');
   if (hint === 'false' || retryable === false) return false;
+  if (code && /spend|budget|auth|api_key/iu.test(code)) return false;
   const marked = hint === 'true' || retryable === true;
   if (status === 429) return marked && code !== null && capacityCodes.has(code);
   if (status === 409) return marked && code === 'idempotency_conflict';
-  if (status !== 503) return false;
-  if ((code === 'service_unavailable' || code === 'system_zero_unavailable') && marked) return true;
-  const starting = code === 'starting' || ((code === null || code === 'service_unavailable') && ['true', '1'].includes(headers.get(('x-sz-' + 'starting')) ?? ''));
-  return starting && retryAfterMs(headers, nowMs) !== null;
+  if (status === 504 || code === 'maintenance' || code === 'starting') return false;
+  if (code === null && (status === 502 || status === 503)) return true;
+  return status >= 500 && status < 600 && marked;
 }
 
  

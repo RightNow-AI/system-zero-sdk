@@ -1,8 +1,8 @@
-"""Served media uses synthetic bytes and injected transports."""
+"""Published media uses synthetic signature bytes and injected transports."""
 import base64
 import json
-from pathlib import Path
 import struct
+from pathlib import Path
 
 import httpx
 import pytest
@@ -10,114 +10,131 @@ import system_zero as sdk
 from system_zero.tools import create_tool_handler
 
 REQUEST = {"model": "system-zero", "state": "Synthetic media", "questions": {"ready": {"type": "boolean", "instructions": "Ready?"}}}
-PNG = bytes([137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13, 73, 72, 68, 82, 0, 0, 0, 1, 0, 0, 0, 1, 8, 2, 0, 0, 0, 144, 119, 83, 222, 0, 0, 0, 12, 73, 68, 65, 84, 120, 156, 99, 96, 96, 96, 0, 0, 0, 4, 0, 1, 246, 23, 56, 85, 0, 0, 0, 0, 73, 69, 78, 68, 174, 66, 96, 130])
-
-
-def wav(rate=16000, codec=1, channels=1, bits=16):
-    align = channels * ((bits + 7) // 8)
-    content = b"WAVEfmt " + struct.pack("<IHHIIHH", 16, codec, channels, rate, rate * align, align, bits)
-    content += b"data" + struct.pack("<I", align) + bytes(align + align % 2)
-    return b"RIFF" + struct.pack("<I", len(content)) + content
-
+PNG = bytes.fromhex("89504e470d0a1a0a")
 
 def url(mime, data):
     return "data:" + mime + ";base64," + base64.b64encode(data).decode("ascii")
 
-
 IMAGE = {"name": "picture", "type": "image", "data": url("image/png", PNG)}
-AUDIO = {"name": "sound", "type": "audio", "data": url("audio/wav", wav())}
+def wav(codec=1, channels=1, rate=16000, bits=16, frames=160):
+    align = channels * ((bits + 7) // 8)
+    data = bytes(frames * align)
+    return b"RIFF" + struct.pack("<I", 36 + len(data) + len(data) % 2) + b"WAVEfmt " + struct.pack("<IHHIIHH", 16, codec, channels, rate, rate * align, align, bits) + b"data" + struct.pack("<I", len(data)) + data + bytes(len(data) % 2)
 
+AUDIO = {"name": "recording", "type": "audio", "data": url("audio/wav", wav())}
 
-def test_pdf_helper_and_ordinary_request():
-    raw = b"%PDF-1.7\nSynthetic signature fixture"
-    attachment = sdk.inline_attachment(name="paper", type="document", mime="application/pdf", data=raw)
-    assert attachment == {"name": "paper", "type": "document", "data": url("application/pdf", raw)}
-    with pytest.raises(sdk.SystemZeroError):
-        sdk.inline_attachment(name="paper", type="document", mime="text/plain", data=raw)
+def test_selected_registry_and_version():
+    assert sdk.VERSION == sdk.__version__ == "0.4.3"
+    assert dict(sdk.MIMES) == {"image": ("image/jpeg", "image/png"), "audio": ("audio/wav",), "document": ("application/pdf",), "video": ("video/mp4",)}
+    assert sdk.MEDIA_LIMITS["max_audio_duration_ms"] == 60_000
+    spec = json.loads((Path(__file__).resolve().parents[2] / "openapi.json").read_text())
+    assert spec["components"]["schemas"]["Attachment"]["properties"]["type"]["enum"] == ["image", "audio", "document", "video"]
+
+@pytest.mark.parametrize("kind,mime,raw", (
+    ("audio", "audio/wav", wav()),
+    ("audio", "audio/wav", wav(3, 2, 16000, 32)),
+    ("document", "application/pdf", b"%PDF-1.7\nSynthetic signature fixture"),
+    ("video", "video/mp4", bytes.fromhex("000000186674797069736f6d")),
+))
+def test_media_helpers_preflight_and_ordinary_http(kind, mime, raw):
+    attachment = sdk.inline_attachment(name="input", type=kind, mime=mime, data=raw)
+    assert attachment == {"name": "input", "type": kind, "data": url(mime, raw)}
+    assert sdk.validate_attachments([attachment]) == [attachment]
+    assert sdk.attachment_magic_matches(mime, raw)
     seen = []
     with sdk.SystemZero(api_key="SYNTHETIC", transport=httpx.MockTransport(
             lambda request: (seen.append(json.loads(request.content)), httpx.Response(200, json={"answers": {}}))[1])) as client:
         client.decide({**REQUEST, "attachments": [attachment]})
     assert seen == [{**REQUEST, "attachments": [attachment]}]
 
-
-def test_served_registry_limits_and_version():
-    assert sdk.VERSION == sdk.__version__ == "0.4.2"
-    assert dict(sdk.MIMES) == {"image": ("image/png", "image/jpeg"), "audio": ("audio/wav",), "document": ("application/pdf",), "video": ("video/mp4",)}
-    assert dict(sdk.MEDIA_LIMITS) == {"max_attachments": 16, "max_images": 4, "max_audio": 1, "max_inline_bytes": 2621440,
-                                    "max_body_bytes": 3665920, "audio_sample_rate": 16000, "max_audio_duration_ms": 300000, "max_audio_channels": 64, "max_image_pixels": 16777216, "max_image_aspect_ratio": 50}
-    spec = json.loads((Path(__file__).resolve().parents[2] / "openapi.json").read_text())
-    assert spec["components"]["schemas"]["Attachment"]["properties"]["type"]["enum"] == ["image", "audio", "document", "video"]
-
-
-@pytest.mark.parametrize("extra", ({}, {"attachments": None}, {"attachments": [IMAGE]}, {"attachments": [AUDIO]}, {"attachments": [IMAGE, AUDIO]}))
-def test_wire_preserves_text_null_image_and_audio(extra):
+@pytest.mark.parametrize("extra", ({}, {"attachments": None}, {"attachments": [IMAGE]}))
+def test_optional_attachments_keep_the_wire_body(extra):
     seen = []
     body = {**REQUEST, **extra}
-    with sdk.SystemZero(api_key="SYNTHETIC", max_retries=0, transport=httpx.MockTransport(
+    with sdk.SystemZero(api_key="SYNTHETIC", transport=httpx.MockTransport(
             lambda request: (seen.append(json.loads(request.content)), httpx.Response(200, json={"answers": {}}))[1])) as client:
         client.decide(body)
     assert seen == [body]
 
+def test_pdf_format_and_image_count_checks():
+    with pytest.raises(sdk.SystemZeroError):
+        sdk.inline_attachment(name="paper", type="document", mime="text/plain", data=b"text")
+    with pytest.raises(sdk.SystemZeroError) as caught:
+        sdk.validate_attachments([{**IMAGE, "name": "image" + str(i)} for i in range(5)])
+    assert caught.value.code == "media_unsupported"
 
-@pytest.mark.parametrize("rate,codec,channels,bits", ((16000, 1, 1, 8), (16000, 1, 2, 16), (16000, 3, 2, 32), (16000, 3, 64, 64)))
-def test_wav_pcm_float_multichannel(rate, codec, channels, bits):
-    raw = wav(rate, codec, channels, bits)
-    assert sdk.inline_attachment(name="sound", type="audio", mime="audio/wav", data=raw) == {"name": "sound", "type": "audio", "data": url("audio/wav", raw)}
+@pytest.mark.parametrize("raw", (wav(rate=44100), b"RIFF malformed"))
+def test_audio_rate_and_structure(raw):
+    with pytest.raises(sdk.SystemZeroError) as caught:
+        sdk.inline_attachment(name="recording", type="audio", mime="audio/wav", data=raw)
+    assert caught.value.code == "media_unsupported"
+
+def test_audio_count():
+    with pytest.raises(sdk.SystemZeroError) as caught:
+        sdk.validate_attachments([AUDIO, {**AUDIO, "name": "second"}])
+    assert caught.value.code == "media_unsupported"
+
+@pytest.mark.parametrize("channels", (1, 2))
+def test_audio_duration_boundary_is_inclusive(channels):
+    raw = wav(channels=channels, bits=8, frames=960_000)
+    attachment = sdk.inline_attachment(name="recording", type="audio", mime="audio/wav", data=raw)
+    assert attachment["data"] == url("audio/wav", raw)
+    assert sdk.validate_attachments([attachment]) == [attachment]
 
 
-@pytest.mark.parametrize("mime,raw", (("image/png", PNG), ("image/jpeg", bytes.fromhex("ffd8ff"))))
-def test_image_signatures(mime, raw):
-    assert sdk.attachment_magic_matches(mime, raw)
-    assert sdk.attachment_magic_matches("application/pdf", b"%PDF-")
-    assert sdk.inline_attachment(name="picture", type="image", mime=mime, data=raw)["data"] == url(mime, raw)
-
-
-@pytest.mark.parametrize("code,action", [
-    ("invalid_request", lambda: sdk.inline_attachment(name="9bad", type="image", mime="image/png", data=PNG)),
-    ("media_unsupported", lambda: sdk.inline_attachment(name="x", type="image", mime="image/bmp", data=PNG)),
-    ("media_decode_failed", lambda: sdk.inline_attachment(name="x", type="image", mime="image/png", data=b"bad")),
-    ("media_unpriced", lambda: sdk.inline_attachment(name="x", type="image", mime="image/gif", data=b"GIF89a")),
-    ("media_unpriced", lambda: sdk.inline_attachment(name="x", type="image", mime="image/webp", data=b"RIFF0000WEBP")),
-    ("media_too_large", lambda: sdk.inline_attachment(name="x", type="image", mime="image/png", data=bytes(2621441))),
-    *[("media_unsupported", lambda rate=rate: sdk.inline_attachment(name="x", type="audio", mime="audio/wav", data=wav(rate))) for rate in (8000, 22050, 44100, 48000)],
-    *[("media_unsupported", lambda mime=mime: sdk.inline_attachment(name="x", type="audio", mime=mime, data=wav())) for mime in ("audio/mpeg", "audio/flac", "audio/ogg", "audio/mp4", "audio/x-wav")],
-    ("media_unsupported", lambda: sdk.inline_attachment(name="x", type="audio", mime="audio/wav", data=b"bad")),
-    ("media_unsupported", lambda: sdk.inline_attachment(name="x", type="audio", mime="audio/wav", data=wav(16000, 6))),
-    ("media_unsupported", lambda: sdk.inline_attachment(name="x", type="audio", mime="audio/wav", data=wav(16000, 3, 1, 16))),
-    ("invalid_request", lambda: sdk.validate_attachments([IMAGE, IMAGE])),
-    ("invalid_request", lambda: sdk.validate_attachments([{**IMAGE, "data": "data:image/png;base64,AAAA="}])),
-    ("invalid_request", lambda: sdk.validate_attachments([{**IMAGE, "name": "a" + str(i)} for i in range(17)])),
-    ("media_unsupported", lambda: sdk.validate_attachments([{**IMAGE, "name": "a" + str(i)} for i in range(5)])),
-    ("media_unsupported", lambda: sdk.validate_attachments([AUDIO, {**AUDIO, "name": "second"}])),
-    ("media_too_large", lambda: sdk.validate_attachments([IMAGE, {**IMAGE, "name": "second", "data": url("image/png", PNG + bytes(2621440 - len(PNG)))}])),
-])
-def test_local_refusals_use_gateway_codes_without_dispatch(code, action):
-    seen = []
-    with sdk.SystemZero(api_key="SYNTHETIC", transport=httpx.MockTransport(lambda request: seen.append(request))):
+@pytest.mark.parametrize("frames", (960_001, 976_000))
+def test_audio_over_duration_matches_api_refusal(frames):
+    raw = wav(bits=8, frames=frames)
+    for preflight in (
+        lambda: sdk.inline_attachment(name="recording", type="audio", mime="audio/wav", data=raw),
+        lambda: sdk.validate_attachments([{"name": "recording", "type": "audio", "data": url("audio/wav", raw)}]),
+    ):
         with pytest.raises(sdk.SystemZeroError) as caught:
-            action()
-    assert caught.value.code == code
-    assert seen == []
+            preflight()
+        assert (caught.value.status, caught.value.code, caught.value.param) == (413, "media_too_large", "attachments")
 
 
-@pytest.mark.parametrize("kind,code,status", (("document", "document_not_available", 404), ("video", "video_not_available", 404), ("image", "service_unavailable", 503), ("audio", "media_unsupported", 400)))
-def test_gateway_refusals_are_preserved(kind, code, status):
+def test_audio_bytes_are_independently_bounded():
+    raw = wav(channels=4, frames=400_000)
+    with pytest.raises(sdk.SystemZeroError) as caught:
+        sdk.inline_attachment(name="recording", type="audio", mime="audio/wav", data=raw)
+    assert caught.value.code == "media_too_large"
+
+def test_audio_answer_stays_uncalibrated():
+    reply = {"answers": {"ready": {"type": "boolean", "decision": True, "calibrated": False}}}
+    with sdk.SystemZero(api_key="SYNTHETIC", transport=httpx.MockTransport(lambda request: httpx.Response(200, json=reply))) as client:
+        assert client.decide({**REQUEST, "attachments": [AUDIO]}) == reply
+
+@pytest.mark.parametrize("code", ("audio_not_available", "video_not_available", "document_not_available"))
+def test_api_holds_preserve_status_and_code_without_retry(code):
     seen = []
     def send(request):
         seen.append(request)
-        return httpx.Response(status, json={"error": {"code": code, "message": "Synthetic refusal.", "type": "invalid_request_error", "retryable": False}})
-    with sdk.SystemZero(api_key="SYNTHETIC", max_retries=0, transport=httpx.MockTransport(send)) as client:
+        return httpx.Response(404, json={"error": {"code": code, "message": "Synthetic hold.", "type": "not_found_error", "retryable": False}})
+    with sdk.SystemZero(api_key="SYNTHETIC", transport=httpx.MockTransport(send)) as client:
         with pytest.raises(sdk.SystemZeroError) as caught:
-            client.decide({**REQUEST, "attachments": [{"name": "input", "type": kind, "upload": "szu_" + "a" * 32, "mime": "image/png" if kind == "image" else "audio/wav"}]})
-    assert caught.value.code == code
+            client.decide(REQUEST)
+    assert caught.value.status == 404 and caught.value.code == code
     assert len(seen) == 1
 
-
-def test_function_tools_carry_served_media():
+@pytest.mark.parametrize("attachment", (
+    IMAGE,
+    AUDIO,
+    {"name": "paper", "type": "document", "data": url("application/pdf", b"%PDF-1.7\nSynthetic")},
+    {"name": "clip", "type": "video", "data": url("video/mp4", bytes.fromhex("000000186674797069736f6d"))},
+))
+def test_function_tools_carry_published_inline_kinds(attachment):
     seen = []
-    with sdk.SystemZero(api_key="SYNTHETIC", max_retries=0, transport=httpx.MockTransport(
+    with sdk.SystemZero(api_key="SYNTHETIC", transport=httpx.MockTransport(
             lambda request: (seen.append(json.loads(request.content)), httpx.Response(200, json={"answers": {}}))[1])) as client:
-        result = create_tool_handler(client)("system_zero_decide", {"state": "Synthetic", "questions": [{"name": "ready", "type": "boolean", "instructions": "Ready?", "criteria": None}], "model": None, "attachments": [IMAGE, AUDIO]})
+        result = create_tool_handler(client)("system_zero_decide", {"state": "Synthetic", "questions": [{"name": "ready", "type": "boolean", "instructions": "Ready?", "criteria": None}], "model": None, "attachments": [attachment]})
     assert result["status"] == "ok"
-    assert seen[0]["attachments"] == [IMAGE, AUDIO]
+    assert seen[0]["attachments"] == [attachment]
+
+@pytest.mark.parametrize("kind", ["image", "document", "video"])
+def test_audio_mixed_with_another_kind_uses_api_error(kind):
+    other = {"name": "other", "type": kind, "data": url("application/pdf" if kind == "document" else "video/mp4" if kind == "video" else "image/png", PNG)}
+    for attachments in ([AUDIO, other], [other, AUDIO]):
+        with pytest.raises(sdk.AudioNotAvailableError) as caught:
+            sdk.validate_attachments(attachments)
+        assert (caught.value.status, caught.value.code, caught.value.param) == (404, "audio_not_available", "attachments")

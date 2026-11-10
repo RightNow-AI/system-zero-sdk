@@ -6,7 +6,7 @@ import * as sdk from '../src/index.js';
 
 const names = (text: string): string[] => text.trim().split(/\s+/u).sort();
 const apiCodes = names(`
-  attachment_too_large audio_not_available capacity_exhausted committee_not_available
+  attachment_too_large audio_not_available capacity_exhausted committee_not_available concurrency_limit_exceeded
   daily_dispatch_limit deliberate_not_available document_controls_not_available document_decode_failed
   document_not_available document_pictures_not_available document_too_large document_unsupported
   https_required idempotency_key_reuse image_not_available injection_suspected
@@ -17,6 +17,7 @@ const apiCodes = names(`
   media_decode_failed media_too_large media_unpriced media_unsupported output_limit_exceeded
   payload_too_large question_not_grounded question_too_large questions_too_large
   rate_limit_exceeded request_refused service_unavailable staging_attempt_ceiling
+  starter_attempt_limit starter_concurrency_limit starter_credit_held starter_rate_limit starter_spend_limit starter_unavailable
   stream_limit_exceeded state_too_large state_too_large_unguarded system_zero_timeout system_zero_unavailable
   upload_in_use upload_not_found upload_not_ready video_not_available
   workspace_limit_exceeded workspace_quarantined
@@ -24,7 +25,7 @@ const apiCodes = names(`
 const gatewayCodes = names(`
   auth_error account_suspended model_not_found unknown_endpoint method_not_allowed invalid_trace_header invalid_api_key invalid_idempotency_key
   idempotency_conflict idempotency_replay_unavailable idempotency_replayed_error idempotency_unavailable limiter_unavailable
-  maintenance internal_error concurrency_limit_exceeded monthly_cap_reached
+  maintenance internal_error monthly_cap_reached
 `);
 const rootNames = names(`Attachment InlineAttachment MEDIA_LIMITS MEDIA_MIMES MediaInput MediaKind VIDEO_PROFILE attachmentMagicMatches inlineAttachment validateAttachments videoAttachment OrdinaryQuestion MediaQuestion LongContextQuestion OrdinaryRequest MediaRequest LongContextRequest EnabledDecideRequest LongContextLimits VideoRequest VideoAttachment
   STREAM_PROTOCOL STREAM_CLIENT_IMPLEMENTED STREAM_RECEIPT_TIMEOUT_MS StreamProtocolError StreamDisconnectedError SystemZeroStreamClient DecisionMode ReconnectPolicy StreamRequest StreamStartOptions StreamRateLimit StreamBase StreamHello StreamAck StreamScheduled StreamDecision StreamError StreamGoodbye PossiblyDecided StreamEvent EventLatency StreamWebSocket StreamWebSocketConstructor StreamClientOptions ClientMutation StreamLimitError
@@ -60,8 +61,8 @@ const entries = {
 
 describe('public package surface', () => {
   it('publishes exactly the API error conveniences', () => {
-    expect(apiCodes).toHaveLength(57);
-    expect(gatewayCodes).toHaveLength(17);
+    expect(apiCodes).toHaveLength(64);
+    expect(gatewayCodes).toHaveLength(16);
     expect([...sdk.SYSTEM_ZERO_ERROR_CODES].sort()).toEqual(apiCodes);
     expect([...sdk.GATEWAY_ERROR_CODES].sort()).toEqual(gatewayCodes);
     expect(Object.values(sdk.ERROR_CODES).sort()).toEqual([...apiCodes, ...gatewayCodes].sort());

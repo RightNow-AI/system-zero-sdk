@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.4.3
+
+Model listing now types optional `limits.long_context` entries with `header_value`, `min_state_tokens`, `state_tokens`, `rendered_tokens` and `attachments`; ordinary token limits describe the direct window. A cold audio pool can return HTTP 503 `system_zero_unavailable` with `Retry-After` up to 240 seconds. The SDK preserves the delay and idempotency key; a wait beyond the retry budget raises immediately. Wait for that delay and retry the same request and key, or explicitly raise both the retry budget and maximum wait to allow automatic recovery.
+
+Explicit class selection uses dangerZone / danger_zone with long_context_64k or long_context_128k. Audio is one WAV at 16,000 Hz, alone, at most 60 seconds. Every HTTP error exposes retryAfterMs / retry_after_ms; over-budget waits raise immediately. Retained stream tokens are redeemed before state restoration.
+
+Calls after a pause can reuse an open connection instead of paying for a new connection: Python shares a process-wide pool and keeps idle HTTP connections for up to 240 seconds, and TypeScript uses its own keep-alive agents for up to 240 seconds, subject to the server closing sooner. Create one client per process and reuse it.
+
+Updated media and long-context guidance to follow `models.list()` for availability. PDF and MP4 use ordinary inline attachments; SDK encoding support does not enable a held API class. Function-tool and MCP attachment validation now follows the published request schema, including PDF and MP4.
+
 ## 0.4.2
 
 0.4.1 was tagged but never published to PyPI or npm. This release includes its key-hygiene fixes and corrects stream cleanup on Python 3.10 and 3.11 when a receipt notification races with cancellation.
@@ -18,7 +28,7 @@ Node native HTTP debug channels are refused when they could print credentials. S
 
 Batch receipts and flow traces retain well-formed server error codes, including new codes. Batch resume accepts these error records. Corrected the TypeScript video documentation.
 
-Added a typed, opt-in long-context surface for use only after API availability for the workspace and workspace opt-in in console Settings. Before availability, expect HTTP 404 long_context_not_available as LongContextNotAvailableError, including eligibility when supplied. Once available, dangerZone in TypeScript and danger_zone in Python provide explicit per-request consent; neither is sent by default. Until availability, the API ignores or refuses that option.
+Added typed long-context requests and per-request consent through dangerZone in TypeScript and danger_zone in Python. Check models.list() and the documented API contract for available classes and workspace opt-in. The API serves 64k and 128k only with its explicit class selector; explicit class selection is not yet supported by this SDK version. The 1M class is closed. A held or ineligible class returns LongContextNotAvailableError, including eligibility when supplied.
 
 PDF and video are supported through ordinary inline attachments. Video request types, attachment types and helpers are exported. Refusal responses keep their typed VideoNotAvailableError and LongContextNotAvailableError; the latter exposes details.eligibility as eligibility, including future rule strings. Existing status, code, message and request IDs are preserved.
 
@@ -30,7 +40,7 @@ Function tool lists are named by format: NESTED_FUNCTION_TOOLS, FLAT_FUNCTION_TO
 
 ## 0.2.0
 
-Images and 16,000 Hz integer PCM or IEEE float WAV audio attachments on decide, including function tools and the MCP adapter. Attachments remain optional and null remains valid. Static PNG and JPEG only; at most 4 images and 1 audio, 2,621,440 decoded bytes total and 3,665,920 bytes for the entire request. Images are limited to 16,777,216 pixels and 50:1 aspect ratio. Audio allows 1-64 channels and at most 300 seconds; the byte limit can be reached earlier. GIF, WebP, animated PNG, non-PDF document formats, other audio formats/rates and upload references remain refused. PDF and video support is described in 0.4.0 above. Explicit media helpers use the API refusal codes. The 71-code catalog and ordinary HTTP retry and call-count behavior are unchanged.
+Added SDK encoding for images and 16,000 Hz integer PCM or IEEE float WAV audio attachments, including function tools and the MCP adapter. Encoding does not establish API availability; check models.list() before sending a kind. Attachments remain optional and null remains valid. Static PNG and JPEG only; at most 4 images and 1 audio, 2,621,440 decoded bytes total and 3,665,920 bytes for the entire request. Images are limited to 16,777,216 pixels and 50:1 aspect ratio. Read models.list() for audio availability. Inline audio/wav uses integer PCM or IEEE float at 16,000 Hz, mono or multichannel, with one audio per request and a decoded-duration limit of 60 seconds inclusive (60,000 ms), one pass per request. Audio answers currently report calibrated: false; the byte limit can be reached earlier. GIF, WebP, animated PNG, non-PDF document formats, other audio formats/rates and upload references are not yet supported by this SDK version. PDF and video support is described in 0.4.0 above. Explicit media helpers use the API refusal codes. The 71-code catalog and ordinary HTTP retry and call-count behavior are unchanged.
 
 ## 0.1.1
 

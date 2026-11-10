@@ -247,6 +247,30 @@ export const SYSTEM_ZERO_ERRORS = {
     429,
     "The request ceiling is reached. Retry after the Retry-After delay."
   ],
+  "starter_attempt_limit": [
+    429,
+    "Starting credit processing reached its temporary allowance. Retry after the Retry-After delay."
+  ],
+  "starter_concurrency_limit": [
+    429,
+    "Two starting credit requests are already in progress. Retry after the Retry-After delay."
+  ],
+  "starter_credit_held": [
+    403,
+    "Your starting credit is under review. Contact us to request a review."
+  ],
+  "starter_rate_limit": [
+    429,
+    "Starting credit requests reached their rate allowance. Retry after the Retry-After delay."
+  ],
+  "starter_spend_limit": [
+    429,
+    "This request exceeds the starting credit spend allowance. Retry after the Retry-After delay or request a review."
+  ],
+  "starter_unavailable": [
+    503,
+    "Starting credit enforcement is temporarily unavailable. Retry after the Retry-After delay."
+  ],
   "state_too_large": [
     413,
     "The state exceeds the size or nesting limit."

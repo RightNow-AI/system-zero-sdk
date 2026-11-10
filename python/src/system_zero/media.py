@@ -11,16 +11,17 @@ from .types import Attachment
 
 MAX_INLINE_BYTES = 2621440
 MAX_ATTACHMENTS = 16
-MIMES = MappingProxyType({'image': ('image/png', 'image/jpeg'), 'audio': ('audio/wav',), 'document': ('application/pdf',), 'video': ('video/mp4',)})
-MEDIA_LIMITS = MappingProxyType({'max_attachments': 16, 'max_images': 4, 'max_audio': 1, 'max_inline_bytes': 2621440, 'max_body_bytes': 3665920, 'audio_sample_rate': 16000, 'max_audio_duration_ms': 300000, 'max_audio_channels': 64, 'max_image_pixels': 16777216, 'max_image_aspect_ratio': 50})
+MIMES = MappingProxyType({'image': ('image/jpeg', 'image/png'), 'audio': ('audio/wav',), 'document': ('application/pdf',), 'video': ('video/mp4',)})
+MEDIA_LIMITS = MappingProxyType({'max_attachments': 16, 'max_images': 4, 'max_audio': 1, 'max_inline_bytes': 2621440, 'max_body_bytes': 3665920, 'audio_sample_rate': 16000, 'max_audio_duration_ms': 60000, 'max_audio_channels': 64, 'max_image_pixels': 16777216, 'max_image_aspect_ratio': 50})
 ByteData = Union[bytes, bytearray, memoryview]
-_ERRORS = {'invalid_request': [400, 'The request is invalid.'], 'media_unsupported': [400, 'The media kind or count is not supported. At most 4 images and 1 audio are allowed.'], 'media_too_large': [413, 'The media exceeds the decoded byte limit.'], 'media_decode_failed': [422, 'The media bytes do not match the declared format.'], 'media_unpriced': [403, 'This input type is not supported.']}
+_ERRORS = {'invalid_request': [400, 'The request is invalid.'], 'media_unsupported': [400, 'The media kind or count is not supported. At most 4 images and 1 audio are allowed.'], 'media_too_large': [413, 'The media exceeds the decoded byte limit.'], 'media_decode_failed': [422, 'The media bytes do not match the declared format.'], 'media_unpriced': [403, 'This input type is not supported.'], 'audio_not_available': [404, 'Audio is unavailable. Send the request without the audio attachment.']}
 _NAME = re.compile(r"[A-Za-z][A-Za-z0-9_-]{0,63}\Z")
 _DATA_HEADER = re.compile(r"data:[a-z0-9.+/-]+;base64\Z")
 
 def _refuse(code: str, param: Optional[str] = None) -> NoReturn:
     status, message = _ERRORS[code]
-    raise error_class("invalid_request_error", code)(message, status=status, type="invalid_request_error",
+    kind = "not_found_error" if status == 404 else "invalid_request_error"
+    raise error_class(kind, code)(message, status=status, type=kind,
                                                      code=code, param=param, retryable=False)
 
 
@@ -103,7 +104,9 @@ def _content(kind: str, mime: str, raw: bytes, param: str) -> None:
     if kind == "audio":
         if mime != "audio/wav":
             _refuse("media_unsupported", param)
-        _audio_frames(raw)
+        frames = _audio_frames(raw)
+        if frames * 1000 > MEDIA_LIMITS["max_audio_duration_ms"] * MEDIA_LIMITS["audio_sample_rate"]:
+            _refuse("media_too_large", "attachments")
         return
     if mime in ("image/gif", "image/webp"):
         if not _signature_matches(mime, raw):
@@ -128,6 +131,8 @@ def validate_attachments(items: Sequence[Attachment]) -> Sequence[Attachment]:
     """Check inline inputs; availability, references and full decoding remain with the API."""
     if not isinstance(items, (list, tuple)):
         _refuse("invalid_request", "attachments")
+    if any(isinstance(item, dict) and item.get("type") == "audio" for item in items) and any(isinstance(item, dict) and item.get("type") != "audio" for item in items):
+        _refuse("audio_not_available", "attachments")
     if any(isinstance(item, dict) and ("upload" in item or item.get("type") in ("document", "video")) for item in items):
         return items
     if len(items) > MAX_ATTACHMENTS:

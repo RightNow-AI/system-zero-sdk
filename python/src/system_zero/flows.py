@@ -310,7 +310,7 @@ def _client_call_bound(client: SystemZero) -> float:
 from ._redaction import protected
 
 @protected
-def run_flow(client: SystemZero, definition: Mapping[str, Any], *, run_id: str, deadline_ms: float, include_content: bool=False, max_decide_calls: Optional[int]=None, danger_zone: Optional[Literal['accept']]=None, now: Optional[Callable[[], float]]=None) -> FlowTrace:
+def run_flow(client: SystemZero, definition: Mapping[str, Any], *, run_id: str, deadline_ms: float, include_content: bool=False, max_decide_calls: Optional[int]=None, danger_zone: Optional[Literal['accept', 'long_context_64k', 'long_context_128k']]=None, now: Optional[Callable[[], float]]=None) -> FlowTrace:
     """Run ordered, bounded decisions and return a content-free trace by default.
 
     Errors retain their SDK class and carry the partial trace on ``error.trace``.
@@ -318,8 +318,8 @@ def run_flow(client: SystemZero, definition: Mapping[str, Any], *, run_id: str, 
     transports must obey the client's timeout contract. Client settings are never
     modified, and the function does not create workers or background operations.
     """
-    if danger_zone is not None and danger_zone != 'accept':
-        raise InvalidRequestError('The request option must be accept.', status=400, type='invalid_request_error', code='invalid_request', param='SZ-Danger-Zone')
+    if danger_zone is not None and danger_zone not in ('accept', 'long_context_64k', 'long_context_128k'):
+        raise InvalidRequestError('The request option must be accept, long_context_64k or long_context_128k.', status=400, type='invalid_request_error', code='invalid_request', param='SZ-Danger-Zone')
     clock = now if now is not None else lambda: time.monotonic() * 1000
     if not callable(clock):
         raise _invalid()

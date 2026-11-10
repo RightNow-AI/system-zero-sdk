@@ -247,6 +247,30 @@
     "status": 429,
     "message": "The request ceiling is reached. Retry after the Retry-After delay."
   },
+  "starter_attempt_limit": {
+    "status": 429,
+    "message": "Starting credit processing reached its temporary allowance. Retry after the Retry-After delay."
+  },
+  "starter_concurrency_limit": {
+    "status": 429,
+    "message": "Two starting credit requests are already in progress. Retry after the Retry-After delay."
+  },
+  "starter_credit_held": {
+    "status": 403,
+    "message": "Your starting credit is under review. Contact us to request a review."
+  },
+  "starter_rate_limit": {
+    "status": 429,
+    "message": "Starting credit requests reached their rate allowance. Retry after the Retry-After delay."
+  },
+  "starter_spend_limit": {
+    "status": 429,
+    "message": "This request exceeds the starting credit spend allowance. Retry after the Retry-After delay or request a review."
+  },
+  "starter_unavailable": {
+    "status": 503,
+    "message": "Starting credit enforcement is temporarily unavailable. Retry after the Retry-After delay."
+  },
   "state_too_large": {
     "status": 413,
     "message": "The state exceeds the size or nesting limit."

@@ -51,6 +51,16 @@ function fixture(steps: Opening[] = ['hello'], options: Record<string, unknown> 
     }
     send(text: string) {
       const frame = JSON.parse(text) as Record<string, unknown>; this.frames.push(frame);
+      if (frame.type === 'resume') {
+        queueMicrotask(() => {
+          if (options.resumeDisconnect) { this.close(1006); return; }
+          if (options.resumeRefused) {
+            this.server({ type: 'error', http_status: 409, envelope: { error: { code: 'stream_resume_refused', retryable: false } } });
+            return;
+          }
+          this.server({ type: 'decision', state_version: frame.state_version, http_status: 200, reply: { answers: {} }, covered_event_ids: ['evt_1'] });
+        });
+      }
       if (frame.type === 'start') this.mode = String(frame.decision_mode);
       if (this.autoAck && typeof frame.event_id === 'string') queueMicrotask(() => this.ack(frame.event_id as string));
     }
@@ -164,6 +174,41 @@ describe('state replay idempotency', () => {
     expect(await refusal).toMatchObject({ code: 'invalid_request' });
     h.sockets[1].close(1006); await vi.advanceTimersByTimeAsync(500);
     expect(h.sockets[2].frames[0]).toMatchObject({ idempotency_key: candidate, request: { state: 'SYNTHETIC kept' } });
+  });
+});
+
+describe('retained stream responses', () => {
+  const resume = { supported: true, action: 'redeem_resume_token', resume_token: 'a'.repeat(43), state_version: 1, expires_in_ms: 300000, retry_after_ms: 0 };
+  it('redeems before restoring state and does not schedule the retained decision again', async () => {
+    const h = fixture();
+    const decisions: unknown[] = [];
+    h.client.on('decision', event => decisions.push(event));
+    await h.client.start(request);
+    const original = h.sockets[0];
+    original.server({ type: 'goodbye', resume }); original.close(1009);
+    await vi.advanceTimersByTimeAsync(500);
+    expect(h.sockets).toHaveLength(2);
+    expect(h.sockets[1].frames[0]).toEqual({ type: 'resume', resume_token: resume.resume_token, stream_id: original.id, state_version: 1 });
+    expect(h.sockets[1].frames[1]).toMatchObject({ type: 'start', decision_mode: 'on_request' });
+    expect(decisions).toHaveLength(1);
+  });
+  it.each([{ resumeRefused: true }, { resumeDisconnect: true }])('never dispatches a fresh decision after lost or refused redemption: %j', async options => {
+    const h = fixture(['hello'], options);
+    await h.client.start(request);
+    h.sockets[0].server({ type: 'goodbye', resume }); h.sockets[0].close(1009);
+    await vi.advanceTimersByTimeAsync(2000);
+    expect(h.sockets).toHaveLength(2);
+    expect(h.sockets[1].frames.map(frame => frame.type)).toEqual(['resume']);
+    await expect(h.client.connect()).rejects.toBeDefined();
+  });
+  it('does not send expired tokens and retains the original replay key', async () => {
+    const h = fixture();
+    await h.client.start(request);
+    const key = h.sockets[0].frames[0].idempotency_key;
+    h.sockets[0].server({ type: 'goodbye', resume: { ...resume, expires_in_ms: 1, retry_after_ms: 1000 } });
+    h.sockets[0].close(1012);
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(h.sockets[1].frames[0]).toMatchObject({ type: 'start', idempotency_key: key });
   });
 });
 

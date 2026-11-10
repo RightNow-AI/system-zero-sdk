@@ -7,10 +7,6 @@ export default {
     "status": 403,
     "message": "API key is revoked"
   },
-  "concurrency_limit_exceeded": {
-    "status": 429,
-    "message": "This account has reached its concurrent call limit. Retry after the Retry-After delay."
-  },
   "idempotency_conflict": {
     "status": 409,
     "message": "A request with this Idempotency-Key is still running. Retry with the same key shortly."
