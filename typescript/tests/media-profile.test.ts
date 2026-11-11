@@ -20,8 +20,8 @@ function wav(codec = 1, channels = 1, rate = 16000, bits = 16, frames = 160): Bu
 const audio = { name: 'recording', type: 'audio' as const, data: dataUrl('audio/wav', wav()) };
 
 describe('published media encoding and API availability', () => {
-  it('exposes the selected MIME registry at version 0.4.6', () => {
-    expect(sdk.VERSION).toBe('0.4.6');
+  it('exposes the selected MIME registry at version 0.4.7', () => {
+    expect(sdk.VERSION).toBe('0.4.7');
     expect(sdk.MEDIA_MIMES).toEqual({ image: ['image/jpeg', 'image/png'], audio: ['audio/wav'], document: ['application/pdf'], video: ['video/mp4'] });
     expect(sdk.MEDIA_LIMITS.maxAudioDurationMs).toBe(60_000);
     const spec = JSON.parse(readFileSync(new URL('../../openapi.json', import.meta.url), 'utf8'));

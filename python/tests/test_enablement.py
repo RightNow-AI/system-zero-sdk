@@ -235,7 +235,9 @@ def test_1m_utf8_body_boundary():
         with pytest.raises(InvalidRequestError) as caught:
             client.decide({**REQUEST, "state": state + "x"}, danger_zone="long_context_1m")
     assert (caught.value.status, caught.value.code) == (413, "payload_too_large")
-    assert len(seen) == 1 and len(seen[0].content) == 8_388_608
+    import gzip
+    plain = gzip.decompress(seen[0].content) if seen[0].headers.get("content-encoding") == "gzip" else seen[0].content
+    assert len(seen) == 1 and len(plain) == 8_388_608
 
 def test_1m_stream_refusal_before_connect():
     import asyncio

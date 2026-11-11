@@ -1,6 +1,8 @@
 import { redact } from './redaction.js';
 import { randomUUID } from 'node:crypto';
 import { isIP } from 'node:net';
+import { promisify } from 'node:util';
+import { gzip } from 'node:zlib';
 import type { DecideRequest, DecideReply, ModelList } from './api-types.js';
 import type { EnabledDecideRequest, VideoRequest } from './enabled-types.js';
 import { validateRequestPolicy, type Policy, type PolicyReply } from './policy.js';
@@ -8,8 +10,9 @@ import { createDecisionRecords, type DecisionRecords } from './decision-records.
 import { APIConnectionError, APIError, APITimeoutError, InvalidRequestError, LongContextNotAvailableError, responseError, SystemZeroError } from './errors.js';
 import { retryWaitMs, shouldRecoverWorkflow, shouldRetry } from './retry.js';
 import { hasResponseStarted, nodeFetch, requestSent } from './transport.js';
+import { Webhooks } from './webhooks.js';
 
-export const VERSION = '0.4.6';
+export const VERSION = '0.4.7';
 export const DEFAULT_BASE_URL = 'https://api.rightnowai.co/v1';
 export type Fetch = typeof globalThis.fetch;
 
@@ -23,6 +26,9 @@ export interface ClientOptions {
   maxRetryWait?: number;
   /** Milliseconds from the first attempt; zero disables automatic retries. */
   retryBudget?: number;
+  /** Compress large HTTP decide bodies when gzip saves at least 10%. */
+  compressRequests?: boolean;
+  /** Receives RequestInit.body as JSON text or a Buffer (binary BodyInit) for compressed requests. */
   fetch?: Fetch;
   /** Clock, randomness and sleep injection keep retry tests deterministic. */
   now?: () => number;
@@ -165,8 +171,10 @@ export class SystemZeroClient {
   readonly getDecision: DecisionRecords['getDecision'];
   readonly getDecisionTrace: DecisionRecords['getDecisionTrace'];
   readonly models: { list: (options?: RequestOptions) => APIPromise<ModelList> };
+  readonly webhooks: Webhooks;
   #apiKey: string;
   #fetch: Fetch;
+  #compressRequests: boolean;
   #now: () => number;
   #monotonic: () => number;
   #random: () => number;
@@ -192,11 +200,14 @@ export class SystemZeroClient {
     if (!(this.options.maxRetryWait >= 0 && this.options.maxRetryWait <= 2_147_483_647 && Number.isFinite(this.options.maxRetryWait))) throw new RangeError('maxRetryWait must be between 0 and 2147483647 milliseconds.');
     this.#checkRetryBudget(this.options.retryBudget);
     this.#fetch = options.fetch ?? nodeFetch;
+    this.#compressRequests = options.compressRequests ?? true;
     this.#now = options.now ?? Date.now;
     this.#monotonic = options.monotonic ?? (() => performance.now());
     this.#random = options.random ?? Math.random;
     this.#sleep = options.sleep ?? (milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds)));
     this.models = Object.freeze({ list: (requestOptions: RequestOptions = {}) => this.#request<ModelList>('GET', '/models', undefined, requestOptions) });
+    this.webhooks = new Webhooks((method, path, body, requestOptions, behavior) =>
+      this.#request(method, path, body, requestOptions, behavior));
     const records = createDecisionRecords(<T>(method: 'GET', path: string,
       body: undefined, requestOptions: RequestOptions) =>
       this.#request<T>(method, path, body, requestOptions));
@@ -218,12 +229,12 @@ export class SystemZeroClient {
     return this.#request<PolicyReply>('POST', '/system-zero/decide', JSON.stringify(request), options);
   }
 
-  #request<T>(method: 'POST' | 'GET', path: string, body: string | undefined, options: RequestOptions): APIPromise<T> {
+  #request<T>(method: 'POST' | 'GET' | 'DELETE', path: string, body: string | undefined, options: RequestOptions, behavior: { idempotency?: boolean; maxRetries?: number } = {}): APIPromise<T> {
     const baseURL = checkedBaseURL(this.options.baseURL);
     const retryBudget = options.retryBudget ?? this.options.retryBudget;
     this.#checkRetryBudget(retryBudget);
     const context = retryContexts.get(options);
-    const maxRetries = Math.min(this.options.maxRetries, context?.maxRetries ?? this.options.maxRetries);
+    const maxRetries = Math.min(behavior.maxRetries ?? this.options.maxRetries, context?.maxRetries ?? this.options.maxRetries);
     const headers = requestHeaders(options.headers);
     if (headers.has('SZ-Danger-Zone') || (options.dangerZone !== undefined && !['accept', 'long_context_64k', 'long_context_128k', 'long_context_1m'].includes(options.dangerZone))) {
       throw new InvalidRequestError('Use dangerZone with accept, long_context_64k, long_context_128k or long_context_1m; do not supply its header.', {
@@ -247,6 +258,7 @@ export class SystemZeroClient {
         error: { code: 'payload_too_large', type: 'invalid_request_error', message: 'The request body exceeds 8,388,608 bytes.', param: 'body' },
       }, false);
     }
+    if (behavior.idempotency === false && (options.idempotencyKey !== undefined || headers.has('idempotency-key'))) throw new TypeError('Upload routes do not accept an Idempotency-Key.');
     try {
       headers.set('authorization', `Bearer ${this.#apiKey}`);
       headers.set('user-agent', `system-zero-typescript/${VERSION} node/${process.versions.node}`);
@@ -257,11 +269,23 @@ export class SystemZeroClient {
       const blankKey = headers.has('idempotency-key') && !headers.get('idempotency-key')!.trim();
       if (blankKey) headers.delete('idempotency-key');
       if (headers.has('x-client-request-id') && !headers.get('x-client-request-id')!.trim()) headers.delete('x-client-request-id');
-      if (method === 'POST' && !blankKey && (oneMillion || maxRetries > 0 && retryBudget > 0) && !headers.has('idempotency-key')) headers.set('idempotency-key', `sz-sdk-${randomUUID()}`);
+      if (method === 'POST' && behavior.idempotency !== false && !blankKey && (oneMillion || maxRetries > 0 && retryBudget > 0) && !headers.has('idempotency-key')) headers.set('idempotency-key', `sz-sdk-${randomUUID()}`);
     } catch { throw new TypeError('Request headers are invalid.'); }
     const init: RequestInit = { method, headers, redirect: 'error' };
     if (body !== undefined) init.body = body;
-    return new APIPromise(this.#send<T>(`${baseURL}${path}`, init, maxRetries, retryBudget, context).catch((error: unknown) => {
+    const prepare = this.#compressRequests && method === 'POST' && path === '/system-zero/decide' && body !== undefined && Buffer.byteLength(body, 'utf8') >= 32_768
+      ? async (signal: AbortSignal) => {
+      // Only this route is opted in. Stream starts and unrelated POSTs keep their wire format.
+        const bytes = Buffer.from(body, 'utf8');
+        const compressed = await promisify(gzip)(bytes, { level: 4 });
+        signal.throwIfAborted();
+        if (compressed.byteLength * 10 <= bytes.byteLength * 9) {
+          init.body = compressed as BodyInit;
+          headers.set('content-encoding', 'gzip');
+          headers.set('content-length', String(compressed.byteLength));
+        }
+      } : undefined;
+    return new APIPromise(this.#send<T>(`${baseURL}${path}`, init, maxRetries, retryBudget, context, prepare).catch((error: unknown) => {
       if (error instanceof SystemZeroError) error.idempotencyKey = headers.get('idempotency-key');
       throw redact(error, this.#apiKey);
     }));
@@ -271,7 +295,7 @@ export class SystemZeroClient {
     if (!(retryBudget >= 0 && retryBudget <= 2_147_483_647 && Number.isFinite(retryBudget))) throw new RangeError('retryBudget must be between 0 and 2147483647 milliseconds.');
   }
 
-  async #send<T>(url: string, init: RequestInit, maxRetries: number, retryBudget: number, context?: RetryContext): Promise<ResponseResult<T>> {
+  async #send<T>(url: string, init: RequestInit, maxRetries: number, retryBudget: number, context?: RetryContext, prepare?: (signal: AbortSignal) => Promise<void>): Promise<ResponseResult<T>> {
     const started = this.#monotonic();
     const initialExternalRemaining = context?.remaining?.() ?? Infinity;
     const elapsed = () => Math.max(0, this.#monotonic() - started);
@@ -314,7 +338,7 @@ export class SystemZeroClient {
       let result: AttemptResult;
       // The first request retains its normal timeout, subject to any batch deadline.
       // Only retry attempts use the remaining recovery budget.
-      try { result = await this.#attempt(url, init, Math.min(this.options.timeout, admittedTimeLeft, attempt === 0 ? Infinity : timeLeft)); }
+      try { result = await this.#attempt(url, init, Math.min(this.options.timeout, admittedTimeLeft, attempt === 0 ? Infinity : timeLeft), attempt === 0 ? prepare : undefined); }
       catch (error) {
         if (externalRemaining() <= 0) { context?.onDeadline?.(); throw error; }
         if (context?.workflowRecovery || !(error instanceof APIConnectionError) || !error.retryable) throw error;
@@ -339,23 +363,42 @@ export class SystemZeroClient {
     }
   }
 
-  async #attempt(url: string, init: RequestInit, timeout: number): Promise<AttemptResult> {
+  async #attempt(url: string, init: RequestInit, timeout: number, prepare?: (signal: AbortSignal) => Promise<void>): Promise<AttemptResult> {
     const controller = new AbortController();
     const safeToRetry = init.method === 'GET' || Boolean(new Headers(init.headers).get('idempotency-key')?.trim());
     let response: Response | undefined;
     let reader: ReadableStreamDefaultReader<Uint8Array> | undefined;
     let timer: ReturnType<typeof setTimeout> | undefined;
+    let preparing = prepare !== undefined;
     // Keyed decisions and safe GETs retain their before-response retry policy.
     // request_sent is diagnostic; sending alone does not end keyed eligibility.
     const fields = () => ({
-      retryable: safeToRetry && response === undefined && !hasResponseStarted(controller.signal),
+      retryable: !preparing && safeToRetry && response === undefined && !hasResponseStarted(controller.signal),
       status: response?.status ?? null,
       request_id: response?.headers.get('x-request-id') ?? null,
-      request_sent: response ? true : requestSent(controller.signal),
+      request_sent: preparing ? false : response ? true : requestSent(controller.signal),
       ...(response ? { headers: response.headers } : {}),
+    });
+    const deadline = new Promise<never>((_resolve, reject) => {
+      timer = setTimeout(() => {
+        reject(new APIConnectionError('RightNow request timed out.', { ...fields(), type: 'timeout_error' }));
+        controller.abort();
+        void reader?.cancel().catch(() => {});
+        void response?.body?.cancel().catch(() => {});
+      }, timeout);
     });
     const operation = (async (): Promise<AttemptResult> => {
       try {
+        if (prepare) {
+          await new Promise<void>((resolve, reject) => {
+            const abort = () => reject(controller.signal.reason);
+            controller.signal.addEventListener('abort', abort, { once: true });
+            void prepare(controller.signal).then(resolve, reject).finally(() => controller.signal.removeEventListener('abort', abort));
+            if (controller.signal.aborted) abort();
+          });
+          controller.signal.throwIfAborted();
+          preparing = false;
+        }
         response = await this.#fetch(url, { ...init, headers: new Headers(init.headers), signal: controller.signal });
         const copy = response.clone();
         reader = copy.body?.getReader();
@@ -382,15 +425,6 @@ export class SystemZeroClient {
         reader?.releaseLock();
       }
     })();
-    const deadline = new Promise<never>((_resolve, reject) => {
-      timer = setTimeout(() => {
-        reject(new APIConnectionError('RightNow request timed out.', { ...fields(), type: 'timeout_error' }));
-        controller.abort();
-        // Injected transports may ignore abort. Cancel both tee branches without awaiting them.
-        void reader?.cancel().catch(() => {});
-        void response?.body?.cancel().catch(() => {});
-      }, timeout);
-    });
     try { return await Promise.race([operation, deadline]); }
     finally { clearTimeout(timer); }
   }

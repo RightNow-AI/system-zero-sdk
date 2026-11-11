@@ -57,12 +57,17 @@ EXPECTED.update(['Attachment', 'ByteData', 'MAX_ATTACHMENTS', 'MAX_INLINE_BYTES'
 EXPECTED.update(['AbstainedAnswer', 'AbstainedBooleanAnswer', 'AbstainedChoiceAnswer', 'AbstainedScoreAnswer', 'AbstentionReason', 'POLICY_ERROR_CLASSES', 'POLICY_ERROR_CODES', 'Policy', 'PolicyAbstention', 'PolicyAnswerOrRefusal', 'PolicyConfidenceFailedError', 'PolicyDecideRequest', 'PolicyDecisionResult', 'PolicyError', 'PolicyErrorCode', 'PolicyMaxCostExceededError', 'PolicyReply', 'as_policy_error', 'is_policy_error', 'policy_decision_for', 'policy_decisions_for', 'policy_error_class', 'policy_max_cost_microcents', 'validate_policy', 'validate_request_policy'])
 API_CODES.update(['policy_confidence_failed', 'policy_max_cost_exceeded'])
 
-EXPECTED.update(['DECISION_RECORD_ERROR_CODES', 'DecisionNotFoundError', 'DecisionRecordErrorCode', 'DecisionRecords', 'DecisionTrace', 'DecisionTraceAttachment', 'DecisionTraceTimings', 'DecisionTraceUsage'])
+EXPECTED.update(['DECISION_RECORD_ERROR_CODES', 'DecisionId', 'DecisionNotFoundError', 'DecisionRecordErrorCode', 'DecisionRecords', 'DecisionTrace', 'DecisionTraceAttachment', 'DecisionTraceTimings', 'DecisionTraceUsage'])
 API_CODES.add('decision_not_found')
+
+EXPECTED.update(['DecisionProvenance', 'ProvenanceAttachmentClass', 'ProvenanceReplyFields', 'ProvenanceRoute', 'provenance_for'])
+
+EXPECTED.update(['WEBHOOK_ERROR_CODES', 'WEBHOOK_MAX_BODY_BYTES', 'WEBHOOK_TIMESTAMP_TOLERANCE_SECONDS', 'WebhookBody', 'WebhookCreateRequest', 'WebhookDecisionCompletedData', 'WebhookDecisionData', 'WebhookDecisionEvent', 'WebhookDecisionRefusedData', 'WebhookDeleteReply', 'WebhookDeleted', 'WebhookDelivery', 'WebhookDeliveryList', 'WebhookEmptyRequest', 'WebhookEndpoint', 'WebhookEndpointId', 'WebhookEndpointList', 'WebhookEndpointWithSecret', 'WebhookEvent', 'WebhookEventType', 'WebhookInputClass', 'WebhookInvalidError', 'WebhookLimitExceededError', 'WebhookManagementErrorCode', 'WebhookNotFoundError', 'WebhookSignatureHeader', 'WebhookSigningSecret', 'WebhookStreamCloseReason', 'WebhookStreamClosedData', 'WebhookStreamClosedEvent', 'WebhookUnavailableError', 'WebhookUsageUnits', 'Webhooks', 'verify_webhook_signature'])
+API_CODES.update(['webhook_invalid', 'webhook_limit_exceeded', 'webhook_not_found', 'webhook_unavailable'])
 
 class PublicSurfaceTests(unittest.TestCase):
     def test_error_conveniences_equal_the_api_catalog(self):
-        self.assertEqual(len(API_CODES), 67)
+        self.assertEqual(len(API_CODES), 71)
         self.assertEqual(len(GATEWAY_CODES), 16)
         self.assertEqual(set(system_zero.SYSTEM_ZERO_ERROR_CODES), API_CODES)
         self.assertEqual(len(system_zero.SYSTEM_ZERO_ERROR_CODES), len(API_CODES))
@@ -92,7 +97,7 @@ class PublicSurfaceTests(unittest.TestCase):
         with system_zero.SystemZero(api_key="surface-test", max_retries=0,
                                     transport=httpx.MockTransport(respond)) as client:
             self.assertEqual({name for name in vars(client) if not name.startswith("_")},
-                             {"base_url", "timeout", "max_retries", "max_retry_wait", "retry_budget", "models"})
+                             {"base_url", "timeout", "max_retries", "max_retry_wait", "retry_budget", "models", "webhooks"})
             self.assertEqual({name for name, value in vars(type(client)).items()
                               if not name.startswith("_") and callable(value)},
                              set(['close', 'decide', 'decide_with_response', 'getDecision', 'getDecisionTrace', 'get_decision', 'get_decision_trace', 'get_decision_trace_with_response', 'get_decision_with_response']))

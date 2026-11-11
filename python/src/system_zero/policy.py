@@ -2,9 +2,10 @@
 
 from decimal import Decimal
 import math
-from typing import Any, Dict, Literal, Mapping, NoReturn, Optional, TypeAlias, TypeVar, TypedDict, Union, cast
+from typing import Any, Dict, Literal, Mapping, NoReturn, Optional, TypeAlias, TypeVar, Union, cast
 
 from .decisions import Decision, LegacyDecision, PolicyAbstention, _expected_score, decision_for
+from .provenance import ProvenanceReplyFields
 from .errors import (
     POLICY_ERROR_CLASSES, InvalidRequestError, PolicyConfidenceFailedError,
     PolicyMaxCostExceededError, SystemZeroError, error_class,
@@ -19,7 +20,7 @@ PolicyDecideRequest: TypeAlias = DecideRequest
 PolicyAnswerOrRefusal: TypeAlias = Union[Answer, QuestionRefusal]
 
 
-class _PolicyReplyOptional(TypedDict, total=False):
+class _PolicyReplyOptional(ProvenanceReplyFields, total=False):
     policy: Policy
 
 

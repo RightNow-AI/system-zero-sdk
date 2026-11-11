@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 import * as sdk from '../src/index.js';
 
 const names = (text: string): string[] => text.trim().split(/\s+/u).sort();
-const apiCodes = names(`decision_not_found policy_confidence_failed policy_max_cost_exceeded 
+const apiCodes = names(`webhook_invalid webhook_limit_exceeded webhook_not_found webhook_unavailable decision_not_found policy_confidence_failed policy_max_cost_exceeded 
   attachment_too_large audio_not_available capacity_exhausted committee_not_available concurrency_limit_exceeded
   daily_dispatch_limit deliberate_not_available document_controls_not_available document_decode_failed
   document_not_available document_pictures_not_available document_too_large document_unsupported
@@ -27,7 +27,7 @@ const gatewayCodes = names(`
   idempotency_conflict idempotency_replay_unavailable idempotency_replayed_error idempotency_unavailable limiter_unavailable
   maintenance internal_error monthly_cap_reached
 `);
-const rootNames = names(`DecisionId DECISION_RECORD_ERROR_CODES DecisionLookupOptions DecisionNotFoundError DecisionRecordErrorCode DecisionRecords DecisionRecordsRequest DecisionTrace DecisionTraceAttachment DecisionTraceTimings DecisionTraceUsage createDecisionRecords WireAbstainedAnswer AbstainedAnswer AbstainedBooleanAnswer AbstainedChoiceAnswer AbstainedScoreAnswer AbstentionReason POLICY_ERROR_CLASSES POLICY_ERROR_CODES Policy PolicyAbstention PolicyAnswer PolicyAnswerOrRefusal PolicyConfidenceFailedError PolicyDecideReplyFields PolicyDecideRequest PolicyDecisionResult PolicyError PolicyErrorCode PolicyMaxCostExceededError PolicyReply PolicyStreamRequest PolicyV1DecideReply asPolicyError isPolicyError policyDecisionFor policyDecisionsFor policyMaxCostMicrocents policyResponseError validatePolicy validateRequestPolicy Attachment InlineAttachment MEDIA_LIMITS MEDIA_MIMES MediaInput MediaKind VIDEO_PROFILE attachmentMagicMatches inlineAttachment validateAttachments videoAttachment ToolDefinition ToolSelectionMode ToolSelectionRequest ToolSelectionResult toolQuestions selectTool OrdinaryQuestion MediaQuestion LongContextQuestion OrdinaryRequest MediaRequest LongContextRequest EnabledDecideRequest LongContextLimits VideoRequest VideoAttachment
+const rootNames = names(`WEBHOOK_ERROR_CODES WEBHOOK_MAX_BODY_BYTES WEBHOOK_TIMESTAMP_TOLERANCE_SECONDS WebhookCreateRequest WebhookDecisionData WebhookDeleted WebhookDelivery WebhookDeliveryRequestOptions WebhookEndpoint WebhookEndpointWithSecret WebhookErrorCode WebhookEvent WebhookEventType WebhookInputClass WebhookInvalidError WebhookLimitExceededError WebhookList WebhookMethod WebhookNotFoundError WebhookRequest WebhookRequestBehavior WebhookRequestOptions WebhookSignatureOptions WebhookStreamCloseReason WebhookStreamClosedData WebhookUnavailableError WebhookUsageUnits Webhooks mapWebhookError verifyWebhookSignature DecisionProvenance ProvenanceAttachmentClass ProvenanceReplyFields ProvenanceRoute provenanceFor DecisionId DECISION_RECORD_ERROR_CODES DecisionLookupOptions DecisionNotFoundError DecisionRecordErrorCode DecisionRecords DecisionRecordsRequest DecisionTrace DecisionTraceAttachment DecisionTraceTimings DecisionTraceUsage createDecisionRecords WireAbstainedAnswer AbstainedAnswer AbstainedBooleanAnswer AbstainedChoiceAnswer AbstainedScoreAnswer AbstentionReason POLICY_ERROR_CLASSES POLICY_ERROR_CODES Policy PolicyAbstention PolicyAnswer PolicyAnswerOrRefusal PolicyConfidenceFailedError PolicyDecideReplyFields PolicyDecideRequest PolicyDecisionResult PolicyError PolicyErrorCode PolicyMaxCostExceededError PolicyReply PolicyStreamRequest PolicyV1DecideReply asPolicyError isPolicyError policyDecisionFor policyDecisionsFor policyMaxCostMicrocents policyResponseError validatePolicy validateRequestPolicy Attachment InlineAttachment MEDIA_LIMITS MEDIA_MIMES MediaInput MediaKind VIDEO_PROFILE attachmentMagicMatches inlineAttachment validateAttachments videoAttachment ToolDefinition ToolSelectionMode ToolSelectionRequest ToolSelectionResult toolQuestions selectTool OrdinaryQuestion MediaQuestion LongContextQuestion OrdinaryRequest MediaRequest LongContextRequest EnabledDecideRequest LongContextLimits VideoRequest VideoAttachment
   STREAM_PROTOCOL STREAM_CLIENT_IMPLEMENTED STREAM_RECEIPT_TIMEOUT_MS StreamProtocolError StreamDisconnectedError SystemZeroStreamClient DecisionMode ReconnectPolicy StreamRequest StreamStartOptions StreamRateLimit StreamBase StreamHello StreamAck StreamScheduled StreamDecision StreamError StreamGoodbye PossiblyDecided StreamEvent EventLatency StreamWebSocket StreamWebSocketConstructor StreamClientOptions ClientMutation StreamLimitError
   JsonValue DecideRequest Question StructuredJson V1DecideReply
   BooleanAnswer ChoiceAnswer ScoreAnswer AuthoritativeAnswer LegacyReplayReply
@@ -61,7 +61,7 @@ const entries = {
 
 describe('public package surface', () => {
   it('publishes exactly the API error conveniences', () => {
-    expect(apiCodes).toHaveLength(67);
+    expect(apiCodes).toHaveLength(71);
     expect(gatewayCodes).toHaveLength(16);
     expect([...sdk.SYSTEM_ZERO_ERROR_CODES].sort()).toEqual(apiCodes);
     expect([...sdk.GATEWAY_ERROR_CODES].sort()).toEqual(gatewayCodes);
@@ -95,7 +95,7 @@ describe('public package surface', () => {
 
   it('exposes only the HTTP client resources and metadata options', () => {
     const client = new sdk.SystemZeroClient({ apiKey: 'surface-test', maxRetries: 0 });
-    expect(Object.keys(client).sort()).toEqual(['getDecision', 'getDecisionTrace', 'models', 'options']);
+    expect(Object.keys(client).sort()).toEqual(['getDecision', 'getDecisionTrace', 'models', 'options', 'webhooks']);
     expect(Object.keys(client.models)).toEqual(['list']);
     expect(Object.getOwnPropertyNames(Object.getPrototypeOf(client)).sort()).toEqual(['constructor', 'decide']);
   });

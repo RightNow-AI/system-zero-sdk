@@ -1,6 +1,8 @@
 // Request and response types for published API surfaces.
 
 
+import type { ProvenanceReplyFields } from './provenance.js';
+
 export type JsonValue = string | number | boolean | null | { [key: string]: JsonValue } | JsonValue[];
 
 export type DecideRequest = ({ "model": string; "state": StructuredJson; "attachments"?: (Array<(Attachment) & ({ "type"?: "image" | "audio" | "document"; })>) | (Array<(Attachment) & ({ "type"?: "video"; "data"?: unknown; })>) | (null); "questions": Record<string, Question>; "session_id"?: string; "prompt_cache_key"?: string; "route"?: "standard"; "mode"?: "standard"; "policy"?: { "min_confidence"?: number; "on_low_confidence"?: "abstain"; "max_cost_usd"?: number; }; }) & (unknown);
@@ -11,7 +13,7 @@ export type Attachment = { "name": string; "type": "image" | "audio" | "document
 
 export type StructuredJson = (string) | (Record<string, JsonValue>) | (Array<JsonValue>);
 
-export type V1DecideReply = { "id": string; "model": string; "served_by": string; "created": number; "context": { "route": "direct"; "tokens": number; }; "answers": Record<string, (AuthoritativeAnswer) | (QuestionRefusalData) | (WireAbstainedAnswer)>; "usage": { "input_tokens": number; "cached_input_tokens": number; "media_tokens": number; "long_input_tokens": number; "media_items": number; "thought_tokens": number; }; "policy"?: { "min_confidence"?: number; "on_low_confidence"?: "abstain"; "max_cost_usd"?: number; }; };
+export type V1DecideReply = { "id": string; "model": string; "served_by": string; "created": number; "context": { "route": "direct"; "tokens": number; }; "answers": Record<string, (AuthoritativeAnswer) | (QuestionRefusalData) | (WireAbstainedAnswer)>; "usage": { "input_tokens": number; "cached_input_tokens": number; "media_tokens": number; "long_input_tokens": number; "media_items": number; "thought_tokens": number; }; "policy"?: { "min_confidence"?: number; "on_low_confidence"?: "abstain"; "max_cost_usd"?: number; }; } & ProvenanceReplyFields;
 
 export type BooleanAnswer = { "type": "boolean"; "probability": number; "confidence": number; "calibration_version": string; "preview"?: true; "decision": boolean; "alternatives": Array<{ "decision": boolean; "confidence": number; }>; "calibrated": boolean; };
 
@@ -23,7 +25,7 @@ export type AuthoritativeAnswer = BooleanAnswer | ChoiceAnswer | ScoreAnswer;
 
 export type WireAbstainedAnswer = ({ "type": "boolean"; "probability": number; "confidence": number; "calibration_version": string; "preview"?: true; "alternatives": Array<{ "decision": boolean; "confidence": number; }>; "calibrated": boolean; "abstained": true; "abstention_reason": "low_confidence" | "uncalibrated"; }) | ({ "type": "choice"; "choice": string; "probabilities": Record<string, number>; "confidence": number; "calibration_version": string; "preview"?: true; "alternatives": Array<{ "decision": string; "confidence": number; }>; "calibrated": boolean; "abstained": true; "abstention_reason": "low_confidence" | "uncalibrated"; }) | ({ "type": "score"; "score": number; "legend": Record<string, string>; "probabilities": Record<string, number>; "confidence": number; "calibration_version": string; "preview"?: true; "alternatives": Array<{ "decision": string; "confidence": number; }>; "calibrated": boolean; "abstained": true; "abstention_reason": "low_confidence" | "uncalibrated"; });
 
-export type LegacyReplayReply = { "id": string; "model": string; "served_by": string; "created": number; "context": { "route": "direct"; "tokens": number; }; "answers": Record<string, (LegacyAnswer) | (QuestionRefusalData)>; "usage": { "input_tokens": number; "cached_input_tokens": number; "media_tokens": number; "long_input_tokens": number; "media_items": number; "thought_tokens": number; }; };
+export type LegacyReplayReply = { "id": string; "model": string; "served_by": string; "created": number; "context": { "route": "direct"; "tokens": number; }; "answers": Record<string, (LegacyAnswer) | (QuestionRefusalData)>; "usage": { "input_tokens": number; "cached_input_tokens": number; "media_tokens": number; "long_input_tokens": number; "media_items": number; "thought_tokens": number; }; } & ProvenanceReplyFields;
 
 export type LegacyBooleanAnswer = { "type": "boolean"; "probability": number; "confidence": number; "calibration_version": string; "preview"?: true; };
 

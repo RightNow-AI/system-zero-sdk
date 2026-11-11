@@ -41,6 +41,8 @@ request IDs, rate limits, latency and replay status. Decide options accept
 Client timeouts and retry waits are milliseconds: `timeout: 150000`,
 `maxRetries: 5`, `retryBudget: 60000` and `maxRetryWait: 60000`.
 
+Request bodies of 32 KB or more are sent gzip-compressed when that makes them at least 10 percent smaller; pass `compressRequests: false` to turn this off.
+
 ## Media on decide
 
 Check `models.list()` or the documented models endpoint for current input
@@ -420,8 +422,8 @@ Every workspace can send `policy` on ordinary decide calls and stream starts.
 `min_confidence` sets a minimum answer confidence greater than zero and at most
 one. Below it, the answer keeps `confidence`, adds `abstained: true` and
 `abstention_reason: "low_confidence"`, and has no `decision` member. The reply
-echoes `policy`. An abstained answer is charged like any answer; the decision
-readers return the `abstained` kind without a decision.
+echoes `policy`. An abstained answer is charged exactly like any answered question.
+The decision readers return the `abstained` kind without a decision.
 
 `max_cost_usd` caps the request's maximum possible cost. If that maximum exceeds
 the cap, the API refuses the request with HTTP 400 `policy_max_cost_exceeded`,
@@ -468,4 +470,70 @@ const reply = await client.decide({
 }, { idempotencyKey: 'shipment-check' });
 const stored = await client.getDecision(reply.id);
 const trace = await client.getDecisionTrace(reply.id);
+```
+
+## Decision provenance
+
+Every ordinary decide reply carries `provenance`, including replies delivered by
+stream. It adds no cost. The largest context class does not carry it, a reply
+too large to carry it omits it, and a decision stored before 2026-11-11 is
+returned without it. Check for the member before reading it.
+
+- `decision_id`: use this id for a later decision lookup.
+- `request_id`: match the original decision request, including after a replay.
+- `created`: read when the decision was created, as Unix seconds.
+- `model`: see the model name you requested.
+- `resolved_release`: see the release that answered.
+- `render_id`: an opaque identifier of the input rendering.
+- `numeric_fingerprint`: compare the numeric configuration used for replies.
+- `calibration_version`: the calibration version for each answered question, as
+  opaque strings.
+- `route`: see the route that handled the decision.
+- `served_by`: read the serving identifier returned for the decision.
+- `attachment_classes`: see the kinds of attachments used, without their content.
+- `keyed_replay`: `true` only when the reply is a keyed replay (the same
+  `Idempotency-Key` sent again); `false` on a fresh reply and on a decision lookup.
+
+```ts
+if (reply.provenance) {
+  console.log(reply.provenance.resolved_release);
+}
+```
+
+## Webhooks
+
+Create an endpoint for `decision.completed`, `decision.refused` or `stream.closed`.
+`decision.completed` events are sent when the decision's usage is recorded, usually within about five minutes of the answer, and can include decisions answered a few minutes before the endpoint was created.
+`decision.refused` and `stream.closed` events are sent within about a minute; a new endpoint starts receiving them within 30 seconds.
+A decision of the largest context class produces no event in this release. A keyed replay produces no event.
+
+Each delivery carries one signature header: `Webhook-Signature: t=<unix seconds>,v1=<64 hex>`.
+It is HMAC-SHA256 over the ASCII timestamp, a period and the original body bytes.
+Verify the raw bytes before parsing JSON. The signature helper accepts timestamps within 300 seconds of the receiver's clock.
+Deduplicate deliveries by event id.
+
+The endpoint secret (`whsec_...`) is shown once when you create the endpoint and once when you rotate its secret. Store it securely then.
+Payloads contain no request state, question text, answers' free text or attachments.
+An event has an id, type and creation time. Decision data contains decision and request ids, creation time, model, route, input classes and their status, response status, refusal code and usage counters.
+Stream-close data contains the stream id, close code and reason.
+
+```ts
+import { SystemZeroClient, verifyWebhookSignature } from '@rightnowai/system-zero';
+
+const client = new SystemZeroClient({ apiKey: (process.env.SYSTEM_ZERO_API_KEY ?? '') });
+const endpoint = await client.webhooks.create({
+  url: 'https://example.com/events', events: ['decision.completed'],
+});
+// Store endpoint.secret securely now; later reads do not include it.
+
+export async function handleDelivery(request: Request, storedSecret: string): Promise<Response> {
+  const rawBody = new Uint8Array(await request.arrayBuffer());
+  const signature = request.headers.get('Webhook-Signature') ?? '';
+  if (!verifyWebhookSignature(rawBody, signature, storedSecret)) {
+    return new Response('Invalid signature', { status: 400 });
+  }
+  const event = JSON.parse(new TextDecoder().decode(rawBody));
+  // Deduplicate by event.id before processing event.data.
+  return new Response(null, { status: 204 });
+}
 ```

@@ -323,6 +323,22 @@ export const SYSTEM_ZERO_ERRORS = {
     404,
     "This input type is not supported."
   ],
+  "webhook_invalid": [
+    400,
+    "The webhook request is invalid."
+  ],
+  "webhook_limit_exceeded": [
+    429,
+    "This workspace has reached its webhook endpoint limit."
+  ],
+  "webhook_not_found": [
+    404,
+    "The requested webhook is not available to this workspace."
+  ],
+  "webhook_unavailable": [
+    503,
+    "Webhook management is temporarily unavailable."
+  ],
   "workspace_limit_exceeded": [
     429,
     "This workspace is over one of its own allowances, such as calls in flight or bytes being read. Retry after the Retry-After delay."

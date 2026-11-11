@@ -160,7 +160,7 @@
             "name": "SZ-Danger-Zone",
             "in": "header",
             "required": false,
-            "description": "Selects a long context class for this request. long_context_64k answers a state of 38,001 to 65,536 tokens; long_context_128k answers a state of 65,537 to 131,072 tokens; long_context_1m answers a state of 131,073 to 1,048,576 tokens. Send the text in state with no attachments. Any attachment with a native long class answers 404 long_context_not_available and is not charged. A class that is not available answers 404 long_context_not_available and is not charged. A state outside the selected band answers a nonretryable 404 long_context_not_available with param state and the class bounds, without a retry delay, and is not charged. With multiple native classes, accept answers 400 invalid_request with param SZ-Danger-Zone. long_context_1m is selected only by its exact value; accept never selects it. It needs nothing switched on in the Console: a workspace that has made one completed payment can use it. An ineligible workspace gets 404 long_context_not_available with the unmet step in details.eligibility and is not charged. Each workspace has a daily bound on requests of this class: past it the answer is 429 long_context_daily_budget_exhausted with details.scope workspace or workspace_attempts, until the next UTC day. A long_context_1m request must carry an Idempotency-Key (400 invalid_request with param Idempotency-Key without one), exactly one question, and the plain request shape: state as one string (an object state is refused), with no policy, mode, route, session_id, prompt_cache_key or attachments. It serves stateless decisions only: each request carries its full context. The maximum charge is held before work and settled to the exact usage; insufficient balance answers 402 insufficient_credits before any work. Without this header, the request uses the direct window. Header names are case-insensitive.",
+            "description": "Selects a long context class for this request. long_context_64k answers a state of 38,001 to 65,536 tokens; long_context_128k answers a state of 65,537 to 131,072 tokens; long_context_1m answers a state of 131,073 to 1,048,576 tokens. Send the text in state with no attachments. Any attachment with a native long class answers 404 long_context_not_available and is not charged. A class that is not available answers 404 long_context_not_available and is not charged. A state outside the selected band answers a nonretryable 404 long_context_not_available with param state and the class bounds, without a retry delay, and is not charged. With multiple native classes, accept answers 400 invalid_request with param SZ-Danger-Zone. long_context_1m is selected only by its exact value; accept never selects it. On this class, confidence is capped at 0.90. It needs nothing switched on in the Console: a workspace that has made one completed payment can use it. An ineligible workspace gets 404 long_context_not_available with the unmet step in details.eligibility and is not charged. Each workspace has a daily bound on requests of this class: past it the answer is 429 long_context_daily_budget_exhausted with details.scope workspace or workspace_attempts, until the next UTC day. A long_context_1m request must carry an Idempotency-Key (400 invalid_request with param Idempotency-Key without one), exactly one question, and the plain request shape: state as one string (an object state is refused), with no policy, mode, route, session_id, prompt_cache_key or attachments. It serves stateless decisions only: each request carries its full context. The maximum charge is held before work and settled to the exact usage; insufficient balance answers 402 insufficient_credits before any work. Without this header, the request uses the direct window. Header names are case-insensitive.",
             "schema": {
               "type": "string",
               "enum": [
@@ -184,7 +184,7 @@
         },
         "responses": {
           "200": {
-            "description": "Fresh successful answers use structured confidence v1. A stored reply from before the change may use the deprecated legacy branch for its 24 hours of retention, only with X-RightNow-Idempotent-Replay: true. Replay preserves answer shape and calibration flags; calibration identifiers use opaque public names or unpublished. A reply never mixes legacy and v1 successful answers; refusals are unchanged.",
+            "description": "Fresh successful answers use structured confidence v1 and may include native provenance from validated gateway facts. A stored reply written before provenance keeps its original body and calibration flags byte for byte for its 24 hours of retention, with X-RightNow-Idempotent-Replay: true; it may use the deprecated legacy confidence branch. Stored provenance replies preserve the original decision facts and set keyed_replay to true on replay. A reply never mixes legacy and v1 successful answers; question refusals are unchanged.",
             "headers": {
               "X-Request-Id": {
                 "$ref": "#/components/headers/X-Request-Id"
@@ -225,7 +225,7 @@
                 },
                 "examples": {
                   "boolean": {
-                    "summary": "A high-confidence false decision, with calibration unattested.",
+                    "summary": "A high-confidence false decision, with calibration unattested. Provenance identifiers are illustrative, not release attestation.",
                     "value": {
                       "id": "szd_00000000000000000000000000000001",
                       "model": "system-zero-3.0.0",
@@ -248,7 +248,7 @@
                             }
                           ],
                           "calibrated": false,
-                          "calibration_version": "unpublished"
+                          "calibration_version": "cal-2026-11-a"
                         }
                       },
                       "usage": {
@@ -258,11 +258,27 @@
                         "long_input_tokens": 0,
                         "media_items": 0,
                         "thought_tokens": 0
+                      },
+                      "provenance": {
+                        "decision_id": "szd_00000000000000000000000000000001",
+                        "request_id": "req_00000000000000000000000000000001",
+                        "created": 1792144800,
+                        "model": "system-zero",
+                        "resolved_release": "system-zero-3.0.0",
+                        "render_id": "unpublished",
+                        "numeric_fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+                        "calibration_version": {
+                          "escalate": "cal-2026-11-a"
+                        },
+                        "route": "direct",
+                        "served_by": "system-zero-3.0.0",
+                        "attachment_classes": [],
+                        "keyed_replay": false
                       }
                     }
                   },
                   "choice": {
-                    "summary": "A choice and all remaining outcomes, with calibration unattested.",
+                    "summary": "A choice and all remaining outcomes, with calibration unattested. Provenance identifiers are illustrative, not release attestation.",
                     "value": {
                       "id": "szd_00000000000000000000000000000002",
                       "model": "system-zero-3.0.0",
@@ -294,7 +310,7 @@
                             }
                           ],
                           "calibrated": false,
-                          "calibration_version": "unpublished"
+                          "calibration_version": "cal-2026-11-b"
                         }
                       },
                       "usage": {
@@ -304,11 +320,27 @@
                         "long_input_tokens": 0,
                         "media_items": 0,
                         "thought_tokens": 0
+                      },
+                      "provenance": {
+                        "decision_id": "szd_00000000000000000000000000000002",
+                        "request_id": "req_00000000000000000000000000000002",
+                        "created": 1792144800,
+                        "model": "system-zero",
+                        "resolved_release": "system-zero-3.0.0",
+                        "render_id": "unpublished",
+                        "numeric_fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+                        "calibration_version": {
+                          "action": "cal-2026-11-b"
+                        },
+                        "route": "direct",
+                        "served_by": "system-zero-3.0.0",
+                        "attachment_classes": [],
+                        "keyed_replay": false
                       }
                     }
                   },
                   "score": {
-                    "summary": "A selected level distinct from the expected score, with calibration unattested.",
+                    "summary": "A selected level distinct from the expected score, with calibration unattested. Provenance identifiers are illustrative, not release attestation.",
                     "value": {
                       "id": "szd_00000000000000000000000000000003",
                       "model": "system-zero-3.0.0",
@@ -345,7 +377,7 @@
                             }
                           ],
                           "calibrated": false,
-                          "calibration_version": "unpublished"
+                          "calibration_version": "cal-2026-11-c"
                         }
                       },
                       "usage": {
@@ -355,9 +387,49 @@
                         "long_input_tokens": 0,
                         "media_items": 0,
                         "thought_tokens": 0
+                      },
+                      "provenance": {
+                        "decision_id": "szd_00000000000000000000000000000003",
+                        "request_id": "req_00000000000000000000000000000003",
+                        "created": 1792144800,
+                        "model": "system-zero",
+                        "resolved_release": "system-zero-3.0.0",
+                        "render_id": "unpublished",
+                        "numeric_fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+                        "calibration_version": {
+                          "urgency": "cal-2026-11-c"
+                        },
+                        "route": "direct",
+                        "served_by": "system-zero-3.0.0",
+                        "attachment_classes": [],
+                        "keyed_replay": false
                       }
                     }
                   }
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "questions_too_large when the conservative reply byte bound before provenance exceeds the output limit. The gateway refuses before admission, dispatch and billing. Provenance does not change admission; its optional member is omitted when it would exceed the reply bound. The existing payload_too_large and attachment_too_large refusals are unchanged.",
+            "headers": {
+              "X-Request-Id": {
+                "$ref": "#/components/headers/X-Request-Id"
+              },
+              "Retry-After": {
+                "$ref": "#/components/headers/Retry-After"
+              },
+              "Retry-After-Ms": {
+                "$ref": "#/components/headers/Retry-After-Ms"
+              },
+              "x-should-retry": {
+                "$ref": "#/components/headers/x-should-retry"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
                 }
               }
             }
@@ -491,6 +563,1235 @@
             }
           }
         }
+      }
+    },
+    "/system-zero/webhooks": {
+      "post": {
+        "operationId": "createWebhook",
+        "summary": "Register a workspace webhook endpoint and return its signing secret once.",
+        "description": "API-key workspace management. Playground credentials and every Idempotency-Key are refused. Bodies are bounded to 4096 bytes and responses use Cache-Control: no-store. No management operation is a counted decision. The feature remains disabled by default. Accepted events use stable IDs and bodies, fresh per-attempt signatures, and at most eight durable send reservations within seven days. Receivers must deduplicate event IDs. The workspace cap is 5, shared by every API key. HTTPS destinations must resolve only to public addresses. Never retry create automatically: a lost response may hide a committed endpoint and its one-use disclosure. List endpoints, then deliberately rotate or delete to recover.",
+        "security": [
+          {
+            "apiKey": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Register a workspace webhook endpoint and return its signing secret once.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Management replies and errors must not be cached.",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "X-Request-Id": {
+                "$ref": "#/components/headers/X-Request-Id"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookEndpointWithSecret"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "webhook_invalid: malformed declaration, invalid limit, or any Idempotency-Key; retryable=false.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Management replies and errors must not be cached.",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "X-Request-Id": {
+                "$ref": "#/components/headers/X-Request-Id"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "invalid_api_key: missing or invalid API key, including Playground credentials.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Management replies and errors must not be cached.",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "X-Request-Id": {
+                "$ref": "#/components/headers/X-Request-Id"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "auth_error for a revoked API key; account_suspended for an unavailable account.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Management replies and errors must not be cached.",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "X-Request-Id": {
+                "$ref": "#/components/headers/X-Request-Id"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "webhook_not_found for an absent or other-workspace endpoint; retryable=false. Hidden routes retain unknown_endpoint.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Management replies and errors must not be cached.",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "X-Request-Id": {
+                "$ref": "#/components/headers/X-Request-Id"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "method_not_allowed for a method outside the resource's declared methods.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Management replies and errors must not be cached.",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "X-Request-Id": {
+                "$ref": "#/components/headers/X-Request-Id"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "payload_too_large when the management body exceeds 4096 bytes.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Management replies and errors must not be cached.",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "X-Request-Id": {
+                "$ref": "#/components/headers/X-Request-Id"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "webhook_limit_exceeded at 5 endpoints per workspace; retryable=false, details.cause=webhook_endpoint_limit, details.limit=5, no Retry-After or rate-limit retry headers. The existing API-key rate limit also applies.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Management replies and errors must not be cached.",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "X-Request-Id": {
+                "$ref": "#/components/headers/X-Request-Id"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "webhook_unavailable if management storage or encryption is unavailable; retryable=true. Maintenance retains its existing refusal.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Management replies and errors must not be cached.",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "X-Request-Id": {
+                "$ref": "#/components/headers/X-Request-Id"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "An existing gateway refusal; follow error.retryable.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Management replies and errors must not be cached.",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "X-Request-Id": {
+                "$ref": "#/components/headers/X-Request-Id"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WebhookCreateRequest"
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "listWebhooks",
+        "summary": "List the workspace's webhook endpoints without secrets.",
+        "description": "API-key workspace management. Playground credentials and every Idempotency-Key are refused. Bodies are bounded to 4096 bytes and responses use Cache-Control: no-store. No management operation is a counted decision. The feature remains disabled by default. Accepted events use stable IDs and bodies, fresh per-attempt signatures, and at most eight durable send reservations within seven days. Receivers must deduplicate event IDs. No signing secret or ciphertext is returned.",
+        "security": [
+          {
+            "apiKey": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List the workspace's webhook endpoints without secrets.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Management replies and errors must not be cached.",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "X-Request-Id": {
+                "$ref": "#/components/headers/X-Request-Id"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookEndpointList"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "webhook_invalid: malformed declaration, invalid limit, or any Idempotency-Key; retryable=false.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Management replies and errors must not be cached.",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "X-Request-Id": {
+                "$ref": "#/components/headers/X-Request-Id"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "invalid_api_key: missing or invalid API key, including Playground credentials.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Management replies and errors must not be cached.",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "X-Request-Id": {
+                "$ref": "#/components/headers/X-Request-Id"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "auth_error for a revoked API key; account_suspended for an unavailable account.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Management replies and errors must not be cached.",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "X-Request-Id": {
+                "$ref": "#/components/headers/X-Request-Id"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "webhook_not_found for an absent or other-workspace endpoint; retryable=false. Hidden routes retain unknown_endpoint.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Management replies and errors must not be cached.",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "X-Request-Id": {
+                "$ref": "#/components/headers/X-Request-Id"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "method_not_allowed for a method outside the resource's declared methods.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Management replies and errors must not be cached.",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "X-Request-Id": {
+                "$ref": "#/components/headers/X-Request-Id"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "payload_too_large when the management body exceeds 4096 bytes.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Management replies and errors must not be cached.",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "X-Request-Id": {
+                "$ref": "#/components/headers/X-Request-Id"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "webhook_limit_exceeded at 5 endpoints per workspace; retryable=false, details.cause=webhook_endpoint_limit, details.limit=5, no Retry-After or rate-limit retry headers. The existing API-key rate limit also applies.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Management replies and errors must not be cached.",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "X-Request-Id": {
+                "$ref": "#/components/headers/X-Request-Id"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "webhook_unavailable if management storage or encryption is unavailable; retryable=true. Maintenance retains its existing refusal.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Management replies and errors must not be cached.",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "X-Request-Id": {
+                "$ref": "#/components/headers/X-Request-Id"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "An existing gateway refusal; follow error.retryable.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Management replies and errors must not be cached.",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "X-Request-Id": {
+                "$ref": "#/components/headers/X-Request-Id"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/system-zero/webhooks/{id}": {
+      "delete": {
+        "operationId": "deleteWebhook",
+        "summary": "Delete a workspace webhook endpoint and its delivery history.",
+        "description": "API-key workspace management. Playground credentials and every Idempotency-Key are refused. Bodies are bounded to 4096 bytes and responses use Cache-Control: no-store. No management operation is a counted decision. The feature remains disabled by default. Accepted events use stable IDs and bodies, fresh per-attempt signatures, and at most eight durable send reservations within seven days. Receivers must deduplicate event IDs. Absent, already deleted and other-workspace ids all return webhook_not_found.",
+        "security": [
+          {
+            "apiKey": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Delete a workspace webhook endpoint and its delivery history.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Management replies and errors must not be cached.",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "X-Request-Id": {
+                "$ref": "#/components/headers/X-Request-Id"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookDeleteReply"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "webhook_invalid: malformed declaration, invalid limit, or any Idempotency-Key; retryable=false.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Management replies and errors must not be cached.",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "X-Request-Id": {
+                "$ref": "#/components/headers/X-Request-Id"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "invalid_api_key: missing or invalid API key, including Playground credentials.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Management replies and errors must not be cached.",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "X-Request-Id": {
+                "$ref": "#/components/headers/X-Request-Id"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "auth_error for a revoked API key; account_suspended for an unavailable account.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Management replies and errors must not be cached.",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "X-Request-Id": {
+                "$ref": "#/components/headers/X-Request-Id"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "webhook_not_found for an absent or other-workspace endpoint; retryable=false. Hidden routes retain unknown_endpoint.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Management replies and errors must not be cached.",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "X-Request-Id": {
+                "$ref": "#/components/headers/X-Request-Id"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "method_not_allowed for a method outside the resource's declared methods.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Management replies and errors must not be cached.",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "X-Request-Id": {
+                "$ref": "#/components/headers/X-Request-Id"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "payload_too_large when the management body exceeds 4096 bytes.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Management replies and errors must not be cached.",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "X-Request-Id": {
+                "$ref": "#/components/headers/X-Request-Id"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "webhook_limit_exceeded at 5 endpoints per workspace; retryable=false, details.cause=webhook_endpoint_limit, details.limit=5, no Retry-After or rate-limit retry headers. The existing API-key rate limit also applies.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Management replies and errors must not be cached.",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "X-Request-Id": {
+                "$ref": "#/components/headers/X-Request-Id"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "webhook_unavailable if management storage or encryption is unavailable; retryable=true. Maintenance retains its existing refusal.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Management replies and errors must not be cached.",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "X-Request-Id": {
+                "$ref": "#/components/headers/X-Request-Id"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "An existing gateway refusal; follow error.retryable.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Management replies and errors must not be cached.",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "X-Request-Id": {
+                "$ref": "#/components/headers/X-Request-Id"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/WebhookEndpointId"
+            }
+          }
+        ]
+      }
+    },
+    "/system-zero/webhooks/{id}/rotate-secret": {
+      "post": {
+        "operationId": "rotateWebhookSecret",
+        "summary": "Replace an endpoint signing secret and return the replacement once.",
+        "description": "API-key workspace management. Playground credentials and every Idempotency-Key are refused. Bodies are bounded to 4096 bytes and responses use Cache-Control: no-store. No management operation is a counted decision. The feature remains disabled by default. Accepted events use stable IDs and bodies, fresh per-attempt signatures, and at most eight durable send reservations within seven days. Receivers must deduplicate event IDs. Send an empty body or {}. Rotation applies from the next authorized attempt preparation; an already prepared attempt can sign or arrive afterward with the old key. Never retry automatically after an ambiguous response; deliberately rotate again to recover.",
+        "security": [
+          {
+            "apiKey": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Replace an endpoint signing secret and return the replacement once.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Management replies and errors must not be cached.",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "X-Request-Id": {
+                "$ref": "#/components/headers/X-Request-Id"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookEndpointWithSecret"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "webhook_invalid: malformed declaration, invalid limit, or any Idempotency-Key; retryable=false.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Management replies and errors must not be cached.",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "X-Request-Id": {
+                "$ref": "#/components/headers/X-Request-Id"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "invalid_api_key: missing or invalid API key, including Playground credentials.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Management replies and errors must not be cached.",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "X-Request-Id": {
+                "$ref": "#/components/headers/X-Request-Id"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "auth_error for a revoked API key; account_suspended for an unavailable account.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Management replies and errors must not be cached.",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "X-Request-Id": {
+                "$ref": "#/components/headers/X-Request-Id"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "webhook_not_found for an absent or other-workspace endpoint; retryable=false. Hidden routes retain unknown_endpoint.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Management replies and errors must not be cached.",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "X-Request-Id": {
+                "$ref": "#/components/headers/X-Request-Id"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "method_not_allowed for a method outside the resource's declared methods.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Management replies and errors must not be cached.",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "X-Request-Id": {
+                "$ref": "#/components/headers/X-Request-Id"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "payload_too_large when the management body exceeds 4096 bytes.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Management replies and errors must not be cached.",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "X-Request-Id": {
+                "$ref": "#/components/headers/X-Request-Id"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "webhook_limit_exceeded at 5 endpoints per workspace; retryable=false, details.cause=webhook_endpoint_limit, details.limit=5, no Retry-After or rate-limit retry headers. The existing API-key rate limit also applies.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Management replies and errors must not be cached.",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "X-Request-Id": {
+                "$ref": "#/components/headers/X-Request-Id"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "webhook_unavailable if management storage or encryption is unavailable; retryable=true. Maintenance retains its existing refusal.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Management replies and errors must not be cached.",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "X-Request-Id": {
+                "$ref": "#/components/headers/X-Request-Id"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "An existing gateway refusal; follow error.retryable.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Management replies and errors must not be cached.",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "X-Request-Id": {
+                "$ref": "#/components/headers/X-Request-Id"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/WebhookEndpointId"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WebhookEmptyRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/system-zero/webhooks/{id}/deliveries": {
+      "get": {
+        "operationId": "listWebhookDeliveries",
+        "summary": "List bounded content-free delivery attempt metadata.",
+        "description": "API-key workspace management. Playground credentials and every Idempotency-Key are refused. Bodies are bounded to 4096 bytes and responses use Cache-Control: no-store. No management operation is a counted decision. The feature remains disabled by default. Accepted events use stable IDs and bodies, fresh per-attempt signatures, and at most eight durable send reservations within seven days. Receivers must deduplicate event IDs. Newest first; at most 1000 attempt records per endpoint, excluding records aged seven days. Physical pruning is bounded and resumes after storage outages. No response body, payload, URL, headers or raw failure text is returned.",
+        "security": [
+          {
+            "apiKey": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List bounded content-free delivery attempt metadata.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Management replies and errors must not be cached.",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "X-Request-Id": {
+                "$ref": "#/components/headers/X-Request-Id"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookDeliveryList"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "webhook_invalid: malformed declaration, invalid limit, or any Idempotency-Key; retryable=false.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Management replies and errors must not be cached.",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "X-Request-Id": {
+                "$ref": "#/components/headers/X-Request-Id"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "invalid_api_key: missing or invalid API key, including Playground credentials.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Management replies and errors must not be cached.",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "X-Request-Id": {
+                "$ref": "#/components/headers/X-Request-Id"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "auth_error for a revoked API key; account_suspended for an unavailable account.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Management replies and errors must not be cached.",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "X-Request-Id": {
+                "$ref": "#/components/headers/X-Request-Id"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "webhook_not_found for an absent or other-workspace endpoint; retryable=false. Hidden routes retain unknown_endpoint.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Management replies and errors must not be cached.",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "X-Request-Id": {
+                "$ref": "#/components/headers/X-Request-Id"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "method_not_allowed for a method outside the resource's declared methods.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Management replies and errors must not be cached.",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "X-Request-Id": {
+                "$ref": "#/components/headers/X-Request-Id"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "payload_too_large when the management body exceeds 4096 bytes.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Management replies and errors must not be cached.",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "X-Request-Id": {
+                "$ref": "#/components/headers/X-Request-Id"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "webhook_limit_exceeded at 5 endpoints per workspace; retryable=false, details.cause=webhook_endpoint_limit, details.limit=5, no Retry-After or rate-limit retry headers. The existing API-key rate limit also applies.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Management replies and errors must not be cached.",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "X-Request-Id": {
+                "$ref": "#/components/headers/X-Request-Id"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "webhook_unavailable if management storage or encryption is unavailable; retryable=true. Maintenance retains its existing refusal.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Management replies and errors must not be cached.",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "X-Request-Id": {
+                "$ref": "#/components/headers/X-Request-Id"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "An existing gateway refusal; follow error.retryable.",
+            "headers": {
+              "Cache-Control": {
+                "description": "Management replies and errors must not be cached.",
+                "schema": {
+                  "type": "string",
+                  "const": "no-store"
+                }
+              },
+              "X-Request-Id": {
+                "$ref": "#/components/headers/X-Request-Id"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/WebhookEndpointId"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 100
+            }
+          }
+        ]
       }
     },
     "/system-zero/decisions/{id}": {
@@ -2105,6 +3406,9 @@
               }
             },
             "additionalProperties": false
+          },
+          "provenance": {
+            "$ref": "#/components/schemas/DecisionProvenance"
           }
         },
         "required": [
@@ -2117,7 +3421,7 @@
           "usage"
         ],
         "additionalProperties": false,
-        "description": "Structured confidence v1. Answered questions require confidence, alternatives and calibrated. Abstained answers omit decision and include abstained plus abstention_reason; other successful answers require decision. An abstained answer is charged exactly like any answered question. It counts toward the monthly cap and incurs the normal per-answer fee. Partial metadata and mixed legacy successes are invalid."
+        "description": "Structured confidence v1. Answered questions require confidence, alternatives and calibrated. Abstained answers omit decision and include abstained plus abstention_reason; other successful answers require decision. An abstained answer is charged exactly like any answered question. It counts toward the monthly cap and incurs the normal per-answer fee. Partial metadata and mixed legacy successes are invalid. Fresh replies include provenance when it fits. The property remains optional because some replies omit it and stored replies retain their original shape."
       },
       "Answer": {
         "anyOf": [
@@ -3252,6 +4556,1293 @@
             "type": "string"
           }
         }
+      },
+      "WebhookEndpointId": {
+        "type": "string",
+        "minLength": 35,
+        "maxLength": 35,
+        "pattern": "^wh_[0-9a-f]{32}$(?![\\s\\S])"
+      },
+      "WebhookSigningSecret": {
+        "type": "string",
+        "minLength": 70,
+        "maxLength": 70,
+        "pattern": "^whsec_[0-9a-f]{64}$(?![\\s\\S])",
+        "format": "password",
+        "description": "Returned only by create and rotation. Store in the receiver's secret manager; never log it. Decode the 64 hex digits to the 32 HMAC key bytes."
+      },
+      "WebhookCreateRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "maxLength": 2048,
+            "pattern": "^[Hh][Tt][Tt][Pp][Ss]:[/][/][^/?#@]+(?:[/?][^#]*)?$(?![\\s\\S])",
+            "not": {
+              "pattern": "[\\s\\\\\\x00-\\x20\\x7f-\\x9f]"
+            },
+            "description": "HTTPS on any URL-valid port, preserved for delivery, with no credentials, whitespace, backslash or fragment; at most 2048 UTF-8 bytes. All resolved addresses must be public at registration and each delivery; redirects are never followed. URLs are sensitive workspace configuration."
+          },
+          "events": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 3,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "enum": [
+                "decision.completed",
+                "decision.refused",
+                "stream.closed"
+              ]
+            }
+          }
+        },
+        "required": [
+          "url",
+          "events"
+        ]
+      },
+      "WebhookEmptyRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {},
+        "required": []
+      },
+      "WebhookEndpoint": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/WebhookEndpointId"
+          },
+          "object": {
+            "const": "webhook_endpoint"
+          },
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "maxLength": 2048,
+            "pattern": "^[Hh][Tt][Tt][Pp][Ss]:[/][/][^/?#@]+(?:[/?][^#]*)?$(?![\\s\\S])",
+            "not": {
+              "pattern": "[\\s\\\\\\x00-\\x20\\x7f-\\x9f]"
+            },
+            "description": "HTTPS on any URL-valid port, preserved for delivery, with no credentials, whitespace, backslash or fragment; at most 2048 UTF-8 bytes. All resolved addresses must be public at registration and each delivery; redirects are never followed. URLs are sensitive workspace configuration."
+          },
+          "events": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 3,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "enum": [
+                "decision.completed",
+                "decision.refused",
+                "stream.closed"
+              ]
+            }
+          },
+          "created": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "id",
+          "object",
+          "url",
+          "events",
+          "created"
+        ]
+      },
+      "WebhookEndpointWithSecret": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/WebhookEndpointId"
+          },
+          "object": {
+            "const": "webhook_endpoint"
+          },
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "maxLength": 2048,
+            "pattern": "^[Hh][Tt][Tt][Pp][Ss]:[/][/][^/?#@]+(?:[/?][^#]*)?$(?![\\s\\S])",
+            "not": {
+              "pattern": "[\\s\\\\\\x00-\\x20\\x7f-\\x9f]"
+            },
+            "description": "HTTPS on any URL-valid port, preserved for delivery, with no credentials, whitespace, backslash or fragment; at most 2048 UTF-8 bytes. All resolved addresses must be public at registration and each delivery; redirects are never followed. URLs are sensitive workspace configuration."
+          },
+          "events": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 3,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "enum": [
+                "decision.completed",
+                "decision.refused",
+                "stream.closed"
+              ]
+            }
+          },
+          "created": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "secret": {
+            "$ref": "#/components/schemas/WebhookSigningSecret"
+          }
+        },
+        "required": [
+          "id",
+          "object",
+          "url",
+          "events",
+          "created",
+          "secret"
+        ]
+      },
+      "WebhookEndpointList": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "object": {
+            "const": "list"
+          },
+          "data": {
+            "type": "array",
+            "maxItems": 5,
+            "items": {
+              "$ref": "#/components/schemas/WebhookEndpoint"
+            }
+          }
+        },
+        "required": [
+          "object",
+          "data"
+        ]
+      },
+      "WebhookDeleteReply": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/WebhookEndpointId"
+          },
+          "deleted": {
+            "const": true
+          }
+        },
+        "required": [
+          "id",
+          "deleted"
+        ]
+      },
+      "WebhookDelivery": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "event_id": {
+            "type": "string",
+            "minLength": 40,
+            "maxLength": 40,
+            "pattern": "^evt_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$(?![\\s\\S])"
+          },
+          "type": {
+            "enum": [
+              "decision.completed",
+              "decision.refused",
+              "stream.closed"
+            ]
+          },
+          "attempt": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 8
+          },
+          "status_code": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 100,
+            "maximum": 599
+          },
+          "latency_ms": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "outcome": {
+            "enum": [
+              "delivered",
+              "http_error",
+              "blocked",
+              "timeout",
+              "network_error",
+              "dead_letter"
+            ]
+          },
+          "created": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "event_id",
+          "type",
+          "attempt",
+          "status_code",
+          "latency_ms",
+          "outcome",
+          "created"
+        ]
+      },
+      "WebhookDeliveryList": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "object": {
+            "const": "list"
+          },
+          "data": {
+            "type": "array",
+            "maxItems": 100,
+            "items": {
+              "$ref": "#/components/schemas/WebhookDelivery"
+            }
+          }
+        },
+        "required": [
+          "object",
+          "data"
+        ]
+      },
+      "WebhookManagementErrorCode": {
+        "type": "string",
+        "enum": [
+          "webhook_invalid",
+          "webhook_not_found",
+          "webhook_limit_exceeded",
+          "webhook_unavailable"
+        ]
+      },
+      "WebhookSignatureHeader": {
+        "type": "string",
+        "pattern": "^t=(?:0|[1-9][0-9]{0,14}|9007199254740991|[1-8][0-9]{15}|900[0-6][0-9]{12}|90070[0-9]{11}|90071[0-8][0-9]{10}|900719[0-8][0-9]{9}|9007199[0-1][0-9]{8}|90071992[0-4][0-9]{7}|900719925[0-3][0-9]{6}|9007199254[0-6][0-9]{5}|90071992547[0-3][0-9]{4}|9007199254740[0-8][0-9]{2}|90071992547409[0-8][0-9]{1}|9007199254740990),v1=[0-9a-f]{64}$(?![\\s\\S])",
+        "description": "Webhook-Signature: HMAC-SHA256 over the ASCII Unix timestamp, a period, and the original body bytes. Timestamp must be a nonnegative safe integer within 300 seconds in either direction. Verify original bytes before parsing; reject bodies over 16384 bytes. Deduplicate event ids durably even within the timestamp window."
+      },
+      "WebhookDecisionCompletedData": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "decision_id": {
+            "type": "string",
+            "minLength": 36,
+            "maxLength": 36,
+            "pattern": "^szd_[0-9a-f]{32}$(?![\\s\\S])"
+          },
+          "request_id": {
+            "type": "string",
+            "minLength": 40,
+            "maxLength": 40,
+            "pattern": "^req_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$(?![\\s\\S])"
+          },
+          "created": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "model": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,199}$(?![\\s\\S])",
+            "description": "The validated served version on success, a server-validated offered alias/version before execution, or unknown before model validation."
+          },
+          "route": {
+            "enum": [
+              "direct",
+              "long",
+              null
+            ]
+          },
+          "classes": {
+            "type": "array",
+            "maxItems": 5,
+            "uniqueItems": true,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "enum": [
+                    "text",
+                    "document",
+                    "image",
+                    "audio",
+                    "video"
+                  ]
+                },
+                "status": {
+                  "enum": [
+                    "served",
+                    "held"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "status"
+              ]
+            },
+            "allOf": [
+              {
+                "not": {
+                  "allOf": [
+                    {
+                      "contains": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "const": "text"
+                          },
+                          "status": {
+                            "const": "served"
+                          }
+                        },
+                        "required": [
+                          "name",
+                          "status"
+                        ]
+                      }
+                    },
+                    {
+                      "contains": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "const": "text"
+                          },
+                          "status": {
+                            "const": "held"
+                          }
+                        },
+                        "required": [
+                          "name",
+                          "status"
+                        ]
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "not": {
+                  "allOf": [
+                    {
+                      "contains": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "const": "document"
+                          },
+                          "status": {
+                            "const": "served"
+                          }
+                        },
+                        "required": [
+                          "name",
+                          "status"
+                        ]
+                      }
+                    },
+                    {
+                      "contains": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "const": "document"
+                          },
+                          "status": {
+                            "const": "held"
+                          }
+                        },
+                        "required": [
+                          "name",
+                          "status"
+                        ]
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "not": {
+                  "allOf": [
+                    {
+                      "contains": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "const": "image"
+                          },
+                          "status": {
+                            "const": "served"
+                          }
+                        },
+                        "required": [
+                          "name",
+                          "status"
+                        ]
+                      }
+                    },
+                    {
+                      "contains": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "const": "image"
+                          },
+                          "status": {
+                            "const": "held"
+                          }
+                        },
+                        "required": [
+                          "name",
+                          "status"
+                        ]
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "not": {
+                  "allOf": [
+                    {
+                      "contains": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "const": "audio"
+                          },
+                          "status": {
+                            "const": "served"
+                          }
+                        },
+                        "required": [
+                          "name",
+                          "status"
+                        ]
+                      }
+                    },
+                    {
+                      "contains": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "const": "audio"
+                          },
+                          "status": {
+                            "const": "held"
+                          }
+                        },
+                        "required": [
+                          "name",
+                          "status"
+                        ]
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "not": {
+                  "allOf": [
+                    {
+                      "contains": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "const": "video"
+                          },
+                          "status": {
+                            "const": "served"
+                          }
+                        },
+                        "required": [
+                          "name",
+                          "status"
+                        ]
+                      }
+                    },
+                    {
+                      "contains": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "const": "video"
+                          },
+                          "status": {
+                            "const": "held"
+                          }
+                        },
+                        "required": [
+                          "name",
+                          "status"
+                        ]
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          "status": {
+            "const": 200
+          },
+          "refusal_code": {
+            "type": "null"
+          },
+          "usage_units": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "input_tokens": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "cached_input_tokens": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "media_tokens": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "cached_media_tokens": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "long_input_tokens": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "media_items": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "thought_tokens": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": [
+              "input_tokens",
+              "cached_input_tokens",
+              "media_tokens",
+              "cached_media_tokens",
+              "long_input_tokens",
+              "media_items",
+              "thought_tokens"
+            ]
+          }
+        },
+        "required": [
+          "decision_id",
+          "request_id",
+          "created",
+          "model",
+          "route",
+          "classes",
+          "status",
+          "refusal_code",
+          "usage_units"
+        ]
+      },
+      "WebhookDecisionRefusedData": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "decision_id": {
+            "type": "string",
+            "minLength": 36,
+            "maxLength": 36,
+            "pattern": "^szd_[0-9a-f]{32}$(?![\\s\\S])"
+          },
+          "request_id": {
+            "type": "string",
+            "minLength": 40,
+            "maxLength": 40,
+            "pattern": "^req_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$(?![\\s\\S])"
+          },
+          "created": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "model": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]{0,199}$(?![\\s\\S])",
+            "description": "The validated served version on success, a server-validated offered alias/version before execution, or unknown before model validation."
+          },
+          "route": {
+            "enum": [
+              "direct",
+              "long",
+              null
+            ]
+          },
+          "classes": {
+            "type": "array",
+            "maxItems": 5,
+            "uniqueItems": true,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "enum": [
+                    "text",
+                    "document",
+                    "image",
+                    "audio",
+                    "video"
+                  ]
+                },
+                "status": {
+                  "enum": [
+                    "served",
+                    "held"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "status"
+              ]
+            },
+            "allOf": [
+              {
+                "not": {
+                  "allOf": [
+                    {
+                      "contains": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "const": "text"
+                          },
+                          "status": {
+                            "const": "served"
+                          }
+                        },
+                        "required": [
+                          "name",
+                          "status"
+                        ]
+                      }
+                    },
+                    {
+                      "contains": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "const": "text"
+                          },
+                          "status": {
+                            "const": "held"
+                          }
+                        },
+                        "required": [
+                          "name",
+                          "status"
+                        ]
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "not": {
+                  "allOf": [
+                    {
+                      "contains": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "const": "document"
+                          },
+                          "status": {
+                            "const": "served"
+                          }
+                        },
+                        "required": [
+                          "name",
+                          "status"
+                        ]
+                      }
+                    },
+                    {
+                      "contains": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "const": "document"
+                          },
+                          "status": {
+                            "const": "held"
+                          }
+                        },
+                        "required": [
+                          "name",
+                          "status"
+                        ]
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "not": {
+                  "allOf": [
+                    {
+                      "contains": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "const": "image"
+                          },
+                          "status": {
+                            "const": "served"
+                          }
+                        },
+                        "required": [
+                          "name",
+                          "status"
+                        ]
+                      }
+                    },
+                    {
+                      "contains": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "const": "image"
+                          },
+                          "status": {
+                            "const": "held"
+                          }
+                        },
+                        "required": [
+                          "name",
+                          "status"
+                        ]
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "not": {
+                  "allOf": [
+                    {
+                      "contains": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "const": "audio"
+                          },
+                          "status": {
+                            "const": "served"
+                          }
+                        },
+                        "required": [
+                          "name",
+                          "status"
+                        ]
+                      }
+                    },
+                    {
+                      "contains": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "const": "audio"
+                          },
+                          "status": {
+                            "const": "held"
+                          }
+                        },
+                        "required": [
+                          "name",
+                          "status"
+                        ]
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "not": {
+                  "allOf": [
+                    {
+                      "contains": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "const": "video"
+                          },
+                          "status": {
+                            "const": "served"
+                          }
+                        },
+                        "required": [
+                          "name",
+                          "status"
+                        ]
+                      }
+                    },
+                    {
+                      "contains": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "const": "video"
+                          },
+                          "status": {
+                            "const": "held"
+                          }
+                        },
+                        "required": [
+                          "name",
+                          "status"
+                        ]
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          "status": {
+            "type": "integer",
+            "minimum": 400,
+            "maximum": 599
+          },
+          "refusal_code": {
+            "type": "string",
+            "enum": [
+              "webhook_invalid",
+              "webhook_not_found",
+              "webhook_limit_exceeded",
+              "webhook_unavailable",
+              "invalid_request",
+              "policy_max_cost_exceeded",
+              "policy_confidence_failed",
+              "output_limit_exceeded",
+              "invalid_criteria",
+              "injection_suspected",
+              "input_quarantined",
+              "workspace_quarantined",
+              "request_refused",
+              "question_too_large",
+              "question_not_grounded",
+              "questions_too_large",
+              "state_too_large",
+              "state_too_large_unguarded",
+              "payload_too_large",
+              "media_unsupported",
+              "media_too_large",
+              "media_decode_failed",
+              "document_unsupported",
+              "document_too_large",
+              "document_decode_failed",
+              "attachment_too_large",
+              "long_duration_unsupported",
+              "long_state_unsupported",
+              "long_too_many_phrases",
+              "long_question_unsupported",
+              "long_options_unsupported",
+              "long_phrase_invalid",
+              "long_question_type_unsupported",
+              "long_media_guard_refused",
+              "long_no_readable_window",
+              "long_evidence_incomplete",
+              "upload_not_found",
+              "decision_not_found",
+              "upload_not_ready",
+              "upload_in_use",
+              "long_context_not_available",
+              "long_recording_not_available",
+              "video_not_available",
+              "image_not_available",
+              "audio_not_available",
+              "document_not_available",
+              "document_pictures_not_available",
+              "document_controls_not_available",
+              "committee_not_available",
+              "deliberate_not_available",
+              "insufficient_credits",
+              "starter_spend_limit",
+              "starter_rate_limit",
+              "starter_concurrency_limit",
+              "starter_attempt_limit",
+              "starter_credit_held",
+              "starter_unavailable",
+              "media_unpriced",
+              "https_required",
+              "rate_limit_exceeded",
+              "stream_limit_exceeded",
+              "workspace_limit_exceeded",
+              "capacity_exhausted",
+              "staging_attempt_ceiling",
+              "daily_dispatch_limit",
+              "idempotency_key_reuse",
+              "long_context_daily_budget_exhausted",
+              "service_unavailable",
+              "system_zero_unavailable",
+              "system_zero_timeout",
+              "unknown_endpoint",
+              "method_not_allowed",
+              "invalid_trace_header",
+              "invalid_api_key",
+              "invalid_idempotency_key",
+              "idempotency_conflict",
+              "idempotency_replay_unavailable",
+              "idempotency_unavailable",
+              "limiter_unavailable",
+              "maintenance",
+              "internal_error",
+              "concurrency_limit_exceeded",
+              "monthly_cap_reached",
+              "account_suspended",
+              "model_not_found",
+              "auth_error"
+            ]
+          },
+          "usage_units": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "input_tokens": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "cached_input_tokens": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "media_tokens": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "cached_media_tokens": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "long_input_tokens": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "media_items": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "thought_tokens": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": [
+              "input_tokens",
+              "cached_input_tokens",
+              "media_tokens",
+              "cached_media_tokens",
+              "long_input_tokens",
+              "media_items",
+              "thought_tokens"
+            ]
+          }
+        },
+        "required": [
+          "decision_id",
+          "request_id",
+          "created",
+          "model",
+          "route",
+          "classes",
+          "status",
+          "refusal_code",
+          "usage_units"
+        ]
+      },
+      "WebhookStreamClosedData": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "stream_id": {
+            "type": "string",
+            "minLength": 37,
+            "maxLength": 37,
+            "pattern": "^szws_[0-9a-f]{32}$(?![\\s\\S])"
+          },
+          "close_code": {
+            "type": "integer",
+            "minimum": 1000,
+            "maximum": 4999
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "client_close",
+              "shutdown",
+              "max_lifetime",
+              "idle",
+              "maintenance",
+              "lease_lost",
+              "slow_reader",
+              "overload",
+              "auth",
+              "policy",
+              "protocol",
+              "store_unavailable"
+            ]
+          }
+        },
+        "required": [
+          "stream_id",
+          "close_code",
+          "reason"
+        ]
+      },
+      "WebhookEvent": {
+        "description": "Content-free metadata only. No state, question, answer, attachment, URL, credentials or arbitrary close reason. Event id is stable across retries; created is the event time, distinct from the signature timestamp. Responses never wait for publication. decision.completed is created atomically with the first durable usage INSERT and uses its seven persisted counters; keyed replays emit none. decision.completed events are sent when the decision's usage is recorded, usually within about five minutes of the answer, and can include decisions answered a few minutes before the endpoint was created. decision.refused and stream.closed events are sent within about a minute; a new endpoint starts receiving them within 30 seconds. Decisions of the largest context class do not produce events. Refusals and observed stream closes publish after the response, keyed once by request or stream id after durable source acceptance. Existing per-request refusal records supply their persisted facts. Accepted delivery is at least once within eight attempts and seven days until endpoint deletion. HTTPS responses have an 8 KiB header-block limit, eight informational responses and a 32 KiB cumulative plaintext-byte budget; an already received crossing chunk fails and closes the attempt.",
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 40,
+                "maxLength": 40,
+                "pattern": "^evt_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$(?![\\s\\S])"
+              },
+              "object": {
+                "const": "webhook_event"
+              },
+              "type": {
+                "const": "decision.completed"
+              },
+              "created": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "data": {
+                "$ref": "#/components/schemas/WebhookDecisionCompletedData"
+              }
+            },
+            "required": [
+              "id",
+              "object",
+              "type",
+              "created",
+              "data"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 40,
+                "maxLength": 40,
+                "pattern": "^evt_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$(?![\\s\\S])"
+              },
+              "object": {
+                "const": "webhook_event"
+              },
+              "type": {
+                "const": "decision.refused"
+              },
+              "created": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "data": {
+                "$ref": "#/components/schemas/WebhookDecisionRefusedData"
+              }
+            },
+            "required": [
+              "id",
+              "object",
+              "type",
+              "created",
+              "data"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 40,
+                "maxLength": 40,
+                "pattern": "^evt_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$(?![\\s\\S])"
+              },
+              "object": {
+                "const": "webhook_event"
+              },
+              "type": {
+                "const": "stream.closed"
+              },
+              "created": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "data": {
+                "$ref": "#/components/schemas/WebhookStreamClosedData"
+              }
+            },
+            "required": [
+              "id",
+              "object",
+              "type",
+              "created",
+              "data"
+            ]
+          }
+        ]
+      },
+      "DecisionProvenance": {
+        "type": "object",
+        "properties": {
+          "decision_id": {
+            "type": "string",
+            "pattern": "^szd_[a-f0-9]{32}$",
+            "description": "The validated node decision id, equal to the reply's id."
+          },
+          "request_id": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The original gateway decision request id. A replay's HTTP X-Request-Id or stream request_id may differ."
+          },
+          "created": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991,
+            "description": "The original decision creation time as a Unix second, equal to the reply's created."
+          },
+          "model": {
+            "type": "string",
+            "description": "The model string requested by the caller, including the alias when used."
+          },
+          "resolved_release": {
+            "type": "string",
+            "description": "The concrete release from the validated node reply, equal to the reply's model."
+          },
+          "render_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9._+:-]+$",
+            "description": "Opaque public render identifier, or unpublished when no public identifier is assigned. Registered identifiers are never reassigned."
+          },
+          "numeric_fingerprint": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$",
+            "description": "The validated node serving fingerprint, encoded as 64 lowercase hexadecimal characters."
+          },
+          "calibration_version": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            },
+            "description": "Public calibration identifier by answered question name, exactly equal to that answer's calibration_version, including unpublished. Question refusals have no entry."
+          },
+          "route": {
+            "type": "string",
+            "enum": [
+              "direct",
+              "long"
+            ],
+            "description": "The validated node context route for this reply."
+          },
+          "served_by": {
+            "type": "string",
+            "description": "The validated node served_by value for this reply."
+          },
+          "attachment_classes": {
+            "maxItems": 4,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "audio",
+                "document",
+                "image",
+                "video"
+              ]
+            },
+            "description": "Sorted unique attachment kinds parsed for this request. No attachment names, content, source identifiers or URLs are included.",
+            "uniqueItems": true
+          },
+          "keyed_replay": {
+            "type": "boolean",
+            "description": "False on a fresh reply; true when a stored provenance reply is served for its Idempotency-Key. Pre-provenance stored replies remain unchanged."
+          }
+        },
+        "required": [
+          "decision_id",
+          "request_id",
+          "created",
+          "model",
+          "resolved_release",
+          "render_id",
+          "numeric_fingerprint",
+          "calibration_version",
+          "route",
+          "served_by",
+          "attachment_classes",
+          "keyed_replay"
+        ],
+        "additionalProperties": false,
+        "description": "Gateway facts for this reply. Per-answer input evidence is OPEN in the node contract and is omitted. The member is absent on replies of the largest context class and on a reply too large to carry it."
       },
       "DecisionId": {
         "type": "string",

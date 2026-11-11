@@ -65,6 +65,10 @@ export const SYSTEM_ZERO_ERROR_CODES = [
   "upload_not_found",
   "upload_not_ready",
   "video_not_available",
+  "webhook_invalid",
+  "webhook_limit_exceeded",
+  "webhook_not_found",
+  "webhook_unavailable",
   "workspace_limit_exceeded",
   "workspace_quarantined"
 ] as const;

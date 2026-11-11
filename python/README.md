@@ -43,6 +43,8 @@ and retry waits are seconds: `timeout=150.0`, `max_retries=5`,
 `retry_budget=60.0` and `max_retry_wait=60.0`. Close the client or use its context
 manager to release the HTTP transport.
 
+Request bodies of 32 KB or more are sent gzip-compressed when that makes them at least 10 percent smaller; pass `compress_requests=False` to turn this off.
+
 ## Media on decide
 
 Check `models.list()` or the documented models endpoint for current input
@@ -422,8 +424,8 @@ Every workspace can send `policy` on ordinary decide calls and stream starts.
 `min_confidence` sets a minimum answer confidence greater than zero and at most
 one. Below it, the answer keeps `confidence`, adds `abstained: true` and
 `abstention_reason: "low_confidence"`, and has no `decision` member. The reply
-echoes `policy`. An abstained answer is charged like any answer; the decision
-readers return the `abstained` kind without a decision.
+echoes `policy`. An abstained answer is charged exactly like any answered question.
+The decision readers return the `abstained` kind without a decision.
 
 `max_cost_usd` caps the request's maximum possible cost. If that maximum exceeds
 the cap, the API refuses the request with HTTP 400 `policy_max_cost_exceeded`,
@@ -471,4 +473,67 @@ reply = client.decide({
 }, idempotency_key="shipment-check")
 stored = client.get_decision(reply["id"])
 trace = client.get_decision_trace(reply["id"])
+```
+
+## Decision provenance
+
+Every ordinary decide reply carries `provenance`, including replies delivered by
+stream. It adds no cost. The largest context class does not carry it, a reply
+too large to carry it omits it, and a decision stored before 2026-11-11 is
+returned without it. Check for the member before reading it.
+
+- `decision_id`: use this id for a later decision lookup.
+- `request_id`: match the original decision request, including after a replay.
+- `created`: read when the decision was created, as Unix seconds.
+- `model`: see the model name you requested.
+- `resolved_release`: see the release that answered.
+- `render_id`: an opaque identifier of the input rendering.
+- `numeric_fingerprint`: compare the numeric configuration used for replies.
+- `calibration_version`: the calibration version for each answered question, as
+  opaque strings.
+- `route`: see the route that handled the decision.
+- `served_by`: read the serving identifier returned for the decision.
+- `attachment_classes`: see the kinds of attachments used, without their content.
+- `keyed_replay`: `true` only when the reply is a keyed replay (the same
+  `Idempotency-Key` sent again); `false` on a fresh reply and on a decision lookup.
+
+```python
+if reply.get("provenance"):
+    print(reply["provenance"]["resolved_release"])
+```
+
+## Webhooks
+
+Create an endpoint for `decision.completed`, `decision.refused` or `stream.closed`.
+`decision.completed` events are sent when the decision's usage is recorded, usually within about five minutes of the answer, and can include decisions answered a few minutes before the endpoint was created.
+`decision.refused` and `stream.closed` events are sent within about a minute; a new endpoint starts receiving them within 30 seconds.
+A decision of the largest context class produces no event in this release. A keyed replay produces no event.
+
+Each delivery carries one signature header: `Webhook-Signature: t=<unix seconds>,v1=<64 hex>`.
+It is HMAC-SHA256 over the ASCII timestamp, a period and the original body bytes.
+Verify the raw bytes before parsing JSON. The signature helper accepts timestamps within 300 seconds of the receiver's clock.
+Deduplicate deliveries by event id.
+
+The endpoint secret (`whsec_...`) is shown once when you create the endpoint and once when you rotate its secret. Store it securely then.
+Payloads contain no request state, question text, answers' free text or attachments.
+An event has an id, type and creation time. Decision data contains decision and request ids, creation time, model, route, input classes and their status, response status, refusal code and usage counters.
+Stream-close data contains the stream id, close code and reason.
+
+```python
+import json
+import os
+from system_zero import SystemZero, verify_webhook_signature
+
+with SystemZero(api_key=os.environ["SYSTEM_ZERO_API_KEY"]) as client:
+    endpoint = client.webhooks.create({
+        "url": "https://example.com/events", "events": ["decision.completed"],
+    })
+    # Store endpoint["secret"] securely now; later reads do not include it.
+
+def handle_delivery(raw_body: bytes, signature_header: str, stored_secret: str):
+    if not verify_webhook_signature(raw_body, signature_header, stored_secret):
+        raise ValueError("Invalid signature")
+    event = json.loads(raw_body)
+    # Deduplicate by event["id"] before processing event["data"].
+    return event
 ```

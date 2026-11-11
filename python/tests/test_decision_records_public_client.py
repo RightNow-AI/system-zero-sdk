@@ -8,6 +8,8 @@ import httpx
 import pytest
 
 import system_zero as sdk
+from system_zero import types
+from system_zero.decision_records import DecisionId, DecisionTrace
 from system_zero.error_codes import (
     GATEWAY_ERROR_CODES as PINNED_GATEWAY_CODES,
     SYSTEM_ZERO_ERROR_CODES as PINNED_SYSTEM_CODES,
@@ -29,6 +31,11 @@ HEADERS = {
     "x-request-id": "req_public_lookup", "x-client-request-id": "public-client",
     "x-ratelimit-limit": "120", "x-ratelimit-remaining": "119", "x-ratelimit-reset": "1800000000",
 }
+
+
+def test_wire_record_types_reexport_the_same_public_definitions():
+    assert types.DecisionId is DecisionId is sdk.DecisionId is str
+    assert types.DecisionTrace is DecisionTrace is sdk.DecisionTrace
 
 
 @pytest.mark.parametrize("method,path_name,payload,with_response", METHODS)

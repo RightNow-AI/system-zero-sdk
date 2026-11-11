@@ -3,14 +3,16 @@
 from enum import Enum
 import re
 from types import MappingProxyType
-from typing import Any, Dict, List, Literal, Mapping, Optional, TYPE_CHECKING, TypedDict, cast
+from typing import Any, Dict, List, Literal, Mapping, Optional, TYPE_CHECKING, TypeAlias, TypedDict, cast
 
 from .errors import NotFoundError, SystemZeroError
 from .response import ResponseResult
-from .types import DecideReply
 
 if TYPE_CHECKING:
     from .client import SystemZero
+
+
+DecisionId: TypeAlias = str
 
 
 class DecisionRecordErrorCode(str, Enum):
@@ -56,7 +58,7 @@ class DecisionTrace(TypedDict):
     """None means the existing records do not retain a value; no content is inferred."""
 
     object: Literal["system_zero.decision_trace"]
-    id: str
+    id: DecisionId
     request_id: Optional[str]
     created: int
     model: str
@@ -71,6 +73,10 @@ class DecisionTrace(TypedDict):
     idempotency: Optional[Literal["fresh", "replay"]]
     stream_id: Optional[str]
     state_version: Optional[int]
+
+
+# Define record types before types.py re-exports them during either import order.
+from .types import DecideReply
 
 
 def _path(id: str, suffix: str) -> str:

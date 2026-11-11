@@ -2,6 +2,8 @@
 
 from typing import Dict, List, Literal, TypeAlias, TypedDict, Union
 
+from .provenance import DecisionProvenance, ProvenanceReplyFields
+
 
 JsonValue: TypeAlias = Union[str, int, float, bool, None, Dict[str, "JsonValue"], List["JsonValue"]]
 StructuredJson: TypeAlias = Union[str, Dict[str, JsonValue], List[JsonValue]]
@@ -205,7 +207,7 @@ class _DecideReplyOptional(TypedDict, total=False):
     policy: Policy
 
 
-class _DecideReplyFields(TypedDict):
+class _DecideReplyFields(ProvenanceReplyFields):
     id: str
     model: str
     served_by: str
@@ -327,3 +329,14 @@ class ErrorBody(_ErrorBodyOptional):
 class ErrorEnvelope(TypedDict):
     error: ErrorBody
     request_id: str
+
+
+# These modules own the definitions; keep their identity across import surfaces.
+from .decision_records import DecisionId, DecisionTrace
+from .webhooks import (
+    WebhookCreateRequest, WebhookDecisionCompletedData, WebhookDecisionRefusedData,
+    WebhookDeleteReply, WebhookDelivery, WebhookDeliveryList, WebhookEmptyRequest,
+    WebhookEndpoint, WebhookEndpointId, WebhookEndpointList, WebhookEndpointWithSecret,
+    WebhookEvent, WebhookManagementErrorCode, WebhookSignatureHeader, WebhookSigningSecret,
+    WebhookStreamClosedData,
+)

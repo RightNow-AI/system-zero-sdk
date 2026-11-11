@@ -6,6 +6,7 @@ from .tool_selection import (
 )
 
 from .client import (
+    SystemZero,
     VERSION,
 )
 
@@ -26,6 +27,7 @@ from .decision_records import (
     DECISION_RECORD_ERROR_CODES,
     DecisionNotFoundError,
     DecisionRecordErrorCode,
+    DecisionId,
     DecisionRecords,
     DecisionTrace,
     DecisionTraceAttachment,
@@ -68,6 +70,14 @@ from .errors import (
     CapabilityNotAvailableError,
     RouteNotAvailableError,
     VideoNotAvailableError,
+)
+
+from .provenance import (
+    DecisionProvenance,
+    ProvenanceAttachmentClass,
+    ProvenanceReplyFields,
+    ProvenanceRoute,
+    provenance_for,
 )
 
 from .policy import (
@@ -187,6 +197,46 @@ from .workflow_types import (
     Usage,
 )
 
+from .webhook_errors import (
+    WEBHOOK_ERROR_CODES,
+    WebhookInvalidError,
+    WebhookLimitExceededError,
+    WebhookNotFoundError,
+    WebhookUnavailableError,
+)
+
+from .webhooks import (
+    WEBHOOK_MAX_BODY_BYTES,
+    WEBHOOK_TIMESTAMP_TOLERANCE_SECONDS,
+    WebhookBody,
+    WebhookCreateRequest,
+    WebhookDecisionData,
+    WebhookDecisionEvent,
+    WebhookDeleted,
+    WebhookDelivery,
+    WebhookDeliveryList,
+    WebhookEndpoint,
+    WebhookEndpointList,
+    WebhookEndpointWithSecret,
+    WebhookEvent,
+    WebhookEventType,
+    WebhookInputClass,
+    WebhookStreamClosedData,
+    WebhookStreamClosedEvent,
+    WebhookStreamCloseReason,
+    WebhookUsageUnits,
+    WebhookEndpointId,
+    WebhookSigningSecret,
+    WebhookSignatureHeader,
+    WebhookManagementErrorCode,
+    WebhookEmptyRequest,
+    WebhookDeleteReply,
+    WebhookDecisionCompletedData,
+    WebhookDecisionRefusedData,
+    Webhooks,
+    verify_webhook_signature,
+)
+
 from .enabled_types import (
     EnabledDecideRequest,
     LongContextLimits,
@@ -240,8 +290,10 @@ __all__ = [
   "DecideReply",
   "DecideRequest",
   "Decision",
+  "DecisionId",
   "DecisionMode",
   "DecisionNotFoundError",
+  "DecisionProvenance",
   "DecisionRecordErrorCode",
   "DecisionRecords",
   "DecisionTrace",
@@ -311,6 +363,9 @@ __all__ = [
   "PolicyMaxCostExceededError",
   "PolicyReply",
   "PossiblyDecided",
+  "ProvenanceAttachmentClass",
+  "ProvenanceReplyFields",
+  "ProvenanceRoute",
   "Question",
   "QuestionRefusal",
   "QuestionScore",
@@ -348,6 +403,39 @@ __all__ = [
   "VideoAttachment",
   "VideoNotAvailableError",
   "VideoRequest",
+  "WEBHOOK_ERROR_CODES",
+  "WEBHOOK_MAX_BODY_BYTES",
+  "WEBHOOK_TIMESTAMP_TOLERANCE_SECONDS",
+  "WebhookBody",
+  "WebhookCreateRequest",
+  "WebhookDecisionCompletedData",
+  "WebhookDecisionData",
+  "WebhookDecisionEvent",
+  "WebhookDecisionRefusedData",
+  "WebhookDeleteReply",
+  "WebhookDeleted",
+  "WebhookDelivery",
+  "WebhookDeliveryList",
+  "WebhookEmptyRequest",
+  "WebhookEndpoint",
+  "WebhookEndpointId",
+  "WebhookEndpointList",
+  "WebhookEndpointWithSecret",
+  "WebhookEvent",
+  "WebhookEventType",
+  "WebhookInputClass",
+  "WebhookInvalidError",
+  "WebhookLimitExceededError",
+  "WebhookManagementErrorCode",
+  "WebhookNotFoundError",
+  "WebhookSignatureHeader",
+  "WebhookSigningSecret",
+  "WebhookStreamCloseReason",
+  "WebhookStreamClosedData",
+  "WebhookStreamClosedEvent",
+  "WebhookUnavailableError",
+  "WebhookUsageUnits",
+  "Webhooks",
   "__version__",
   "as_policy_error",
   "attachment_magic_matches",
@@ -365,6 +453,7 @@ __all__ = [
   "policy_decisions_for",
   "policy_error_class",
   "policy_max_cost_microcents",
+  "provenance_for",
   "report_json",
   "report_markdown",
   "request_fingerprint",
@@ -381,5 +470,6 @@ __all__ = [
   "validate_flow",
   "validate_policy",
   "validate_request_policy",
+  "verify_webhook_signature",
   "video_attachment"
 ]

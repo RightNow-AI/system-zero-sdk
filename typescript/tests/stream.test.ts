@@ -18,6 +18,7 @@ class Socket extends EventEmitter {
   readyState = 0;
   protocol = protocol;
   frames: Record<string, unknown>[] = [];
+  rawFrames: string[] = [];
   seq = 0;
   id: string;
   constructor(readonly url: string, readonly protocols: string[], readonly options: { headers: Record<string, string> }) {
@@ -41,6 +42,7 @@ class Socket extends EventEmitter {
   }
   send(text: string) {
     if (Socket.sendFailure) { Socket.sendFailure = false; throw new Error('SYNTHETIC send fault'); }
+    this.rawFrames.push(text);
     this.frames.push(JSON.parse(text) as Record<string, unknown>);
   }
   close(code = 1000) { this.readyState = 3; this.emit('close', code, Buffer.from('SYNTHETIC')); }
@@ -97,6 +99,22 @@ function eventTargetSocket(ServerSocket: typeof Socket) {
 
 beforeEach(() => { Socket.connections = []; Socket.sendFailure = false; Socket.failOpening = false; Socket.upgradeRefusal = undefined; });
 afterEach(async () => { for (const client of clients.splice(0)) await client.close(); vi.restoreAllMocks(); vi.useRealTimers(); });
+
+it('keeps a large WebSocket start request as exact JSON text without a content coding', async () => {
+  const client = make();
+  await client.connect();
+  const large = { ...request, state: 'SYNTHETIC ledger line\n'.repeat(4000) };
+  const pending = client.start(large, { decisionMode: 'on_request' });
+  await flush();
+  const socket = first();
+  expect(new Headers(socket.options.headers).has('content-encoding')).toBe(false);
+  const frame = socket.frames.find(value => value.type === 'start');
+  expect(frame).toMatchObject({ type: 'start', event_id: 'evt_1', request: large,
+    idempotency_key: expect.stringMatching(/^sz-stream-/u), decision_mode: 'on_request', min_interval_ms: 0 });
+  expect(socket.rawFrames).toContain(JSON.stringify(frame));
+  socket.ack(1, false);
+  await pending;
+});
 
 it('keeps attachment-shaped append items as JSON state rather than top-level media', async () => {
   const client = make();

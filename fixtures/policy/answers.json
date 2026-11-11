@@ -45,6 +45,9 @@
           }
         ],
         "preview": true,
+        "provenance": {
+          "release": "synthetic-release"
+        },
         "abstained": true,
         "abstention_reason": "uncalibrated"
       },

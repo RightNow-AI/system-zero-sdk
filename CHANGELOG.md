@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.4.7
+
+Decision provenance: the decide reply's optional `provenance` member is typed. Check for it before reading it.
+
+Webhooks: create, list, delete and rotate endpoints, read their deliveries, and verify a delivery with `verifyWebhookSignature` / `verify_webhook_signature`.
+
+Both SDKs now gzip HTTP decide request bodies of 32 KB or more when compression saves at least 10 percent; a client option (`compressRequests` / `compress_requests`) turns it off. An injected fetch receives a Buffer body for a compressed request.
+
+The request policy text states that an abstained answer is charged exactly like any answered question.
+
 ## 0.4.6
 
 Request policy supports min_confidence with abstained answers and max_cost_usd.

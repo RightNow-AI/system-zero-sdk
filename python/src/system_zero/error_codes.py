@@ -83,6 +83,10 @@ class ErrorCode(str, Enum):
     UPLOAD_NOT_FOUND = 'upload_not_found'
     UPLOAD_NOT_READY = 'upload_not_ready'
     VIDEO_NOT_AVAILABLE = 'video_not_available'
+    WEBHOOK_INVALID = 'webhook_invalid'
+    WEBHOOK_LIMIT_EXCEEDED = 'webhook_limit_exceeded'
+    WEBHOOK_NOT_FOUND = 'webhook_not_found'
+    WEBHOOK_UNAVAILABLE = 'webhook_unavailable'
     WORKSPACE_LIMIT_EXCEEDED = 'workspace_limit_exceeded'
     WORKSPACE_QUARANTINED = 'workspace_quarantined'
 
@@ -152,6 +156,10 @@ SYSTEM_ZERO_ERROR_CODES = (
     'upload_not_found',
     'upload_not_ready',
     'video_not_available',
+    'webhook_invalid',
+    'webhook_limit_exceeded',
+    'webhook_not_found',
+    'webhook_unavailable',
     'workspace_limit_exceeded',
     'workspace_quarantined',
 )

@@ -1,4 +1,5 @@
 """SYNTHETIC shared flow conformance; every HTTP call uses a mock transport."""
+import gzip
 from copy import deepcopy
 import json
 from pathlib import Path
@@ -40,7 +41,7 @@ def test_shared_flow_conformance(case):
     responses = iter(case.get('responses', []))
 
     def send(request):
-        seen.append(json.loads(request.content))
+        seen.append(json.loads(_decoded_body(request)))
         assert request.headers['idempotency-key'].startswith('sz-flow-v1-')
         response = next(responses)
         return httpx.Response(response['status'], json=response['body'], headers=response.get('headers'))
@@ -94,7 +95,7 @@ def test_validation_snapshots_json_and_run_is_immune_to_caller_mutation():
     seen = []
 
     def send(request):
-        seen.append(json.loads(request.content))
+        seen.append(json.loads(_decoded_body(request)))
         flow['request']['state']['note'] = 'changed after run began'
         flow['steps'][1]['questions']['ok']['instructions'] = 'changed'
         return httpx.Response(200, json=reply())
@@ -107,7 +108,7 @@ def test_templates_are_explicit_and_carry_current_state_and_answer_fields():
     flow = definition(2)
     flow['steps'][1]['state_template'] = {'object': {'original': {'state': True}, 'decision': {'answer': {'step': 'step0', 'question': 'ok', 'field': 'decision'}}, 'confidence': {'answer': {'step': 'step0', 'question': 'ok', 'field': 'confidence'}}, 'alternatives': {'answer': {'step': 'step0', 'question': 'ok', 'field': 'alternatives'}}, 'literal': {'literal': {'answer': '${step0.ok}', 'state': True}}, 'list': {'array': [{'literal': 1}, {'literal': '{{step0.ok}}'}]}}}
     seen = []
-    with client_for(lambda request: (seen.append(json.loads(request.content)), httpx.Response(200, json=reply()))[1]) as client:
+    with client_for(lambda request: (seen.append(json.loads(_decoded_body(request))), httpx.Response(200, json=reply()))[1]) as client:
         trace = run_flow(client, flow, **options())
     assert seen[1]['state'] == {'original': {'note': 'SYNTHETIC input'}, 'decision': True, 'confidence': 0.8, 'alternatives': [{'decision': False, 'confidence': 0.2}], 'literal': {'answer': '${step0.ok}', 'state': True}, 'list': [1, '{{step0.ok}}']}
     assert trace['steps'][1]['answers'][0]['question'] == 'ok'
@@ -370,7 +371,7 @@ def test_shared_flow_conformance_with_explicit_count_cap(case_name, count_cap, e
     responses = iter(case.get('responses', []))
 
     def send(request):
-        seen.append(json.loads(request.content))
+        seen.append(json.loads(_decoded_body(request)))
         response = next(responses)
         return httpx.Response(response['status'], json=response['body'], headers=response.get('headers'))
     run_options = options(run_id='fixture-run', **case.get('options', {}))
@@ -520,3 +521,6 @@ def test_explicit_count_cap_keeps_redacted_trace_codes_and_logical_count(code, s
     assert 'SYNTHETIC private' not in json.dumps(error.trace)
     assert 'SYNTHETIC sensitive' not in json.dumps(error.trace)
     assert len(calls) == 1
+
+def _decoded_body(request):
+    return gzip.decompress(request.content) if request.headers.get('content-encoding') == 'gzip' else request.content

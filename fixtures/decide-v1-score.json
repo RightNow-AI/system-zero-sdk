@@ -34,7 +34,7 @@
         }
       ],
       "calibrated": false,
-      "calibration_version": "unpublished"
+      "calibration_version": "cal-2026-11-c"
     }
   },
   "usage": {
@@ -44,5 +44,21 @@
     "long_input_tokens": 0,
     "media_items": 0,
     "thought_tokens": 0
+  },
+  "provenance": {
+    "decision_id": "szd_00000000000000000000000000000003",
+    "request_id": "req_00000000000000000000000000000003",
+    "created": 1792144800,
+    "model": "system-zero",
+    "resolved_release": "system-zero-3.0.0",
+    "render_id": "unpublished",
+    "numeric_fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
+    "calibration_version": {
+      "urgency": "cal-2026-11-c"
+    },
+    "route": "direct",
+    "served_by": "system-zero-3.0.0",
+    "attachment_classes": [],
+    "keyed_replay": false
   }
 }

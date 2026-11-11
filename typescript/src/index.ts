@@ -2,6 +2,9 @@
 export * from './api-types.js';
 export * from './policy.js';
 export * from './decision-records.js';
+export * from './provenance.js';
+export * from './webhooks.js';
+export * from './webhook-errors.js';
 export * from './enabled-types.js';
 export { VERSION, DEFAULT_BASE_URL, APIPromise, SystemZeroClient, withRetryContext } from './client.js';
 export type { Fetch, ClientOptions, RequestOptions, ResponseMetadata, ResponseResult } from './client.js';

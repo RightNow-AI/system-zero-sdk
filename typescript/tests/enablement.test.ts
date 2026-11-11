@@ -1,4 +1,5 @@
 import ts from 'typescript';
+import { gunzipSync } from 'node:zlib';
 import { fileURLToPath } from 'node:url';
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -240,7 +241,10 @@ it.each([undefined, null, []])('1M accepts absent, null and empty attachments: %
 it('1M measures the exact UTF-8 body boundary', async () => {
   let calls = 0;
   const client = new SystemZeroClient({ apiKey: 'SYNTHETIC', maxRetries: 0, fetch: async (_url, init) => {
-    calls++; expect(Buffer.byteLength(String(init?.body), 'utf8')).toBe(8_388_608); return Response.json({ answers: {} });
+    calls++;
+    const bytes = Buffer.from(await new Response(init?.body).arrayBuffer());
+    const plain = new Headers(init?.headers).get('content-encoding') === 'gzip' ? gunzipSync(bytes) : bytes;
+    expect(plain.byteLength).toBe(8_388_608); return Response.json({ answers: {} });
   } });
   const overhead = Buffer.byteLength(JSON.stringify({ ...request, state: '' }));
   const state = '\u00e9' + 'x'.repeat(8_388_608 - overhead - 2);
