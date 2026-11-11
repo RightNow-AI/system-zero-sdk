@@ -1,0 +1,845 @@
+{
+  "abstained": [
+    {
+      "name": "boolean low confidence",
+      "answer": {
+        "type": "boolean",
+        "probability": 0.6,
+        "confidence": 0.6,
+        "calibration_version": "unpublished",
+        "calibrated": true,
+        "alternatives": [
+          {
+            "decision": false,
+            "confidence": 0.4
+          }
+        ],
+        "abstained": true,
+        "abstention_reason": "low_confidence"
+      },
+      "summary": {
+        "kind": "abstained",
+        "abstained": true,
+        "abstention_reason": "low_confidence",
+        "confidence": 0.6,
+        "probability": 0.6,
+        "calibrated": true
+      }
+    },
+    {
+      "name": "choice uncalibrated",
+      "answer": {
+        "type": "choice",
+        "choice": "a",
+        "probabilities": {
+          "a": 0.8,
+          "b": 0.2
+        },
+        "confidence": 0.8,
+        "calibration_version": "unpublished",
+        "calibrated": false,
+        "alternatives": [
+          {
+            "decision": "b",
+            "confidence": 0.2
+          }
+        ],
+        "preview": true,
+        "abstained": true,
+        "abstention_reason": "uncalibrated"
+      },
+      "summary": {
+        "kind": "abstained",
+        "abstained": true,
+        "abstention_reason": "uncalibrated",
+        "confidence": 0.8,
+        "probability": 0.8,
+        "calibrated": false
+      }
+    },
+    {
+      "name": "score low confidence",
+      "answer": {
+        "type": "score",
+        "score": 0.8,
+        "legend": {
+          "0": "low",
+          "1": "medium",
+          "2": "high"
+        },
+        "probabilities": {
+          "0": 0.4,
+          "1": 0.4,
+          "2": 0.2
+        },
+        "confidence": 0.4,
+        "calibration_version": "unpublished",
+        "calibrated": false,
+        "alternatives": [
+          {
+            "decision": "1",
+            "confidence": 0.4
+          },
+          {
+            "decision": "2",
+            "confidence": 0.2
+          }
+        ],
+        "abstained": true,
+        "abstention_reason": "low_confidence"
+      },
+      "summary": {
+        "kind": "abstained",
+        "abstained": true,
+        "abstention_reason": "low_confidence",
+        "confidence": 0.4,
+        "probability": 0.4,
+        "calibrated": false
+      }
+    },
+    {
+      "name": "choice total one millionth above one",
+      "answer": {
+        "type": "choice",
+        "choice": "a",
+        "probabilities": {
+          "a": 0.75,
+          "b": 0.250001
+        },
+        "confidence": 0.75,
+        "calibration_version": "unpublished",
+        "calibrated": true,
+        "alternatives": [
+          {
+            "decision": "b",
+            "confidence": 0.250001
+          }
+        ],
+        "abstained": true,
+        "abstention_reason": "low_confidence"
+      },
+      "summary": {
+        "kind": "abstained",
+        "abstained": true,
+        "abstention_reason": "low_confidence",
+        "confidence": 0.75,
+        "probability": 0.75,
+        "calibrated": true
+      }
+    },
+    {
+      "name": "choice total one millionth below one",
+      "answer": {
+        "type": "choice",
+        "choice": "a",
+        "probabilities": {
+          "a": 0.75,
+          "b": 0.249999
+        },
+        "confidence": 0.75,
+        "calibration_version": "unpublished",
+        "calibrated": true,
+        "alternatives": [
+          {
+            "decision": "b",
+            "confidence": 0.249999
+          }
+        ],
+        "abstained": true,
+        "abstention_reason": "low_confidence"
+      },
+      "summary": {
+        "kind": "abstained",
+        "abstained": true,
+        "abstention_reason": "low_confidence",
+        "confidence": 0.75,
+        "probability": 0.75,
+        "calibrated": true
+      }
+    },
+    {
+      "name": "score total one millionth above one",
+      "answer": {
+        "type": "score",
+        "score": 0.250001,
+        "legend": {
+          "0": "low",
+          "1": "high"
+        },
+        "probabilities": {
+          "0": 0.75,
+          "1": 0.250001
+        },
+        "confidence": 0.75,
+        "calibration_version": "unpublished",
+        "calibrated": true,
+        "alternatives": [
+          {
+            "decision": "1",
+            "confidence": 0.250001
+          }
+        ],
+        "abstained": true,
+        "abstention_reason": "low_confidence"
+      },
+      "summary": {
+        "kind": "abstained",
+        "abstained": true,
+        "abstention_reason": "low_confidence",
+        "confidence": 0.75,
+        "probability": 0.75,
+        "calibrated": true
+      }
+    },
+    {
+      "name": "score total one millionth below one",
+      "answer": {
+        "type": "score",
+        "score": 0.249999,
+        "legend": {
+          "0": "low",
+          "1": "high"
+        },
+        "probabilities": {
+          "0": 0.75,
+          "1": 0.249999
+        },
+        "confidence": 0.75,
+        "calibration_version": "unpublished",
+        "calibrated": true,
+        "alternatives": [
+          {
+            "decision": "1",
+            "confidence": 0.249999
+          }
+        ],
+        "abstained": true,
+        "abstention_reason": "low_confidence"
+      },
+      "summary": {
+        "kind": "abstained",
+        "abstained": true,
+        "abstention_reason": "low_confidence",
+        "confidence": 0.75,
+        "probability": 0.75,
+        "calibrated": true
+      }
+    },
+    {
+      "name": "score upper diagnostic tolerance after projection",
+      "node_probabilities": {
+        "0": 0.75,
+        "1": 0.2500000000005
+      },
+      "answer": {
+        "type": "score",
+        "score": 0.2500010000004,
+        "legend": {
+          "0": "low",
+          "1": "high"
+        },
+        "probabilities": {
+          "0": 0.75,
+          "1": 0.25
+        },
+        "confidence": 0.75,
+        "calibration_version": "unpublished",
+        "calibrated": true,
+        "alternatives": [
+          {
+            "decision": "1",
+            "confidence": 0.25
+          }
+        ],
+        "abstained": true,
+        "abstention_reason": "low_confidence"
+      },
+      "summary": {
+        "kind": "abstained",
+        "abstained": true,
+        "abstention_reason": "low_confidence",
+        "confidence": 0.75,
+        "probability": 0.75,
+        "calibrated": true
+      }
+    },
+    {
+      "name": "score lower diagnostic tolerance after projection",
+      "node_probabilities": {
+        "0": 0.75,
+        "1": 0.2499999999995
+      },
+      "answer": {
+        "type": "score",
+        "score": 0.2499989999996,
+        "legend": {
+          "0": "low",
+          "1": "high"
+        },
+        "probabilities": {
+          "0": 0.75,
+          "1": 0.25
+        },
+        "confidence": 0.75,
+        "calibration_version": "unpublished",
+        "calibrated": true,
+        "alternatives": [
+          {
+            "decision": "1",
+            "confidence": 0.25
+          }
+        ],
+        "abstained": true,
+        "abstention_reason": "low_confidence"
+      },
+      "summary": {
+        "kind": "abstained",
+        "abstained": true,
+        "abstention_reason": "low_confidence",
+        "confidence": 0.75,
+        "probability": 0.75,
+        "calibrated": true
+      }
+    }
+  ],
+  "passing": [
+    {
+      "name": "passing choice total one millionth above one",
+      "question": {
+        "type": "choice",
+        "instructions": "SYNTHETIC: Select a label.",
+        "criteria": {
+          "a": null,
+          "b": null
+        }
+      },
+      "node_answer": {
+        "type": "choice",
+        "choice": "a",
+        "probabilities": {
+          "a": 0.75,
+          "b": 0.250001
+        },
+        "confidence": 0.5,
+        "calibration_version": "unpublished"
+      },
+      "answer": {
+        "type": "choice",
+        "choice": "a",
+        "probabilities": {
+          "a": 0.75,
+          "b": 0.250001
+        },
+        "confidence": 0.75,
+        "calibration_version": "unpublished",
+        "decision": "a",
+        "alternatives": [
+          {
+            "decision": "b",
+            "confidence": 0.250001
+          }
+        ],
+        "calibrated": false
+      },
+      "summary": {
+        "kind": "v1",
+        "decision": "a",
+        "confidence": 0.75,
+        "probability": 0.75,
+        "calibrated": false
+      }
+    },
+    {
+      "name": "passing choice total one millionth below one",
+      "question": {
+        "type": "choice",
+        "instructions": "SYNTHETIC: Select a label.",
+        "criteria": {
+          "a": null,
+          "b": null
+        }
+      },
+      "node_answer": {
+        "type": "choice",
+        "choice": "a",
+        "probabilities": {
+          "a": 0.75,
+          "b": 0.2499990000005
+        },
+        "confidence": 0.5,
+        "calibration_version": "unpublished"
+      },
+      "answer": {
+        "type": "choice",
+        "choice": "a",
+        "probabilities": {
+          "a": 0.75,
+          "b": 0.249999
+        },
+        "confidence": 0.75,
+        "calibration_version": "unpublished",
+        "decision": "a",
+        "alternatives": [
+          {
+            "decision": "b",
+            "confidence": 0.249999
+          }
+        ],
+        "calibrated": false
+      },
+      "summary": {
+        "kind": "v1",
+        "decision": "a",
+        "confidence": 0.75,
+        "probability": 0.75,
+        "calibrated": false
+      }
+    },
+    {
+      "name": "passing score total one millionth above one",
+      "question": {
+        "type": "score",
+        "instructions": "SYNTHETIC: Select a level.",
+        "criteria": [
+          "low",
+          "high"
+        ]
+      },
+      "node_answer": {
+        "type": "score",
+        "score": 0.250001,
+        "legend": {
+          "0": "low",
+          "1": "high"
+        },
+        "probabilities": {
+          "0": 0.75,
+          "1": 0.250001
+        },
+        "confidence": 0.5,
+        "calibration_version": "unpublished"
+      },
+      "answer": {
+        "type": "score",
+        "score": 0.250001,
+        "legend": {
+          "0": "low",
+          "1": "high"
+        },
+        "probabilities": {
+          "0": 0.75,
+          "1": 0.250001
+        },
+        "confidence": 0.75,
+        "calibration_version": "unpublished",
+        "decision": "0",
+        "alternatives": [
+          {
+            "decision": "1",
+            "confidence": 0.250001
+          }
+        ],
+        "calibrated": false
+      },
+      "summary": {
+        "kind": "v1",
+        "decision": "0",
+        "confidence": 0.75,
+        "probability": 0.75,
+        "calibrated": false
+      }
+    },
+    {
+      "name": "passing score total one millionth below one",
+      "question": {
+        "type": "score",
+        "instructions": "SYNTHETIC: Select a level.",
+        "criteria": [
+          "low",
+          "high"
+        ]
+      },
+      "node_answer": {
+        "type": "score",
+        "score": 0.249999,
+        "legend": {
+          "0": "low",
+          "1": "high"
+        },
+        "probabilities": {
+          "0": 0.75,
+          "1": 0.2499990000005
+        },
+        "confidence": 0.5,
+        "calibration_version": "unpublished"
+      },
+      "answer": {
+        "type": "score",
+        "score": 0.249999,
+        "legend": {
+          "0": "low",
+          "1": "high"
+        },
+        "probabilities": {
+          "0": 0.75,
+          "1": 0.249999
+        },
+        "confidence": 0.75,
+        "calibration_version": "unpublished",
+        "decision": "0",
+        "alternatives": [
+          {
+            "decision": "1",
+            "confidence": 0.249999
+          }
+        ],
+        "calibrated": false
+      },
+      "summary": {
+        "kind": "v1",
+        "decision": "0",
+        "confidence": 0.75,
+        "probability": 0.75,
+        "calibrated": false
+      }
+    },
+    {
+      "name": "passing score upper diagnostic tolerance after projection",
+      "question": {
+        "type": "score",
+        "instructions": "SYNTHETIC: Select a level.",
+        "criteria": [
+          "low",
+          "high"
+        ]
+      },
+      "node_answer": {
+        "type": "score",
+        "score": 0.2500010000004,
+        "legend": {
+          "0": "low",
+          "1": "high"
+        },
+        "probabilities": {
+          "0": 0.75,
+          "1": 0.2500000000005
+        },
+        "confidence": 0.5,
+        "calibration_version": "unpublished"
+      },
+      "answer": {
+        "type": "score",
+        "score": 0.2500010000004,
+        "legend": {
+          "0": "low",
+          "1": "high"
+        },
+        "probabilities": {
+          "0": 0.75,
+          "1": 0.25
+        },
+        "confidence": 0.75,
+        "calibration_version": "unpublished",
+        "decision": "0",
+        "alternatives": [
+          {
+            "decision": "1",
+            "confidence": 0.25
+          }
+        ],
+        "calibrated": false
+      },
+      "summary": {
+        "kind": "v1",
+        "decision": "0",
+        "confidence": 0.75,
+        "probability": 0.75,
+        "calibrated": false
+      }
+    },
+    {
+      "name": "passing score lower diagnostic tolerance after projection",
+      "question": {
+        "type": "score",
+        "instructions": "SYNTHETIC: Select a level.",
+        "criteria": [
+          "low",
+          "high"
+        ]
+      },
+      "node_answer": {
+        "type": "score",
+        "score": 0.2499989999996,
+        "legend": {
+          "0": "low",
+          "1": "high"
+        },
+        "probabilities": {
+          "0": 0.75,
+          "1": 0.2499999999995
+        },
+        "confidence": 0.5,
+        "calibration_version": "unpublished"
+      },
+      "answer": {
+        "type": "score",
+        "score": 0.2499989999996,
+        "legend": {
+          "0": "low",
+          "1": "high"
+        },
+        "probabilities": {
+          "0": 0.75,
+          "1": 0.25
+        },
+        "confidence": 0.75,
+        "calibration_version": "unpublished",
+        "decision": "0",
+        "alternatives": [
+          {
+            "decision": "1",
+            "confidence": 0.25
+          }
+        ],
+        "calibrated": false
+      },
+      "summary": {
+        "kind": "v1",
+        "decision": "0",
+        "confidence": 0.75,
+        "probability": 0.75,
+        "calibrated": false
+      }
+    },
+    {
+      "name": "passing score diagnostic within raw tolerance",
+      "question": {
+        "type": "score",
+        "instructions": "SYNTHETIC: Select a level.",
+        "criteria": [
+          "low",
+          "high"
+        ]
+      },
+      "node_answer": {
+        "type": "score",
+        "score": 0.2500005,
+        "legend": {
+          "0": "low",
+          "1": "high"
+        },
+        "probabilities": {
+          "0": 0.75,
+          "1": 0.25
+        },
+        "confidence": 0.5,
+        "calibration_version": "unpublished"
+      },
+      "answer": {
+        "type": "score",
+        "score": 0.2500005,
+        "legend": {
+          "0": "low",
+          "1": "high"
+        },
+        "probabilities": {
+          "0": 0.75,
+          "1": 0.25
+        },
+        "confidence": 0.75,
+        "calibration_version": "unpublished",
+        "decision": "0",
+        "alternatives": [
+          {
+            "decision": "1",
+            "confidence": 0.25
+          }
+        ],
+        "calibrated": false
+      },
+      "summary": {
+        "kind": "v1",
+        "decision": "0",
+        "confidence": 0.75,
+        "probability": 0.75,
+        "calibrated": false
+      }
+    }
+  ],
+  "invalid_abstained": [
+    {
+      "name": "choice total outside positive tolerance",
+      "answer": {
+        "type": "choice",
+        "choice": "a",
+        "probabilities": {
+          "a": 0.75,
+          "b": 0.250002
+        },
+        "confidence": 0.75,
+        "calibration_version": "unpublished",
+        "calibrated": true,
+        "alternatives": [
+          {
+            "decision": "b",
+            "confidence": 0.250002
+          }
+        ],
+        "abstained": true,
+        "abstention_reason": "low_confidence"
+      }
+    },
+    {
+      "name": "choice total outside negative tolerance",
+      "answer": {
+        "type": "choice",
+        "choice": "a",
+        "probabilities": {
+          "a": 0.75,
+          "b": 0.249998
+        },
+        "confidence": 0.75,
+        "calibration_version": "unpublished",
+        "calibrated": true,
+        "alternatives": [
+          {
+            "decision": "b",
+            "confidence": 0.249998
+          }
+        ],
+        "abstained": true,
+        "abstention_reason": "low_confidence"
+      }
+    },
+    {
+      "name": "score total outside positive tolerance",
+      "answer": {
+        "type": "score",
+        "score": 0.250002,
+        "legend": {
+          "0": "low",
+          "1": "high"
+        },
+        "probabilities": {
+          "0": 0.75,
+          "1": 0.250002
+        },
+        "confidence": 0.75,
+        "calibration_version": "unpublished",
+        "calibrated": true,
+        "alternatives": [
+          {
+            "decision": "1",
+            "confidence": 0.250002
+          }
+        ],
+        "abstained": true,
+        "abstention_reason": "low_confidence"
+      }
+    },
+    {
+      "name": "score total outside negative tolerance",
+      "answer": {
+        "type": "score",
+        "score": 0.249998,
+        "legend": {
+          "0": "low",
+          "1": "high"
+        },
+        "probabilities": {
+          "0": 0.75,
+          "1": 0.249998
+        },
+        "confidence": 0.75,
+        "calibration_version": "unpublished",
+        "calibrated": true,
+        "alternatives": [
+          {
+            "decision": "1",
+            "confidence": 0.249998
+          }
+        ],
+        "abstained": true,
+        "abstention_reason": "low_confidence"
+      }
+    },
+    {
+      "name": "score diagnostic above projection allowance",
+      "answer": {
+        "type": "score",
+        "score": 0.25001,
+        "legend": {
+          "0": "low",
+          "1": "high"
+        },
+        "probabilities": {
+          "0": 0.75,
+          "1": 0.25
+        },
+        "confidence": 0.75,
+        "calibration_version": "unpublished",
+        "calibrated": true,
+        "alternatives": [
+          {
+            "decision": "1",
+            "confidence": 0.25
+          }
+        ],
+        "abstained": true,
+        "abstention_reason": "low_confidence"
+      }
+    },
+    {
+      "name": "score diagnostic below projection allowance",
+      "answer": {
+        "type": "score",
+        "score": 0.24999,
+        "legend": {
+          "0": "low",
+          "1": "high"
+        },
+        "probabilities": {
+          "0": 0.75,
+          "1": 0.25
+        },
+        "confidence": 0.75,
+        "calibration_version": "unpublished",
+        "calibrated": true,
+        "alternatives": [
+          {
+            "decision": "1",
+            "confidence": 0.25
+          }
+        ],
+        "abstained": true,
+        "abstention_reason": "low_confidence"
+      }
+    }
+  ],
+  "ordinary": {
+    "type": "boolean",
+    "probability": 0.9,
+    "confidence": 0.9,
+    "decision": true,
+    "calibration_version": "unpublished",
+    "calibrated": true,
+    "alternatives": [
+      {
+        "decision": false,
+        "confidence": 0.1
+      }
+    ]
+  },
+  "legacy": {
+    "type": "boolean",
+    "probability": 0.9,
+    "confidence": 0.8,
+    "calibration_version": "unpublished"
+  },
+  "refusal": {
+    "error": {
+      "code": "question_not_grounded",
+      "retryable": false
+    }
+  }
+}

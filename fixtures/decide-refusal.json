@@ -1,0 +1,26 @@
+{
+  "id": "szd_00000000000000000000000000000001",
+  "model": "system-zero",
+  "served_by": "system-zero-synthetic-v1",
+  "created": 1760000000,
+  "context": {
+    "route": "direct",
+    "tokens": 13
+  },
+  "answers": {
+    "unsupported": {
+      "error": {
+        "code": "question_not_grounded",
+        "retryable": false
+      }
+    }
+  },
+  "usage": {
+    "input_tokens": 44,
+    "cached_input_tokens": 0,
+    "media_tokens": 0,
+    "long_input_tokens": 0,
+    "media_items": 0,
+    "thought_tokens": 0
+  }
+}

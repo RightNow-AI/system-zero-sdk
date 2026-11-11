@@ -343,7 +343,7 @@ def test_throwing_clock_uses_typed_invalid_request():
         with pytest.raises(InvalidRequestError):
             run_flow(client, definition(), **options(now=broken_clock))
 
-@pytest.mark.parametrize('code,saved_code', [('SYNTHETIC_private_code', 'service_unavailable')])
+@pytest.mark.parametrize('code,saved_code', [('decision_not_found', 'decision_not_found'), ('policy_confidence_failed', 'policy_confidence_failed'), ('SYNTHETIC_private_code', 'service_unavailable')])
 def test_c_rebase_flow_trace_preserves_cumulative_public_codes_without_private_content(code, saved_code):
     calls = []
 
@@ -499,7 +499,7 @@ def test_explicit_count_cap_includes_the_refused_http_decision_in_partial_trace(
     assert [step['decide_calls'] for step in caught.value.trace['steps']] == [1, 1]
     assert caught.value.trace['decide_calls'] == 2
 
-@pytest.mark.parametrize('code,saved_code', [('SYNTHETIC_private_code', 'service_unavailable')])
+@pytest.mark.parametrize('code,saved_code', [('decision_not_found', 'decision_not_found'), ('policy_confidence_failed', 'policy_confidence_failed'), ('SYNTHETIC_private_code', 'service_unavailable')])
 def test_explicit_count_cap_keeps_redacted_trace_codes_and_logical_count(code, saved_code):
     calls = []
 

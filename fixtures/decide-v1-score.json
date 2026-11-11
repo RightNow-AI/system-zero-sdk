@@ -1,0 +1,48 @@
+{
+  "id": "szd_00000000000000000000000000000003",
+  "model": "system-zero-3.0.0",
+  "served_by": "system-zero-3.0.0",
+  "created": 1792144800,
+  "context": {
+    "route": "direct",
+    "tokens": 100
+  },
+  "answers": {
+    "urgency": {
+      "type": "score",
+      "score": 1.1,
+      "legend": {
+        "0": "low",
+        "1": "medium",
+        "2": "high"
+      },
+      "probabilities": {
+        "0": 0.1,
+        "1": 0.7,
+        "2": 0.2
+      },
+      "decision": "1",
+      "confidence": 0.7,
+      "alternatives": [
+        {
+          "decision": "2",
+          "confidence": 0.2
+        },
+        {
+          "decision": "0",
+          "confidence": 0.1
+        }
+      ],
+      "calibrated": false,
+      "calibration_version": "unpublished"
+    }
+  },
+  "usage": {
+    "input_tokens": 100,
+    "cached_input_tokens": 0,
+    "media_tokens": 0,
+    "long_input_tokens": 0,
+    "media_items": 0,
+    "thought_tokens": 0
+  }
+}

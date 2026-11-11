@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.4.6
+
+Request policy supports min_confidence with abstained answers and max_cost_usd.
+
+Decision records let you read a decision and its content-free trace by id.
+
+The 1M class needs nothing switched on in the Console; the request option is still required.
+
+The first call after an idle period can take several minutes to become available: the answer names the wait in `Retry-After`; send the same request again with the same Idempotency-Key until it answers.
+
 ## 0.4.5
 
 Audio is served like every other attachment kind; the on-demand note is removed.

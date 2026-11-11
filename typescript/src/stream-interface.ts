@@ -1,8 +1,9 @@
 import type { Attachment, DecideReply, DecideRequest, ErrorEnvelope, JsonValue, StructuredJson } from './api-types.js';
+import type { PolicyReply, PolicyStreamRequest } from './policy.js';
 
 export type DecisionMode = 'on_change' | 'on_request';
 export type ReconnectPolicy = 'latest' | 'never';
-export type StreamRequest = DecideRequest;
+export type StreamRequest = PolicyStreamRequest;
 export interface StreamStartOptions { dangerZone?: import('./client.js').RequestOptions['dangerZone']; decisionMode?: DecisionMode; minIntervalMs?: number }
 export interface StreamRateLimit { limit: number; remaining: number; reset_epoch_seconds: number }
 export interface StreamBase { stream_id: string; seq: number }
@@ -17,7 +18,7 @@ export interface StreamAck extends StreamBase {
 export interface StreamScheduled extends StreamBase { type: 'scheduled'; state_version: number; in_flight: boolean }
 export interface StreamDecision extends StreamBase {
   type: 'decision'; state_version: number; covered_event_ids: string[];
-  reply: DecideReply; request_id: string; http_status: 200; server_timing: string | null;
+  reply: PolicyReply; request_id: string; http_status: 200; server_timing: string | null;
   latency_ms: number | null; rate_limit: StreamRateLimit | null; queue_ms: number; decide_ms: number;
 }
 export interface StreamError extends StreamBase {

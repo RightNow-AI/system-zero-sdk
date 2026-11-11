@@ -54,9 +54,15 @@ EXPECTED.update(['OrdinaryQuestion', 'MediaQuestion', 'LongContextQuestion', 'Or
 
 EXPECTED.update(['Attachment', 'ByteData', 'MAX_ATTACHMENTS', 'MAX_INLINE_BYTES', 'MEDIA_LIMITS', 'MIMES', 'VIDEO_PROFILE', 'attachment_magic_matches', 'inline_attachment', 'validate_attachments', 'video_attachment'])
 
+EXPECTED.update(['AbstainedAnswer', 'AbstainedBooleanAnswer', 'AbstainedChoiceAnswer', 'AbstainedScoreAnswer', 'AbstentionReason', 'POLICY_ERROR_CLASSES', 'POLICY_ERROR_CODES', 'Policy', 'PolicyAbstention', 'PolicyAnswerOrRefusal', 'PolicyConfidenceFailedError', 'PolicyDecideRequest', 'PolicyDecisionResult', 'PolicyError', 'PolicyErrorCode', 'PolicyMaxCostExceededError', 'PolicyReply', 'as_policy_error', 'is_policy_error', 'policy_decision_for', 'policy_decisions_for', 'policy_error_class', 'policy_max_cost_microcents', 'validate_policy', 'validate_request_policy'])
+API_CODES.update(['policy_confidence_failed', 'policy_max_cost_exceeded'])
+
+EXPECTED.update(['DECISION_RECORD_ERROR_CODES', 'DecisionNotFoundError', 'DecisionRecordErrorCode', 'DecisionRecords', 'DecisionTrace', 'DecisionTraceAttachment', 'DecisionTraceTimings', 'DecisionTraceUsage'])
+API_CODES.add('decision_not_found')
+
 class PublicSurfaceTests(unittest.TestCase):
     def test_error_conveniences_equal_the_api_catalog(self):
-        self.assertEqual(len(API_CODES), 64)
+        self.assertEqual(len(API_CODES), 67)
         self.assertEqual(len(GATEWAY_CODES), 16)
         self.assertEqual(set(system_zero.SYSTEM_ZERO_ERROR_CODES), API_CODES)
         self.assertEqual(len(system_zero.SYSTEM_ZERO_ERROR_CODES), len(API_CODES))
@@ -89,7 +95,7 @@ class PublicSurfaceTests(unittest.TestCase):
                              {"base_url", "timeout", "max_retries", "max_retry_wait", "retry_budget", "models"})
             self.assertEqual({name for name, value in vars(type(client)).items()
                               if not name.startswith("_") and callable(value)},
-                             {"close", "decide", "decide_with_response"})
+                             set(['close', 'decide', 'decide_with_response', 'getDecision', 'getDecisionTrace', 'get_decision', 'get_decision_trace', 'get_decision_trace_with_response', 'get_decision_with_response']))
             self.assertEqual(client.models.list(), {"object": "list", "data": []})
         self.assertEqual(requests, [("GET", "/v1/models")])
 

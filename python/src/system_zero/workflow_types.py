@@ -118,7 +118,7 @@ class _FlowAnswerTraceOptional(TypedDict, total=False):
 
 class FlowAnswerTrace(_FlowAnswerTraceOptional):
     question_index: int
-    kind: Literal["v1", "legacy", "refusal"]
+    kind: Literal["v1", "legacy", "refusal", "abstained"]
     confidence: Optional[float]
 
 
@@ -175,7 +175,7 @@ QuestionType: TypeAlias = Literal["boolean", "choice", "score"]
 class QuestionScore(TypedDict):
     question_id: str
     type: QuestionType
-    outcome: Literal["correct", "wrong", "refused"]
+    outcome: Literal["correct", "wrong", "refused", "abstained"]
     expected_refusal: bool
     correct: bool
     confidence: Optional[float]
@@ -194,7 +194,11 @@ class EvaluationRecord(TypedDict):
     code: Optional[str]
 
 
-class AccuracyMetrics(TypedDict):
+class _AccuracyMetricsOptional(TypedDict, total=False):
+    abstained: int
+
+
+class AccuracyMetrics(_AccuracyMetricsOptional):
     questions: int
     correct: int
     wrong: int

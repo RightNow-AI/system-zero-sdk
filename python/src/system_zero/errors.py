@@ -37,6 +37,14 @@ class SystemZeroError(Exception):
 class InvalidRequestError(SystemZeroError):
     """The server refused the request shape or content."""
 
+class PolicyMaxCostExceededError(InvalidRequestError):
+    """Admission estimate exceeded the cap before node work or usage counting."""
+    counted: Literal[False] = False
+
+class PolicyConfidenceFailedError(InvalidRequestError):
+    """Completed work counts toward usage and computed cost despite the refusal."""
+    counted: Literal[True] = True
+
 class AuthenticationError(SystemZeroError):
     """API-key authentication failed."""
 
@@ -104,7 +112,9 @@ class CapabilityNotAvailableError(NotFoundError):
 RouteNotAvailableError = CapabilityNotAvailableError
 
 class LongContextNotAvailableError(RouteNotAvailableError):
-    """Expected HTTP 404 until workspace availability. Workspace opt-in is also required.
+    """Expected HTTP 404 when the class or workspace is ineligible.
+
+    1M needs no Console switch; a completed payment and request option are required.
 
     eligibility exposes details.eligibility, including future rule strings.
     """
@@ -136,10 +146,11 @@ class DeliberateNotAvailableError(RouteNotAvailableError):
     """The deliberate mode is held."""
 MEDIA_ERROR_CLASSES = {'payload_too_large': PayloadTooLargeError, 'invalid_criteria': InvalidCriteriaError, 'service_unavailable': ServiceUnavailableError, 'long_context_not_available': LongContextNotAvailableError, 'long_recording_not_available': LongRecordingNotAvailableError, 'video_not_available': VideoNotAvailableError, 'image_not_available': ImageNotAvailableError, 'audio_not_available': AudioNotAvailableError, 'document_not_available': DocumentNotAvailableError, 'committee_not_available': CommitteeNotAvailableError, 'deliberate_not_available': DeliberateNotAvailableError}
 ERROR_CLASSES = {'invalid_request_error': InvalidRequestError, 'authentication_error': AuthenticationError, 'permission_error': PermissionError, 'not_found_error': NotFoundError, 'rate_limit_error': RateLimitError, 'overloaded_error': OverloadedError, 'api_error': APIError, 'server_error': ServerError}
+POLICY_ERROR_CLASSES = {'policy_max_cost_exceeded': PolicyMaxCostExceededError, 'policy_confidence_failed': PolicyConfidenceFailedError}
 
 def error_class(kind: str, code: Optional[str]):
-    """Retain envelope type compatibility while specializing current API codes."""
+    """Retain envelope types and specialize public API codes."""
     base = ERROR_CLASSES.get(kind, APIError) if isinstance(kind, str) else APIError
     if isinstance(code, str):
-        return MEDIA_ERROR_CLASSES.get(code, base)
+        return POLICY_ERROR_CLASSES.get(code, MEDIA_ERROR_CLASSES.get(code, base))
     return base

@@ -1,0 +1,26 @@
+{
+  "id": "szd_00000000000000000000000000000001",
+  "model": "system-zero",
+  "served_by": "system-zero-synthetic-v1",
+  "created": 1760000000,
+  "context": {
+    "route": "direct",
+    "tokens": 13
+  },
+  "answers": {
+    "boolean": {
+      "type": "boolean",
+      "probability": 0.608,
+      "confidence": 0.21599999999999997,
+      "calibration_version": "unpublished"
+    }
+  },
+  "usage": {
+    "input_tokens": 43,
+    "cached_input_tokens": 0,
+    "media_tokens": 0,
+    "long_input_tokens": 0,
+    "media_items": 0,
+    "thought_tokens": 0
+  }
+}

@@ -3,11 +3,13 @@ import { randomUUID } from 'node:crypto';
 import { isIP } from 'node:net';
 import type { DecideRequest, DecideReply, ModelList } from './api-types.js';
 import type { EnabledDecideRequest, VideoRequest } from './enabled-types.js';
+import { validateRequestPolicy, type Policy, type PolicyReply } from './policy.js';
+import { createDecisionRecords, type DecisionRecords } from './decision-records.js';
 import { APIConnectionError, APIError, APITimeoutError, InvalidRequestError, LongContextNotAvailableError, responseError, SystemZeroError } from './errors.js';
 import { retryWaitMs, shouldRecoverWorkflow, shouldRetry } from './retry.js';
 import { hasResponseStarted, nodeFetch, requestSent } from './transport.js';
 
-export const VERSION = '0.4.5';
+export const VERSION = '0.4.6';
 export const DEFAULT_BASE_URL = 'https://api.rightnowai.co/v1';
 export type Fetch = typeof globalThis.fetch;
 
@@ -160,6 +162,8 @@ interface AttemptResult { response: Response; body: unknown; json: boolean }
 
 export class SystemZeroClient {
   readonly options: Readonly<{ baseURL: string; timeout: number; maxRetries: number; maxRetryWait: number; retryBudget: number }>;
+  readonly getDecision: DecisionRecords['getDecision'];
+  readonly getDecisionTrace: DecisionRecords['getDecisionTrace'];
   readonly models: { list: (options?: RequestOptions) => APIPromise<ModelList> };
   #apiKey: string;
   #fetch: Fetch;
@@ -193,9 +197,14 @@ export class SystemZeroClient {
     this.#random = options.random ?? Math.random;
     this.#sleep = options.sleep ?? (milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds)));
     this.models = Object.freeze({ list: (requestOptions: RequestOptions = {}) => this.#request<ModelList>('GET', '/models', undefined, requestOptions) });
+    const records = createDecisionRecords(<T>(method: 'GET', path: string,
+      body: undefined, requestOptions: RequestOptions) =>
+      this.#request<T>(method, path, body, requestOptions));
+    this.getDecision = records.getDecision;
+    this.getDecisionTrace = records.getDecisionTrace;
   }
 
-  decide(request: DecideRequest | EnabledDecideRequest | VideoRequest, options: RequestOptions = {}): APIPromise<DecideReply> {
+  decide(request: DecideRequest | EnabledDecideRequest | VideoRequest, options: RequestOptions = {}): APIPromise<PolicyReply> {
     if (options.dangerZone === 'long_context_1m') {
       if (typeof request.state !== 'string') longContextUnavailable('state');
       if (!request.questions || Object.keys(request.questions).length !== 1) throw responseError(413, new Headers(), {
@@ -205,7 +214,8 @@ export class SystemZeroClient {
         if (Object.hasOwn(request, name)) longContextUnavailable(name);
       }
     }
-    return this.#request<DecideReply>('POST', '/system-zero/decide', JSON.stringify(request), options);
+    validateRequestPolicy(request);
+    return this.#request<PolicyReply>('POST', '/system-zero/decide', JSON.stringify(request), options);
   }
 
   #request<T>(method: 'POST' | 'GET', path: string, body: string | undefined, options: RequestOptions): APIPromise<T> {

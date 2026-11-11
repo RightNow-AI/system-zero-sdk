@@ -34,6 +34,14 @@ class ScoreQuestion(TypedDict):
 Question: TypeAlias = Union[BooleanQuestion, ChoiceQuestion, ScoreQuestion]
 
 
+class Policy(TypedDict, total=False):
+    """Optional gateway policy; omitted on_low_confidence means abstain."""
+
+    min_confidence: float
+    on_low_confidence: Literal["abstain"]
+    max_cost_usd: float
+
+
 class Attachment(TypedDict):
     name: str
     type: Literal['image', 'audio', 'document', 'video']
@@ -46,6 +54,7 @@ class _DecideRequestOptional(TypedDict, total=False):
     prompt_cache_key: str
     route: Literal["standard"]
     mode: Literal["standard"]
+    policy: Policy
 
 
 class DecideRequest(_DecideRequestOptional):
@@ -136,7 +145,37 @@ class ScoreAnswer(_AnswerMeta):
 AuthoritativeAnswer: TypeAlias = Union[BooleanAnswer, ChoiceAnswer, ScoreAnswer]
 
 
-Answer: TypeAlias = Union[LegacyAnswer, AuthoritativeAnswer]
+AbstentionReason: TypeAlias = Literal["low_confidence", "uncalibrated"]
+
+
+class _AbstainedMeta(_AnswerMeta):
+    abstained: Literal[True]
+    abstention_reason: AbstentionReason
+
+
+class AbstainedBooleanAnswer(_AbstainedMeta):
+    type: Literal["boolean"]
+    probability: float
+    alternatives: List[BooleanDecisionAlternative]
+
+
+class AbstainedChoiceAnswer(_AbstainedMeta):
+    type: Literal["choice"]
+    choice: str
+    probabilities: Dict[str, float]
+    alternatives: List[StringDecisionAlternative]
+
+
+class AbstainedScoreAnswer(_AbstainedMeta):
+    type: Literal["score"]
+    score: float
+    legend: Dict[str, str]
+    probabilities: Dict[str, float]
+    alternatives: List[StringDecisionAlternative]
+
+
+AbstainedAnswer: TypeAlias = Union[AbstainedBooleanAnswer, AbstainedChoiceAnswer, AbstainedScoreAnswer]
+Answer: TypeAlias = Union[LegacyAnswer, AuthoritativeAnswer, AbstainedAnswer]
 
 
 class QuestionRefusalError(TypedDict):
@@ -162,6 +201,10 @@ class Usage(TypedDict):
     thought_tokens: int
 
 
+class _DecideReplyOptional(TypedDict, total=False):
+    policy: Policy
+
+
 class _DecideReplyFields(TypedDict):
     id: str
     model: str
@@ -171,8 +214,8 @@ class _DecideReplyFields(TypedDict):
     usage: Usage
 
 
-class V1DecideReply(_DecideReplyFields):
-    answers: Dict[str, Union[AuthoritativeAnswer, QuestionRefusal]]
+class V1DecideReply(_DecideReplyFields, _DecideReplyOptional):
+    answers: Dict[str, Union[AuthoritativeAnswer, AbstainedAnswer, QuestionRefusal]]
 
 
 class LegacyDecideReply(_DecideReplyFields):

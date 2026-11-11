@@ -10,6 +10,7 @@ class ErrorCode(str, Enum):
     COMMITTEE_NOT_AVAILABLE = 'committee_not_available'
     CONCURRENCY_LIMIT_EXCEEDED = 'concurrency_limit_exceeded'
     DAILY_DISPATCH_LIMIT = 'daily_dispatch_limit'
+    DECISION_NOT_FOUND = 'decision_not_found'
     DELIBERATE_NOT_AVAILABLE = 'deliberate_not_available'
     DOCUMENT_CONTROLS_NOT_AVAILABLE = 'document_controls_not_available'
     DOCUMENT_DECODE_FAILED = 'document_decode_failed'
@@ -57,6 +58,8 @@ class ErrorCode(str, Enum):
     MONTHLY_CAP_REACHED = 'monthly_cap_reached'
     OUTPUT_LIMIT_EXCEEDED = 'output_limit_exceeded'
     PAYLOAD_TOO_LARGE = 'payload_too_large'
+    POLICY_CONFIDENCE_FAILED = 'policy_confidence_failed'
+    POLICY_MAX_COST_EXCEEDED = 'policy_max_cost_exceeded'
     QUESTION_NOT_GROUNDED = 'question_not_grounded'
     QUESTION_TOO_LARGE = 'question_too_large'
     QUESTIONS_TOO_LARGE = 'questions_too_large'
@@ -90,6 +93,7 @@ SYSTEM_ZERO_ERROR_CODES = (
     'committee_not_available',
     'concurrency_limit_exceeded',
     'daily_dispatch_limit',
+    'decision_not_found',
     'deliberate_not_available',
     'document_controls_not_available',
     'document_decode_failed',
@@ -124,6 +128,8 @@ SYSTEM_ZERO_ERROR_CODES = (
     'media_unsupported',
     'output_limit_exceeded',
     'payload_too_large',
+    'policy_confidence_failed',
+    'policy_max_cost_exceeded',
     'question_not_grounded',
     'question_too_large',
     'questions_too_large',

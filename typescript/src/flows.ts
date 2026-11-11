@@ -27,7 +27,7 @@ export interface FlowDefinition {
   steps: FlowStep[];
 }
 export interface FlowOptions {
-  /** Explicit long-context request option; workspace opt-in is also required. */
+  /** Explicit long-context request option; workspace eligibility still applies. */
   dangerZone?: 'accept' | 'long_context_64k' | 'long_context_128k' | 'long_context_1m';
   run_id: string;
   /** Call count cap, defaulting to MAX_STEPS (32). Larger caps are refused. */
@@ -40,7 +40,7 @@ export interface FlowOptions {
 }
 export interface FlowAnswerTrace {
   question_index: number;
-  kind: 'v1' | 'legacy' | 'refusal';
+  kind: 'v1' | 'legacy' | 'refusal' | 'abstained';
   confidence: number | null;
   question?: string;
   decision?: boolean | string;
@@ -284,7 +284,7 @@ export function validateFlow(input: unknown): FlowDefinition {
 type SavedAnswers = Map<string, Record<string, DecisionResult>>;
 function matches(condition: FlowCondition, answers: SavedAnswers): boolean {
   const result = answers.get(condition.step)?.[condition.question];
-  if (!result || result.kind === 'refusal') return false;
+  if (!result || result.kind === 'refusal' || result.kind === 'abstained') return false;
   if (condition.op === 'eq') return result.decision === condition.value;
   if (condition.op === 'in') return condition.values.includes(result.decision);
   if (result.confidence === null) return false;
@@ -295,7 +295,7 @@ function render(template: FlowTemplate, state: JsonValue, answers: SavedAnswers)
   if ('state' in template) return state;
   if ('answer' in template) {
     const result = answers.get(template.answer.step)?.[template.answer.question];
-    if (!result || result.kind === 'refusal') throw invalid();
+    if (!result || result.kind === 'refusal' || result.kind === 'abstained') throw invalid();
     return snapshot(result[template.answer.field]);
   }
   if ('array' in template) return template.array.map(child => render(child, state, answers));
@@ -424,7 +424,10 @@ export async function runFlow(client: Pick<SystemZeroClient, 'decide' | 'options
         const result: FlowAnswerTrace = { question_index: questionIndex, kind: decision.kind, confidence: decision.kind === 'refusal' ? null : decision.confidence };
         if (includeContent) {
           result.question = name;
-          if (decision.kind !== 'refusal') { result.decision = decision.decision; result.alternatives = snapshot(decision.alternatives) as unknown as Alternative[]; }
+          if (decision.kind !== 'refusal') {
+            if (decision.kind !== 'abstained') result.decision = decision.decision;
+            result.alternatives = snapshot(decision.alternatives) as unknown as Alternative[];
+          }
         }
         return result;
       });

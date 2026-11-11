@@ -31,6 +31,10 @@ export const SYSTEM_ZERO_ERRORS = {
     429,
     "This account reached today's request limit. It resets at 00:00 UTC."
   ],
+  "decision_not_found": [
+    404,
+    "The requested decision is not available."
+  ],
   "deliberate_not_available": [
     404,
     "This mode is not available."
@@ -218,6 +222,14 @@ export const SYSTEM_ZERO_ERRORS = {
   "payload_too_large": [
     413,
     "The request exceeds the body limit. Send fewer or smaller attachments."
+  ],
+  "policy_confidence_failed": [
+    422,
+    "The reply failed the confidence policy. The completed decision is counted toward the monthly cap and is not charged."
+  ],
+  "policy_max_cost_exceeded": [
+    400,
+    "The request's maximum possible cost exceeds max_cost_usd. The request was not dispatched, counted toward monthly usage or charged."
   ],
   "question_not_grounded": [
     422,

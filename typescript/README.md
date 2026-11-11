@@ -357,6 +357,9 @@ Use the exact class values above. With `accept`, text answers HTTP 400
 With `accept`, PDF answers HTTP 404 `long_context_not_available`; image, audio or
 video drops the long grants and runs as an ordinary request.
 
+1M needs nothing switched on. It is experimental, not stable.
+1M is not guaranteed to be available for every request.
+
 Select `long_context_1m` explicitly with `dangerZone` / `danger_zone` for a
 state above 131,072 through 1,048,576 tokens. `accept` and body size never select
 it. Use one string state and exactly one question, with 2 to 25 choice options
@@ -370,19 +373,23 @@ The SDK sends your `Idempotency-Key` or generates one even when retries are
 disabled; a blank key is refused locally as HTTP 400 `invalid_request`, param
 `Idempotency-Key`. Invalid shapes are refused locally as HTTP 404
 `long_context_not_available`; a question count other than one uses
-`questions_too_large`. Enable access per workspace in the Console: make one
-completed payment, then open Settings, Workspace, Context access. Before access,
-HTTP 404 `long_context_not_available` is uncharged; `details.eligibility` names
-the first unmet step and may contain new strings.
+`questions_too_large`. Nothing needs to be switched on in the Console. A
+workspace that has made one completed payment can use the 1M class; the request
+option `dangerZone` / `danger_zone` (`SZ-Danger-Zone: long_context_1m`) is still
+required. An ineligible workspace gets HTTP 404 `long_context_not_available`
+without a charge; `details.eligibility` names the first unmet step and may
+contain new strings. A state too short for this class is refused with HTTP 404
+`long_context_not_available`, param `state`, without a charge.
 
 The maximum charge is held before work and settled to exact usage. Insufficient
-credit returns HTTP 402 `insufficient_credits` before work. A daily class limit
-returns HTTP 429 `long_context_daily_budget_exhausted` until the next UTC day;
-neither error is retried automatically. A cold pool returns HTTP 503
+credit returns HTTP 402 `insufficient_credits` before work and is not retried
+automatically. A workspace that reaches its daily bound for this class gets
+HTTP 429 `long_context_daily_budget_exhausted` with `details.scope` equal to
+`"workspace"` or `"workspace_attempts"`. The day-wide limit returns the same code
+without `details.scope`. None of these daily refusals is retried automatically;
+all clear at the next UTC day. A cold pool returns HTTP 503
 `service_unavailable` before any hold or charge; the SDK retries within its
-normal budget using the same key. The first call
-after an idle period can take several minutes to become available: the answer
-names the wait in `Retry-After`; keep retrying for up to ten minutes. One reply runs at a time per pool; a concurrent
+normal budget using the same key. The first call after an idle period can take several minutes to become available: the answer names the wait in `Retry-After`; send the same request again with the same Idempotency-Key until it answers. One reply runs at a time per pool; a concurrent
 second call returns HTTP 429 `capacity_exhausted` with `Retry-After`.
 
 No selector is sent by default. Do not supply the header
@@ -397,8 +404,8 @@ served band with `header_value`, `min_state_tokens`, `state_tokens`,
 direct window and a selector that covers the state, if available. A selected
 class with state outside its band returns non-retryable HTTP 404
 `long_context_not_available`, param `state`, naming that band; it is not charged.
-A held or ineligible class, or missing workspace opt-in,
-can return HTTP 404 `long_context_not_available`, raised as
+A held or ineligible class can return HTTP 404
+`long_context_not_available`, raised as
 `LongContextNotAvailableError`. Its `eligibility` preserves `details.eligibility`
 when supplied, including future rule strings. Held routes are never retried.
 
@@ -406,3 +413,59 @@ Replies type `usage.long_input_tokens`. Response metadata exposes the server's
 `sz-danger-zone` values as `dangerZone` in TypeScript and `danger_zone` in Python.
 `LongContextLimits` describes discovery limits; `openapi.json` describes the
 served contract and `enabled.openapi.json` contains the additional request shapes.
+
+## Request policy
+
+Every workspace can send `policy` on ordinary decide calls and stream starts.
+`min_confidence` sets a minimum answer confidence greater than zero and at most
+one. Below it, the answer keeps `confidence`, adds `abstained: true` and
+`abstention_reason: "low_confidence"`, and has no `decision` member. The reply
+echoes `policy`. An abstained answer is charged like any answer; the decision
+readers return the `abstained` kind without a decision.
+
+`max_cost_usd` caps the request's maximum possible cost. If that maximum exceeds
+the cap, the API refuses the request with HTTP 400 `policy_max_cost_exceeded`,
+parameter `policy.max_cost_usd`, without charging it.
+
+`on_low_confidence` defaults to `abstain`, its only served value.
+`on_low_confidence: "error"` and `require_calibrated` are not served: they are
+refused with HTTP 400 `invalid_request` and their respective
+`policy.on_low_confidence` or `policy.require_calibrated` parameter.
+The 1M class does not accept policy.
+
+```ts
+import { SystemZeroClient, decisionsFor } from '@rightnowai/system-zero';
+
+const client = new SystemZeroClient();
+const reply = await client.decide({
+  model: 'system-zero', state: 'The shipment arrived.',
+  questions: { arrived: { type: 'boolean', instructions: 'Has it arrived?' } },
+  policy: { min_confidence: 0.8 },
+});
+for (const result of Object.values(decisionsFor(reply))) {
+  if (result.kind === 'abstained') console.log(result.abstention_reason);
+  else if (result.kind === 'v1') console.log(result.decision);
+}
+```
+
+## Decision records
+
+Read a decision again by its id with the same API key and workspace. Only decides
+sent with an `Idempotency-Key` are kept, for 24 hours. The stored reply is returned
+unchanged. Its trace carries no content; some members are null in this version.
+
+An unknown id, an unkeyed decision, another key or workspace, or an expired record
+returns HTTP 404 `decision_not_found`. Reads use the key's request limit, create
+no usage and are not charged.
+
+```ts
+import { SystemZeroClient } from '@rightnowai/system-zero';
+
+const client = new SystemZeroClient();
+const reply = await client.decide({
+  model: 'system-zero', state: 'The shipment arrived.',
+  questions: { arrived: { type: 'boolean', instructions: 'Has it arrived?' } },
+}, { idempotencyKey: 'shipment-check' });
+const stored = await client.getDecision(reply.id);
+const trace = await client.getDecisionTrace(reply.id);
+```

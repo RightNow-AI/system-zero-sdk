@@ -234,7 +234,7 @@ def validate_flow(definition: Mapping[str, Any]) -> FlowDefinition:
 
 def _matches(condition: Mapping[str, Any], answers: Mapping[str, Mapping[str, Any]]) -> bool:
     answer = answers.get(condition['step'], {}).get(condition['question'])
-    if answer is None or answer.kind == 'refusal':
+    if answer is None or answer.kind in ('refusal', 'abstained'):
         return False
     operation = condition['op']
     if operation == 'eq':
@@ -257,7 +257,7 @@ def _render(template: Mapping[str, Any], state: Any, answers: Mapping[str, Mappi
             parent[key] = _snapshot(state)
         elif tag == 'answer':
             answer = answers.get(content['step'], {}).get(content['question'])
-            if answer is None or answer.kind == 'refusal':
+            if answer is None or answer.kind in ('refusal', 'abstained'):
                 raise _invalid()
             parent[key] = _snapshot(getattr(answer, content['field']))
         elif tag == 'object':
@@ -417,7 +417,9 @@ def run_flow(client: SystemZero, definition: Mapping[str, Any], *, run_id: str, 
                     if include_content:
                         entry['question'] = question
                         if answer.kind != 'refusal':
-                            entry.update(decision=answer.decision, alternatives=_snapshot(list(answer.alternatives)))
+                            entry['alternatives'] = _snapshot(list(answer.alternatives))
+                            if answer.kind != 'abstained':
+                                entry['decision'] = answer.decision
                     active_step['answers'].append(entry)
                     if answer.kind == 'refusal' and refusal is None:
                         refusal = _question_refusal(answer.refusal.code, active_step['request_id'])

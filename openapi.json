@@ -160,7 +160,7 @@
             "name": "SZ-Danger-Zone",
             "in": "header",
             "required": false,
-            "description": "Selects a long context class for this request. long_context_64k answers a state of 38,001 to 65,536 tokens; long_context_128k answers a state of 65,537 to 131,072 tokens; long_context_1m answers a state of 131,073 to 1,048,576 tokens. Send the text in state with no attachments. Any attachment with a native long class answers 404 long_context_not_available and is not charged. A class that is not available answers 404 long_context_not_available and is not charged. A state outside the selected band answers a nonretryable 404 long_context_not_available with param state and the class bounds, without a retry delay, and is not charged. With multiple native classes, accept answers 400 invalid_request with param SZ-Danger-Zone. long_context_1m is selected only by its exact value; accept never selects it. It needs workspace access, set up in the Console; until then it answers 404 long_context_not_available with the unmet step in details.eligibility and is not charged. A long_context_1m request must carry an Idempotency-Key (400 invalid_request with param Idempotency-Key without one), exactly one question, and the plain request shape: state as one string (an object state is refused), with no policy, mode, route, session_id, prompt_cache_key or attachments. It serves stateless decisions only: each request carries its full context. The maximum charge is held before work and settled to the exact usage; insufficient balance answers 402 insufficient_credits before any work. Without this header, the request uses the direct window. Header names are case-insensitive.",
+            "description": "Selects a long context class for this request. long_context_64k answers a state of 38,001 to 65,536 tokens; long_context_128k answers a state of 65,537 to 131,072 tokens; long_context_1m answers a state of 131,073 to 1,048,576 tokens. Send the text in state with no attachments. Any attachment with a native long class answers 404 long_context_not_available and is not charged. A class that is not available answers 404 long_context_not_available and is not charged. A state outside the selected band answers a nonretryable 404 long_context_not_available with param state and the class bounds, without a retry delay, and is not charged. With multiple native classes, accept answers 400 invalid_request with param SZ-Danger-Zone. long_context_1m is selected only by its exact value; accept never selects it. It needs nothing switched on in the Console: a workspace that has made one completed payment can use it. An ineligible workspace gets 404 long_context_not_available with the unmet step in details.eligibility and is not charged. Each workspace has a daily bound on requests of this class: past it the answer is 429 long_context_daily_budget_exhausted with details.scope workspace or workspace_attempts, until the next UTC day. A long_context_1m request must carry an Idempotency-Key (400 invalid_request with param Idempotency-Key without one), exactly one question, and the plain request shape: state as one string (an object state is refused), with no policy, mode, route, session_id, prompt_cache_key or attachments. It serves stateless decisions only: each request carries its full context. The maximum charge is held before work and settled to the exact usage; insufficient balance answers 402 insufficient_credits before any work. Without this header, the request uses the direct window. Header names are case-insensitive.",
             "schema": {
               "type": "string",
               "enum": [
@@ -363,7 +363,7 @@
             }
           },
           "4XX": {
-            "description": "A refusal of the request, the key or its limits: error.code names it.",
+            "description": "A refusal of the request, the key or its limits: error.code names it. invalid_request includes held or invalid policy members, using policy member parameter labels. policy_max_cost_exceeded is HTTP 400 before admission and dispatch: not counted toward monthly usage and not charged; details.counted is false.",
             "headers": {
               "X-Request-Id": {
                 "$ref": "#/components/headers/X-Request-Id"
@@ -492,6 +492,1058 @@
           }
         }
       }
+    },
+    "/system-zero/decisions/{id}": {
+      "get": {
+        "operationId": "getDecision",
+        "summary": "Read a retained decision by id.",
+        "description": "Requires the same active API key and account that created the decision. Only a decision indexed while this feature is enabled and retained by the existing keyed replay store is available. Send Idempotency-Key on the original decide; unkeyed, older unindexed, oversized or over-budget decisions are unavailable. The existing retention is 24 hours, with earlier eviction of the answer or index possible. Reads never refresh the original expiry and cause no new execution or charge. Both views and decide use the shared key's configured requests per minute; there is no universal numeric limit. A counted read reports X-RateLimit-Limit, X-RateLimit-Remaining and X-RateLimit-Reset. A 429 rate_limit_exceeded supplies Retry-After and Retry-After-Ms; prefer the millisecond wait. This is one object by id with no pagination, cursor, query parameters or request body. Response trace and rate-limit headers describe this lookup, which does not set X-RightNow-Idempotent-Replay. GET and HEAD are supported; HEAD keeps the status and headers and omits the body. OPTIONS follows the existing read-route rules; other methods return 405 once listed and the hidden endpoint while unlisted. Cache-Control is no-store. The stored response body is returned byte for byte, including an available legacy reply shape.",
+        "security": [
+          {
+            "apiKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/DecisionId"
+            }
+          },
+          {
+            "name": "X-Client-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "An optional id for this lookup, echoed back as a response header.",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512,
+              "pattern": "^[\\x20-\\x7E]+$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The retained current or legacy decision body, unchanged; this read is not an idempotent decide replay.",
+            "headers": {
+              "X-Request-Id": {
+                "$ref": "#/components/headers/X-Request-Id"
+              },
+              "X-Client-Request-Id": {
+                "$ref": "#/components/headers/X-Client-Request-Id"
+              },
+              "X-RateLimit-Limit": {
+                "$ref": "#/components/headers/X-RateLimit-Limit"
+              },
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Reset": {
+                "$ref": "#/components/headers/X-RateLimit-Reset"
+              },
+              "X-RateLimit-Limit-Requests": {
+                "$ref": "#/components/headers/X-RateLimit-Limit-Requests"
+              },
+              "X-RateLimit-Remaining-Requests": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining-Requests"
+              },
+              "X-RateLimit-Reset-Requests": {
+                "$ref": "#/components/headers/X-RateLimit-Reset-Requests"
+              },
+              "Cache-Control": {
+                "$ref": "#/components/headers/Cache-Control"
+              },
+              "X-Latency-Ms": {
+                "$ref": "#/components/headers/X-Latency-Ms"
+              },
+              "Server-Timing": {
+                "$ref": "#/components/headers/Server-Timing"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/DecideReply"
+                    },
+                    {
+                      "$ref": "#/components/schemas/LegacyReplayReply"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_trace_header for a malformed X-Client-Request-Id, or an existing invalid-request envelope.",
+            "headers": {
+              "X-Request-Id": {
+                "$ref": "#/components/headers/X-Request-Id"
+              },
+              "X-Client-Request-Id": {
+                "$ref": "#/components/headers/X-Client-Request-Id"
+              },
+              "X-RateLimit-Limit": {
+                "$ref": "#/components/headers/X-RateLimit-Limit"
+              },
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Reset": {
+                "$ref": "#/components/headers/X-RateLimit-Reset"
+              },
+              "X-RateLimit-Limit-Requests": {
+                "$ref": "#/components/headers/X-RateLimit-Limit-Requests"
+              },
+              "X-RateLimit-Remaining-Requests": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining-Requests"
+              },
+              "X-RateLimit-Reset-Requests": {
+                "$ref": "#/components/headers/X-RateLimit-Reset-Requests"
+              },
+              "Cache-Control": {
+                "$ref": "#/components/headers/Cache-Control"
+              },
+              "X-Latency-Ms": {
+                "$ref": "#/components/headers/X-Latency-Ms"
+              },
+              "Server-Timing": {
+                "$ref": "#/components/headers/Server-Timing"
+              },
+              "x-should-retry": {
+                "$ref": "#/components/headers/x-should-retry"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The API key is missing or invalid.",
+            "headers": {
+              "X-Request-Id": {
+                "$ref": "#/components/headers/X-Request-Id"
+              },
+              "X-Client-Request-Id": {
+                "$ref": "#/components/headers/X-Client-Request-Id"
+              },
+              "X-RateLimit-Limit": {
+                "$ref": "#/components/headers/X-RateLimit-Limit"
+              },
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Reset": {
+                "$ref": "#/components/headers/X-RateLimit-Reset"
+              },
+              "X-RateLimit-Limit-Requests": {
+                "$ref": "#/components/headers/X-RateLimit-Limit-Requests"
+              },
+              "X-RateLimit-Remaining-Requests": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining-Requests"
+              },
+              "X-RateLimit-Reset-Requests": {
+                "$ref": "#/components/headers/X-RateLimit-Reset-Requests"
+              },
+              "Cache-Control": {
+                "$ref": "#/components/headers/Cache-Control"
+              },
+              "X-Latency-Ms": {
+                "$ref": "#/components/headers/X-Latency-Ms"
+              },
+              "Server-Timing": {
+                "$ref": "#/components/headers/Server-Timing"
+              },
+              "x-should-retry": {
+                "$ref": "#/components/headers/x-should-retry"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "auth_error for a revoked or blocked key, or account_suspended for a suspended account, before any replay storage read. Existing account permissions apply.",
+            "headers": {
+              "X-Request-Id": {
+                "$ref": "#/components/headers/X-Request-Id"
+              },
+              "X-Client-Request-Id": {
+                "$ref": "#/components/headers/X-Client-Request-Id"
+              },
+              "X-RateLimit-Limit": {
+                "$ref": "#/components/headers/X-RateLimit-Limit"
+              },
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Reset": {
+                "$ref": "#/components/headers/X-RateLimit-Reset"
+              },
+              "X-RateLimit-Limit-Requests": {
+                "$ref": "#/components/headers/X-RateLimit-Limit-Requests"
+              },
+              "X-RateLimit-Remaining-Requests": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining-Requests"
+              },
+              "X-RateLimit-Reset-Requests": {
+                "$ref": "#/components/headers/X-RateLimit-Reset-Requests"
+              },
+              "Cache-Control": {
+                "$ref": "#/components/headers/Cache-Control"
+              },
+              "X-Latency-Ms": {
+                "$ref": "#/components/headers/X-Latency-Ms"
+              },
+              "Server-Timing": {
+                "$ref": "#/components/headers/Server-Timing"
+              },
+              "x-should-retry": {
+                "$ref": "#/components/headers/x-should-retry"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "decision_not_found (not_found_error, retryable false) for an invalid id or unavailable scoped retained decision. Unadmitted callers see the existing hidden endpoint while unlisted.",
+            "headers": {
+              "X-Request-Id": {
+                "$ref": "#/components/headers/X-Request-Id"
+              },
+              "X-Client-Request-Id": {
+                "$ref": "#/components/headers/X-Client-Request-Id"
+              },
+              "X-RateLimit-Limit": {
+                "$ref": "#/components/headers/X-RateLimit-Limit"
+              },
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Reset": {
+                "$ref": "#/components/headers/X-RateLimit-Reset"
+              },
+              "X-RateLimit-Limit-Requests": {
+                "$ref": "#/components/headers/X-RateLimit-Limit-Requests"
+              },
+              "X-RateLimit-Remaining-Requests": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining-Requests"
+              },
+              "X-RateLimit-Reset-Requests": {
+                "$ref": "#/components/headers/X-RateLimit-Reset-Requests"
+              },
+              "Cache-Control": {
+                "$ref": "#/components/headers/Cache-Control"
+              },
+              "X-Latency-Ms": {
+                "$ref": "#/components/headers/X-Latency-Ms"
+              },
+              "Server-Timing": {
+                "$ref": "#/components/headers/Server-Timing"
+              },
+              "x-should-retry": {
+                "$ref": "#/components/headers/x-should-retry"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                },
+                "examples": {
+                  "decision_not_found": {
+                    "summary": "The same typed refusal for unavailable or differently scoped decisions.",
+                    "value": {
+                      "error": {
+                        "message": "The requested decision is not available.",
+                        "type": "not_found_error",
+                        "param": null,
+                        "code": "decision_not_found",
+                        "retryable": false
+                      },
+                      "request_id": "req_00000000-0000-7000-8000-000000000001"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "The listed endpoint accepts GET, HEAD and OPTIONS.",
+            "headers": {
+              "X-Request-Id": {
+                "$ref": "#/components/headers/X-Request-Id"
+              },
+              "X-Client-Request-Id": {
+                "$ref": "#/components/headers/X-Client-Request-Id"
+              },
+              "X-RateLimit-Limit": {
+                "$ref": "#/components/headers/X-RateLimit-Limit"
+              },
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Reset": {
+                "$ref": "#/components/headers/X-RateLimit-Reset"
+              },
+              "X-RateLimit-Limit-Requests": {
+                "$ref": "#/components/headers/X-RateLimit-Limit-Requests"
+              },
+              "X-RateLimit-Remaining-Requests": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining-Requests"
+              },
+              "X-RateLimit-Reset-Requests": {
+                "$ref": "#/components/headers/X-RateLimit-Reset-Requests"
+              },
+              "Cache-Control": {
+                "$ref": "#/components/headers/Cache-Control"
+              },
+              "X-Latency-Ms": {
+                "$ref": "#/components/headers/X-Latency-Ms"
+              },
+              "Server-Timing": {
+                "$ref": "#/components/headers/Server-Timing"
+              },
+              "x-should-retry": {
+                "$ref": "#/components/headers/x-should-retry"
+              },
+              "Allow": {
+                "description": "Methods the listed read endpoint supports.",
+                "schema": {
+                  "type": "string",
+                  "const": "GET, HEAD, OPTIONS"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "rate_limit_exceeded from the shared configured per-key requests-per-minute budget or the ordinary pre-auth limits. Wait for Retry-After-Ms or Retry-After.",
+            "headers": {
+              "X-Request-Id": {
+                "$ref": "#/components/headers/X-Request-Id"
+              },
+              "X-Client-Request-Id": {
+                "$ref": "#/components/headers/X-Client-Request-Id"
+              },
+              "X-RateLimit-Limit": {
+                "$ref": "#/components/headers/X-RateLimit-Limit"
+              },
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Reset": {
+                "$ref": "#/components/headers/X-RateLimit-Reset"
+              },
+              "X-RateLimit-Limit-Requests": {
+                "$ref": "#/components/headers/X-RateLimit-Limit-Requests"
+              },
+              "X-RateLimit-Remaining-Requests": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining-Requests"
+              },
+              "X-RateLimit-Reset-Requests": {
+                "$ref": "#/components/headers/X-RateLimit-Reset-Requests"
+              },
+              "Cache-Control": {
+                "$ref": "#/components/headers/Cache-Control"
+              },
+              "X-Latency-Ms": {
+                "$ref": "#/components/headers/X-Latency-Ms"
+              },
+              "Server-Timing": {
+                "$ref": "#/components/headers/Server-Timing"
+              },
+              "x-should-retry": {
+                "$ref": "#/components/headers/x-should-retry"
+              },
+              "Retry-After": {
+                "$ref": "#/components/headers/Retry-After"
+              },
+              "Retry-After-Ms": {
+                "$ref": "#/components/headers/Retry-After-Ms"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Retryable service_unavailable when replay storage cannot answer, maintenance, or an existing authentication/limiter store outage. Observe Retry-After-Ms or Retry-After.",
+            "headers": {
+              "X-Request-Id": {
+                "$ref": "#/components/headers/X-Request-Id"
+              },
+              "X-Client-Request-Id": {
+                "$ref": "#/components/headers/X-Client-Request-Id"
+              },
+              "X-RateLimit-Limit": {
+                "$ref": "#/components/headers/X-RateLimit-Limit"
+              },
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Reset": {
+                "$ref": "#/components/headers/X-RateLimit-Reset"
+              },
+              "X-RateLimit-Limit-Requests": {
+                "$ref": "#/components/headers/X-RateLimit-Limit-Requests"
+              },
+              "X-RateLimit-Remaining-Requests": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining-Requests"
+              },
+              "X-RateLimit-Reset-Requests": {
+                "$ref": "#/components/headers/X-RateLimit-Reset-Requests"
+              },
+              "Cache-Control": {
+                "$ref": "#/components/headers/Cache-Control"
+              },
+              "X-Latency-Ms": {
+                "$ref": "#/components/headers/X-Latency-Ms"
+              },
+              "Server-Timing": {
+                "$ref": "#/components/headers/Server-Timing"
+              },
+              "x-should-retry": {
+                "$ref": "#/components/headers/x-should-retry"
+              },
+              "Retry-After": {
+                "$ref": "#/components/headers/Retry-After"
+              },
+              "Retry-After-Ms": {
+                "$ref": "#/components/headers/Retry-After-Ms"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "The existing platform error envelope; retry the same read only when error.retryable is true, observing any pacing headers.",
+            "headers": {
+              "X-Request-Id": {
+                "$ref": "#/components/headers/X-Request-Id"
+              },
+              "X-Client-Request-Id": {
+                "$ref": "#/components/headers/X-Client-Request-Id"
+              },
+              "X-RateLimit-Limit": {
+                "$ref": "#/components/headers/X-RateLimit-Limit"
+              },
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Reset": {
+                "$ref": "#/components/headers/X-RateLimit-Reset"
+              },
+              "X-RateLimit-Limit-Requests": {
+                "$ref": "#/components/headers/X-RateLimit-Limit-Requests"
+              },
+              "X-RateLimit-Remaining-Requests": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining-Requests"
+              },
+              "X-RateLimit-Reset-Requests": {
+                "$ref": "#/components/headers/X-RateLimit-Reset-Requests"
+              },
+              "Cache-Control": {
+                "$ref": "#/components/headers/Cache-Control"
+              },
+              "X-Latency-Ms": {
+                "$ref": "#/components/headers/X-Latency-Ms"
+              },
+              "Server-Timing": {
+                "$ref": "#/components/headers/Server-Timing"
+              },
+              "x-should-retry": {
+                "$ref": "#/components/headers/x-should-retry"
+              },
+              "Retry-After": {
+                "$ref": "#/components/headers/Retry-After"
+              },
+              "Retry-After-Ms": {
+                "$ref": "#/components/headers/Retry-After-Ms"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/system-zero/decisions/{id}/trace": {
+      "get": {
+        "operationId": "getDecisionTrace",
+        "summary": "Read a retained decision's content-free trace.",
+        "description": "Requires the same active API key and account that created the decision. Only a decision indexed while this feature is enabled and retained by the existing keyed replay store is available. Send Idempotency-Key on the original decide; unkeyed, older unindexed, oversized or over-budget decisions are unavailable. The existing retention is 24 hours, with earlier eviction of the answer or index possible. Reads never refresh the original expiry and cause no new execution or charge. Both views and decide use the shared key's configured requests per minute; there is no universal numeric limit. A counted read reports X-RateLimit-Limit, X-RateLimit-Remaining and X-RateLimit-Reset. A 429 rate_limit_exceeded supplies Retry-After and Retry-After-Ms; prefer the millisecond wait. This is one object by id with no pagination, cursor, query parameters or request body. Response trace and rate-limit headers describe this lookup, which does not set X-RightNow-Idempotent-Replay. GET and HEAD are supported; HEAD keeps the status and headers and omits the body. OPTIONS follows the existing read-route rules; other methods return 405 once listed and the hidden endpoint while unlisted. Cache-Control is no-store. The content-free trace contains only retained metadata; every unavailable field remains null and OPEN.",
+        "security": [
+          {
+            "apiKey": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/DecisionId"
+            }
+          },
+          {
+            "name": "X-Client-Request-Id",
+            "in": "header",
+            "required": false,
+            "description": "An optional id for this lookup, echoed back as a response header.",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512,
+              "pattern": "^[\\x20-\\x7E]+$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Content-free metadata from the same currently retained scoped reply.",
+            "headers": {
+              "X-Request-Id": {
+                "$ref": "#/components/headers/X-Request-Id"
+              },
+              "X-Client-Request-Id": {
+                "$ref": "#/components/headers/X-Client-Request-Id"
+              },
+              "X-RateLimit-Limit": {
+                "$ref": "#/components/headers/X-RateLimit-Limit"
+              },
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Reset": {
+                "$ref": "#/components/headers/X-RateLimit-Reset"
+              },
+              "X-RateLimit-Limit-Requests": {
+                "$ref": "#/components/headers/X-RateLimit-Limit-Requests"
+              },
+              "X-RateLimit-Remaining-Requests": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining-Requests"
+              },
+              "X-RateLimit-Reset-Requests": {
+                "$ref": "#/components/headers/X-RateLimit-Reset-Requests"
+              },
+              "Cache-Control": {
+                "$ref": "#/components/headers/Cache-Control"
+              },
+              "X-Latency-Ms": {
+                "$ref": "#/components/headers/X-Latency-Ms"
+              },
+              "Server-Timing": {
+                "$ref": "#/components/headers/Server-Timing"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DecisionTrace"
+                },
+                "examples": {
+                  "current": {
+                    "summary": "Current retained metadata; all unavailable execution fields remain null.",
+                    "value": {
+                      "object": "system_zero.decision_trace",
+                      "id": "szd_00000000000000000000000000000001",
+                      "request_id": null,
+                      "created": 1792144800,
+                      "model": "system-zero-1.0.0",
+                      "model_version": "system-zero-1.0.0",
+                      "render_id": null,
+                      "route": "direct",
+                      "attachments": null,
+                      "timings": {
+                        "queue_ms": null,
+                        "node_ms": null,
+                        "settle_ms": null
+                      },
+                      "usage_units": {
+                        "input_tokens": 100,
+                        "cached_input_tokens": 20,
+                        "media_tokens": 0,
+                        "cached_media_tokens": null,
+                        "long_input_tokens": 0,
+                        "media_items": 0,
+                        "thought_tokens": 0
+                      },
+                      "refusal_code": null,
+                      "refusal_codes": [],
+                      "idempotency": null,
+                      "stream_id": null,
+                      "state_version": null
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid_trace_header for a malformed X-Client-Request-Id, or an existing invalid-request envelope.",
+            "headers": {
+              "X-Request-Id": {
+                "$ref": "#/components/headers/X-Request-Id"
+              },
+              "X-Client-Request-Id": {
+                "$ref": "#/components/headers/X-Client-Request-Id"
+              },
+              "X-RateLimit-Limit": {
+                "$ref": "#/components/headers/X-RateLimit-Limit"
+              },
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Reset": {
+                "$ref": "#/components/headers/X-RateLimit-Reset"
+              },
+              "X-RateLimit-Limit-Requests": {
+                "$ref": "#/components/headers/X-RateLimit-Limit-Requests"
+              },
+              "X-RateLimit-Remaining-Requests": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining-Requests"
+              },
+              "X-RateLimit-Reset-Requests": {
+                "$ref": "#/components/headers/X-RateLimit-Reset-Requests"
+              },
+              "Cache-Control": {
+                "$ref": "#/components/headers/Cache-Control"
+              },
+              "X-Latency-Ms": {
+                "$ref": "#/components/headers/X-Latency-Ms"
+              },
+              "Server-Timing": {
+                "$ref": "#/components/headers/Server-Timing"
+              },
+              "x-should-retry": {
+                "$ref": "#/components/headers/x-should-retry"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "The API key is missing or invalid.",
+            "headers": {
+              "X-Request-Id": {
+                "$ref": "#/components/headers/X-Request-Id"
+              },
+              "X-Client-Request-Id": {
+                "$ref": "#/components/headers/X-Client-Request-Id"
+              },
+              "X-RateLimit-Limit": {
+                "$ref": "#/components/headers/X-RateLimit-Limit"
+              },
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Reset": {
+                "$ref": "#/components/headers/X-RateLimit-Reset"
+              },
+              "X-RateLimit-Limit-Requests": {
+                "$ref": "#/components/headers/X-RateLimit-Limit-Requests"
+              },
+              "X-RateLimit-Remaining-Requests": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining-Requests"
+              },
+              "X-RateLimit-Reset-Requests": {
+                "$ref": "#/components/headers/X-RateLimit-Reset-Requests"
+              },
+              "Cache-Control": {
+                "$ref": "#/components/headers/Cache-Control"
+              },
+              "X-Latency-Ms": {
+                "$ref": "#/components/headers/X-Latency-Ms"
+              },
+              "Server-Timing": {
+                "$ref": "#/components/headers/Server-Timing"
+              },
+              "x-should-retry": {
+                "$ref": "#/components/headers/x-should-retry"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "auth_error for a revoked or blocked key, or account_suspended for a suspended account, before any replay storage read. Existing account permissions apply.",
+            "headers": {
+              "X-Request-Id": {
+                "$ref": "#/components/headers/X-Request-Id"
+              },
+              "X-Client-Request-Id": {
+                "$ref": "#/components/headers/X-Client-Request-Id"
+              },
+              "X-RateLimit-Limit": {
+                "$ref": "#/components/headers/X-RateLimit-Limit"
+              },
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Reset": {
+                "$ref": "#/components/headers/X-RateLimit-Reset"
+              },
+              "X-RateLimit-Limit-Requests": {
+                "$ref": "#/components/headers/X-RateLimit-Limit-Requests"
+              },
+              "X-RateLimit-Remaining-Requests": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining-Requests"
+              },
+              "X-RateLimit-Reset-Requests": {
+                "$ref": "#/components/headers/X-RateLimit-Reset-Requests"
+              },
+              "Cache-Control": {
+                "$ref": "#/components/headers/Cache-Control"
+              },
+              "X-Latency-Ms": {
+                "$ref": "#/components/headers/X-Latency-Ms"
+              },
+              "Server-Timing": {
+                "$ref": "#/components/headers/Server-Timing"
+              },
+              "x-should-retry": {
+                "$ref": "#/components/headers/x-should-retry"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "decision_not_found (not_found_error, retryable false) for an invalid id or unavailable scoped retained decision. Unadmitted callers see the existing hidden endpoint while unlisted.",
+            "headers": {
+              "X-Request-Id": {
+                "$ref": "#/components/headers/X-Request-Id"
+              },
+              "X-Client-Request-Id": {
+                "$ref": "#/components/headers/X-Client-Request-Id"
+              },
+              "X-RateLimit-Limit": {
+                "$ref": "#/components/headers/X-RateLimit-Limit"
+              },
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Reset": {
+                "$ref": "#/components/headers/X-RateLimit-Reset"
+              },
+              "X-RateLimit-Limit-Requests": {
+                "$ref": "#/components/headers/X-RateLimit-Limit-Requests"
+              },
+              "X-RateLimit-Remaining-Requests": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining-Requests"
+              },
+              "X-RateLimit-Reset-Requests": {
+                "$ref": "#/components/headers/X-RateLimit-Reset-Requests"
+              },
+              "Cache-Control": {
+                "$ref": "#/components/headers/Cache-Control"
+              },
+              "X-Latency-Ms": {
+                "$ref": "#/components/headers/X-Latency-Ms"
+              },
+              "Server-Timing": {
+                "$ref": "#/components/headers/Server-Timing"
+              },
+              "x-should-retry": {
+                "$ref": "#/components/headers/x-should-retry"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                },
+                "examples": {
+                  "decision_not_found": {
+                    "summary": "The same typed refusal for unavailable or differently scoped decisions.",
+                    "value": {
+                      "error": {
+                        "message": "The requested decision is not available.",
+                        "type": "not_found_error",
+                        "param": null,
+                        "code": "decision_not_found",
+                        "retryable": false
+                      },
+                      "request_id": "req_00000000-0000-7000-8000-000000000001"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "The listed endpoint accepts GET, HEAD and OPTIONS.",
+            "headers": {
+              "X-Request-Id": {
+                "$ref": "#/components/headers/X-Request-Id"
+              },
+              "X-Client-Request-Id": {
+                "$ref": "#/components/headers/X-Client-Request-Id"
+              },
+              "X-RateLimit-Limit": {
+                "$ref": "#/components/headers/X-RateLimit-Limit"
+              },
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Reset": {
+                "$ref": "#/components/headers/X-RateLimit-Reset"
+              },
+              "X-RateLimit-Limit-Requests": {
+                "$ref": "#/components/headers/X-RateLimit-Limit-Requests"
+              },
+              "X-RateLimit-Remaining-Requests": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining-Requests"
+              },
+              "X-RateLimit-Reset-Requests": {
+                "$ref": "#/components/headers/X-RateLimit-Reset-Requests"
+              },
+              "Cache-Control": {
+                "$ref": "#/components/headers/Cache-Control"
+              },
+              "X-Latency-Ms": {
+                "$ref": "#/components/headers/X-Latency-Ms"
+              },
+              "Server-Timing": {
+                "$ref": "#/components/headers/Server-Timing"
+              },
+              "x-should-retry": {
+                "$ref": "#/components/headers/x-should-retry"
+              },
+              "Allow": {
+                "description": "Methods the listed read endpoint supports.",
+                "schema": {
+                  "type": "string",
+                  "const": "GET, HEAD, OPTIONS"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "rate_limit_exceeded from the shared configured per-key requests-per-minute budget or the ordinary pre-auth limits. Wait for Retry-After-Ms or Retry-After.",
+            "headers": {
+              "X-Request-Id": {
+                "$ref": "#/components/headers/X-Request-Id"
+              },
+              "X-Client-Request-Id": {
+                "$ref": "#/components/headers/X-Client-Request-Id"
+              },
+              "X-RateLimit-Limit": {
+                "$ref": "#/components/headers/X-RateLimit-Limit"
+              },
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Reset": {
+                "$ref": "#/components/headers/X-RateLimit-Reset"
+              },
+              "X-RateLimit-Limit-Requests": {
+                "$ref": "#/components/headers/X-RateLimit-Limit-Requests"
+              },
+              "X-RateLimit-Remaining-Requests": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining-Requests"
+              },
+              "X-RateLimit-Reset-Requests": {
+                "$ref": "#/components/headers/X-RateLimit-Reset-Requests"
+              },
+              "Cache-Control": {
+                "$ref": "#/components/headers/Cache-Control"
+              },
+              "X-Latency-Ms": {
+                "$ref": "#/components/headers/X-Latency-Ms"
+              },
+              "Server-Timing": {
+                "$ref": "#/components/headers/Server-Timing"
+              },
+              "x-should-retry": {
+                "$ref": "#/components/headers/x-should-retry"
+              },
+              "Retry-After": {
+                "$ref": "#/components/headers/Retry-After"
+              },
+              "Retry-After-Ms": {
+                "$ref": "#/components/headers/Retry-After-Ms"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Retryable service_unavailable when replay storage cannot answer, maintenance, or an existing authentication/limiter store outage. Observe Retry-After-Ms or Retry-After.",
+            "headers": {
+              "X-Request-Id": {
+                "$ref": "#/components/headers/X-Request-Id"
+              },
+              "X-Client-Request-Id": {
+                "$ref": "#/components/headers/X-Client-Request-Id"
+              },
+              "X-RateLimit-Limit": {
+                "$ref": "#/components/headers/X-RateLimit-Limit"
+              },
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Reset": {
+                "$ref": "#/components/headers/X-RateLimit-Reset"
+              },
+              "X-RateLimit-Limit-Requests": {
+                "$ref": "#/components/headers/X-RateLimit-Limit-Requests"
+              },
+              "X-RateLimit-Remaining-Requests": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining-Requests"
+              },
+              "X-RateLimit-Reset-Requests": {
+                "$ref": "#/components/headers/X-RateLimit-Reset-Requests"
+              },
+              "Cache-Control": {
+                "$ref": "#/components/headers/Cache-Control"
+              },
+              "X-Latency-Ms": {
+                "$ref": "#/components/headers/X-Latency-Ms"
+              },
+              "Server-Timing": {
+                "$ref": "#/components/headers/Server-Timing"
+              },
+              "x-should-retry": {
+                "$ref": "#/components/headers/x-should-retry"
+              },
+              "Retry-After": {
+                "$ref": "#/components/headers/Retry-After"
+              },
+              "Retry-After-Ms": {
+                "$ref": "#/components/headers/Retry-After-Ms"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "5XX": {
+            "description": "The existing platform error envelope; retry the same read only when error.retryable is true, observing any pacing headers.",
+            "headers": {
+              "X-Request-Id": {
+                "$ref": "#/components/headers/X-Request-Id"
+              },
+              "X-Client-Request-Id": {
+                "$ref": "#/components/headers/X-Client-Request-Id"
+              },
+              "X-RateLimit-Limit": {
+                "$ref": "#/components/headers/X-RateLimit-Limit"
+              },
+              "X-RateLimit-Remaining": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining"
+              },
+              "X-RateLimit-Reset": {
+                "$ref": "#/components/headers/X-RateLimit-Reset"
+              },
+              "X-RateLimit-Limit-Requests": {
+                "$ref": "#/components/headers/X-RateLimit-Limit-Requests"
+              },
+              "X-RateLimit-Remaining-Requests": {
+                "$ref": "#/components/headers/X-RateLimit-Remaining-Requests"
+              },
+              "X-RateLimit-Reset-Requests": {
+                "$ref": "#/components/headers/X-RateLimit-Reset-Requests"
+              },
+              "Cache-Control": {
+                "$ref": "#/components/headers/Cache-Control"
+              },
+              "X-Latency-Ms": {
+                "$ref": "#/components/headers/X-Latency-Ms"
+              },
+              "Server-Timing": {
+                "$ref": "#/components/headers/Server-Timing"
+              },
+              "x-should-retry": {
+                "$ref": "#/components/headers/x-should-retry"
+              },
+              "Retry-After": {
+                "$ref": "#/components/headers/Retry-After"
+              },
+              "Retry-After-Ms": {
+                "$ref": "#/components/headers/Retry-After-Ms"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -567,6 +1619,37 @@
         "description": "The gateway's stages and their durations, on answers to a proven key.",
         "schema": {
           "type": "string"
+        }
+      },
+      "X-RateLimit-Limit-Requests": {
+        "description": "The lower of the key's and workspace's requests-per-minute limits.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "X-RateLimit-Remaining-Requests": {
+        "description": "The lower remaining allowance in the key's and workspace's minute windows.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "X-RateLimit-Reset-Requests": {
+        "description": "The Unix reset second for the tighter remaining key or workspace allowance.",
+        "schema": {
+          "type": "integer"
+        }
+      },
+      "X-Client-Request-Id": {
+        "description": "The valid caller-supplied id for this lookup, when present; not the original decision's request id.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "Cache-Control": {
+        "description": "Lookup responses are never cached.",
+        "schema": {
+          "type": "string",
+          "const": "no-store"
         }
       },
       "sz-danger-zone": {
@@ -673,6 +1756,30 @@
             "enum": [
               "standard"
             ]
+          },
+          "policy": {
+            "description": "Optional gateway policy, echoed when supplied. Where request policy is served, it is available on ordinary decide and stream start for every workspace; other decision paths refuse policy with parameter policy. on_low_confidence error and require_calibrated are refused with invalid_request and their policy member labels.",
+            "type": "object",
+            "properties": {
+              "min_confidence": {
+                "description": "Minimum public answer confidence; equality passes.",
+                "type": "number",
+                "exclusiveMinimum": 0,
+                "maximum": 1
+              },
+              "on_low_confidence": {
+                "description": "An abstained answer is charged exactly like any answered question. Omission means abstain; the completed answer counts toward the monthly cap.",
+                "type": "string",
+                "const": "abstain"
+              },
+              "max_cost_usd": {
+                "description": "Refused when the request's maximum possible cost exceeds max_cost_usd. At most eight fractional decimal digits.",
+                "type": "number",
+                "exclusiveMinimum": 0,
+                "maximum": 1000
+              }
+            },
+            "additionalProperties": false
           }
         },
         "required": [
@@ -924,6 +2031,9 @@
                 },
                 {
                   "$ref": "#/components/schemas/QuestionRefusal"
+                },
+                {
+                  "$ref": "#/components/schemas/AbstainedAnswer"
                 }
               ]
             }
@@ -971,6 +2081,30 @@
               "thought_tokens"
             ],
             "additionalProperties": false
+          },
+          "policy": {
+            "description": "Optional gateway policy, echoed when supplied. Where request policy is served, it is available on ordinary decide and stream start for every workspace; other decision paths refuse policy with parameter policy. on_low_confidence error and require_calibrated are refused with invalid_request and their policy member labels.",
+            "type": "object",
+            "properties": {
+              "min_confidence": {
+                "description": "Minimum public answer confidence; equality passes.",
+                "type": "number",
+                "exclusiveMinimum": 0,
+                "maximum": 1
+              },
+              "on_low_confidence": {
+                "description": "An abstained answer is charged exactly like any answered question. Omission means abstain; the completed answer counts toward the monthly cap.",
+                "type": "string",
+                "const": "abstain"
+              },
+              "max_cost_usd": {
+                "description": "Refused when the request's maximum possible cost exceeds max_cost_usd. At most eight fractional decimal digits.",
+                "type": "number",
+                "exclusiveMinimum": 0,
+                "maximum": 1000
+              }
+            },
+            "additionalProperties": false
           }
         },
         "required": [
@@ -983,7 +2117,7 @@
           "usage"
         ],
         "additionalProperties": false,
-        "description": "Structured confidence v1. Every successful answer requires decision, confidence, alternatives and calibrated; partial metadata and mixed legacy successes are invalid."
+        "description": "Structured confidence v1. Answered questions require confidence, alternatives and calibrated. Abstained answers omit decision and include abstained plus abstention_reason; other successful answers require decision. An abstained answer is charged exactly like any answered question. It counts toward the monthly cap and incurs the normal per-answer fee. Partial metadata and mixed legacy successes are invalid."
       },
       "Answer": {
         "anyOf": [
@@ -1239,6 +2373,284 @@
           }
         ]
       },
+      "AbstainedAnswer": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "boolean"
+              },
+              "probability": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1,
+                "description": "P(true), even when decision is false. Probabilities use integer millionths; confidence and alternatives preserve the same distribution."
+              },
+              "confidence": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1,
+                "description": "The model's estimated probability that the selected decision is correct, equal to that outcome's released probability. Not a margin; measured reliability depends on the calibration chart's evaluated scope."
+              },
+              "calibration_version": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200,
+                "description": "Opaque public calibration identifier, or unpublished when no public identifier is assigned. The same registered calibration keeps the same identifier. An identifier does not prove calibration."
+              },
+              "preview": {
+                "type": "boolean",
+                "const": true,
+                "description": "Compatibility marker for an answer without attested calibration; preserved on stored replies."
+              },
+              "alternatives": {
+                "minItems": 1,
+                "maxItems": 1,
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "decision": {
+                      "type": "boolean",
+                      "description": "Another allowed outcome, with the same decision type as this answer."
+                    },
+                    "confidence": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1,
+                      "description": "This outcome's released probability, not the probability that it is the runner-up."
+                    }
+                  },
+                  "required": [
+                    "decision",
+                    "confidence"
+                  ],
+                  "additionalProperties": false
+                },
+                "description": "Every other allowed outcome exactly once, including zero-probability outcomes. Sorted by descending integer-millionth probability; choice ties use ascending UTF-8 key bytes and score ties use ascending numeric index. No probability mass is omitted."
+              },
+              "calibrated": {
+                "type": "boolean",
+                "description": "True only for an exact evidence-backed gateway release attestation matching the concrete model, calibration version, answer type, context route, serving identity, input attachment-type set and outcome count. Answers without attested calibration, including fallback and identity calibration, are false; true does not guarantee future accuracy."
+              },
+              "abstained": {
+                "type": "boolean",
+                "const": true
+              },
+              "abstention_reason": {
+                "type": "string",
+                "enum": [
+                  "low_confidence",
+                  "uncalibrated"
+                ]
+              }
+            },
+            "required": [
+              "type",
+              "probability",
+              "confidence",
+              "calibration_version",
+              "alternatives",
+              "calibrated",
+              "abstained",
+              "abstention_reason"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "choice"
+              },
+              "choice": {
+                "type": "string"
+              },
+              "probabilities": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1
+                },
+                "description": "The complete released distribution in integer millionths. The gateway preserves its validated distribution without renormalizing: a multi-outcome total may be 999999, 1000000 or 1000001 units. Confidence equals the selected outcome's released probability."
+              },
+              "confidence": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1,
+                "description": "The model's estimated probability that the selected decision is correct, equal to that outcome's released probability. Not a margin; measured reliability depends on the calibration chart's evaluated scope."
+              },
+              "calibration_version": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200,
+                "description": "Opaque public calibration identifier, or unpublished when no public identifier is assigned. The same registered calibration keeps the same identifier. An identifier does not prove calibration."
+              },
+              "preview": {
+                "type": "boolean",
+                "const": true,
+                "description": "Compatibility marker for an answer without attested calibration; preserved on stored replies."
+              },
+              "alternatives": {
+                "maxItems": 254,
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "decision": {
+                      "type": "string",
+                      "description": "Another allowed outcome, with the same decision type as this answer."
+                    },
+                    "confidence": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1,
+                      "description": "This outcome's released probability, not the probability that it is the runner-up."
+                    }
+                  },
+                  "required": [
+                    "decision",
+                    "confidence"
+                  ],
+                  "additionalProperties": false
+                },
+                "description": "Every other allowed outcome exactly once, including zero-probability outcomes. Sorted by descending integer-millionth probability; choice ties use ascending UTF-8 key bytes and score ties use ascending numeric index. No probability mass is omitted."
+              },
+              "calibrated": {
+                "type": "boolean",
+                "description": "True only for an exact evidence-backed gateway release attestation matching the concrete model, calibration version, answer type, context route, serving identity, input attachment-type set and outcome count. Answers without attested calibration, including fallback and identity calibration, are false; true does not guarantee future accuracy."
+              },
+              "abstained": {
+                "type": "boolean",
+                "const": true
+              },
+              "abstention_reason": {
+                "type": "string",
+                "enum": [
+                  "low_confidence",
+                  "uncalibrated"
+                ]
+              }
+            },
+            "required": [
+              "type",
+              "choice",
+              "probabilities",
+              "confidence",
+              "calibration_version",
+              "alternatives",
+              "calibrated",
+              "abstained",
+              "abstention_reason"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "score"
+              },
+              "score": {
+                "type": "number",
+                "description": "Diagnostic expected level index preserved from the validated node answer. It may differ from the expectation of released probabilities by the gateway's 0.000001 tolerance plus weighted probability-rounding error (at most 1e-12 per input probability). Decision confidence describes exact-level correctness, not distance from this diagnostic score."
+              },
+              "legend": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                }
+              },
+              "probabilities": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1
+                },
+                "description": "The complete released distribution in integer millionths. The gateway preserves its validated distribution without renormalizing: a multi-outcome total may be 999999, 1000000 or 1000001 units. Confidence equals the selected outcome's released probability."
+              },
+              "confidence": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1,
+                "description": "The model's estimated probability that the selected decision is correct, equal to that outcome's released probability. Not a margin; measured reliability depends on the calibration chart's evaluated scope."
+              },
+              "calibration_version": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200,
+                "description": "Opaque public calibration identifier, or unpublished when no public identifier is assigned. The same registered calibration keeps the same identifier. An identifier does not prove calibration."
+              },
+              "preview": {
+                "type": "boolean",
+                "const": true,
+                "description": "Compatibility marker for an answer without attested calibration; preserved on stored replies."
+              },
+              "alternatives": {
+                "maxItems": 9,
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "decision": {
+                      "type": "string",
+                      "pattern": "^(?:0|[1-9][0-9]*)$",
+                      "description": "Another allowed outcome, with the same decision type as this answer."
+                    },
+                    "confidence": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 1,
+                      "description": "This outcome's released probability, not the probability that it is the runner-up."
+                    }
+                  },
+                  "required": [
+                    "decision",
+                    "confidence"
+                  ],
+                  "additionalProperties": false
+                },
+                "description": "Every other allowed outcome exactly once, including zero-probability outcomes. Sorted by descending integer-millionth probability; choice ties use ascending UTF-8 key bytes and score ties use ascending numeric index. No probability mass is omitted."
+              },
+              "calibrated": {
+                "type": "boolean",
+                "description": "True only for an exact evidence-backed gateway release attestation matching the concrete model, calibration version, answer type, context route, serving identity, input attachment-type set and outcome count. Answers without attested calibration, including fallback and identity calibration, are false; true does not guarantee future accuracy."
+              },
+              "abstained": {
+                "type": "boolean",
+                "const": true
+              },
+              "abstention_reason": {
+                "type": "string",
+                "enum": [
+                  "low_confidence",
+                  "uncalibrated"
+                ]
+              }
+            },
+            "required": [
+              "type",
+              "score",
+              "legend",
+              "probabilities",
+              "confidence",
+              "calibration_version",
+              "alternatives",
+              "calibrated",
+              "abstained",
+              "abstention_reason"
+            ],
+            "additionalProperties": false
+          }
+        ],
+        "description": "An abstained answer is charged exactly like any answered question. It counts toward usage, including the per-answer fee. Retained model fields are evidence, not a decision."
+      },
       "LegacyReplayReply": {
         "type": "object",
         "properties": {
@@ -1348,7 +2760,7 @@
         ],
         "additionalProperties": false,
         "deprecated": true,
-        "description": "Stored pre-v1 reply, with public calibration identifiers, available only on an idempotent replay within its 24-hour retention. Its confidence is a legacy margin and must not be used as decision probability."
+        "description": "Stored pre-v1 reply, with public calibration identifiers, available on an idempotent decide replay or an available retained decision lookup within the original 24-hour retention. Lookup does not set the idempotent-replay header. Its confidence is a legacy margin, not a decision probability."
       },
       "LegacyAnswer": {
         "anyOf": [
@@ -1818,7 +3230,7 @@
                   "string",
                   "null"
                 ],
-                "description": "The request field the refusal names, in fixed labels: a name a caller chose reads *."
+                "description": "The request field the refusal names, in fixed labels: a name a caller chose reads *. Policy validation uses policy for a non-object, policy.<known member> for a known field, and policy.* for any unknown member."
               },
               "code": {
                 "type": [
@@ -1840,6 +3252,292 @@
             "type": "string"
           }
         }
+      },
+      "DecisionId": {
+        "type": "string",
+        "minLength": 36,
+        "maxLength": 36,
+        "pattern": "^szd_[a-f0-9]{32}$",
+        "description": "The original decision id. An invalid or unavailable id returns the same scoped 404 decision_not_found."
+      },
+      "DecisionTrace": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "object",
+          "id",
+          "request_id",
+          "created",
+          "model",
+          "model_version",
+          "render_id",
+          "route",
+          "attachments",
+          "timings",
+          "usage_units",
+          "refusal_code",
+          "refusal_codes",
+          "idempotency",
+          "stream_id",
+          "state_version"
+        ],
+        "properties": {
+          "object": {
+            "const": "system_zero.decision_trace"
+          },
+          "id": {
+            "$ref": "#/components/schemas/DecisionId"
+          },
+          "request_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The original execution request id is not linked to retained decisions; this is not the lookup request's X-Request-Id; currently null (OPEN)."
+          },
+          "created": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991,
+            "description": "The retained decision timestamp in Unix seconds, unchanged; not a usage-row or lookup timestamp."
+          },
+          "model": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9._+:-]{1,128}$",
+            "description": "The retained reply's model."
+          },
+          "model_version": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9._+:-]{1,128}$",
+            "description": "The retained reply's served_by value, unchanged."
+          },
+          "render_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The original execution render id has no existing decision-to-usage link; currently null (OPEN)."
+          },
+          "route": {
+            "type": "string",
+            "enum": [
+              "direct",
+              "long"
+            ],
+            "description": "The retained reply's context.route."
+          },
+          "attachments": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "description": "Attachment classes and counts are not available from the retained reply; currently null (OPEN).",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "class",
+                "count"
+              ],
+              "properties": {
+                "class": {
+                  "type": "string",
+                  "enum": [
+                    "document",
+                    "image",
+                    "audio",
+                    "video"
+                  ]
+                },
+                "count": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                }
+              }
+            }
+          },
+          "timings": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "queue_ms",
+              "node_ms",
+              "settle_ms"
+            ],
+            "properties": {
+              "queue_ms": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "description": "The original execution queue duration in milliseconds is not stored with a decision link; currently null (OPEN).",
+                "minimum": 0
+              },
+              "node_ms": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "description": "The original execution node duration in milliseconds has no decision-to-usage link; currently null (OPEN).",
+                "minimum": 0
+              },
+              "settle_ms": {
+                "type": [
+                  "number",
+                  "null"
+                ],
+                "description": "The original execution settle duration in milliseconds is not stored with a decision link; currently null (OPEN).",
+                "minimum": 0
+              }
+            }
+          },
+          "usage_units": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "input_tokens",
+              "cached_input_tokens",
+              "media_tokens",
+              "cached_media_tokens",
+              "long_input_tokens",
+              "media_items",
+              "thought_tokens"
+            ],
+            "properties": {
+              "input_tokens": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0,
+                "maximum": 9007199254740991,
+                "description": "The retained reply's usage.input_tokens, or null when no valid nonnegative safe-integer measurement is retained."
+              },
+              "cached_input_tokens": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0,
+                "maximum": 9007199254740991,
+                "description": "The retained reply's usage.cached_input_tokens, or null when no valid nonnegative safe-integer measurement is retained."
+              },
+              "media_tokens": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0,
+                "maximum": 9007199254740991,
+                "description": "The retained reply's usage.media_tokens, or null when no valid nonnegative safe-integer measurement is retained."
+              },
+              "cached_media_tokens": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0,
+                "maximum": 9007199254740991,
+                "description": "Retained public replies omit cached_media_tokens; currently null (OPEN)."
+              },
+              "long_input_tokens": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0,
+                "maximum": 9007199254740991,
+                "description": "The retained reply's usage.long_input_tokens, or null when no valid nonnegative safe-integer measurement is retained."
+              },
+              "media_items": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0,
+                "maximum": 9007199254740991,
+                "description": "The retained reply's usage.media_items, or null when no valid nonnegative safe-integer measurement is retained."
+              },
+              "thought_tokens": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0,
+                "maximum": 9007199254740991,
+                "description": "The retained reply's usage.thought_tokens, or null when no valid nonnegative safe-integer measurement is retained."
+              }
+            }
+          },
+          "refusal_code": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "injection_suspected",
+              "question_not_grounded",
+              "long_question_unsupported",
+              "long_options_unsupported",
+              "long_phrase_invalid",
+              "long_question_type_unsupported",
+              "long_media_guard_refused",
+              "long_no_readable_window",
+              "long_evidence_incomplete",
+              null
+            ],
+            "description": "The per-question refusal code when exactly one distinct known code is retained; null for none or multiple codes."
+          },
+          "refusal_codes": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "enum": [
+                "injection_suspected",
+                "question_not_grounded",
+                "long_question_unsupported",
+                "long_options_unsupported",
+                "long_phrase_invalid",
+                "long_question_type_unsupported",
+                "long_media_guard_refused",
+                "long_no_readable_window",
+                "long_evidence_incomplete"
+              ]
+            },
+            "description": "The sorted distinct known per-question refusal codes, with no question names or messages."
+          },
+          "idempotency": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The original execution's fresh or replay outcome has no decision-to-usage link; a lookup is not a decide replay; currently null (OPEN).",
+            "enum": [
+              "fresh",
+              "replay",
+              null
+            ]
+          },
+          "stream_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The original stream id is not persisted with a decision link; currently null (OPEN)."
+          },
+          "state_version": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "The original stream state version is not persisted with a decision link; currently null (OPEN).",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "description": "Content-free metadata projected only from a currently retained scoped decision. No answer values, question names, messages, attachment names or request content. Missing measurements stay null; draft migration fields remain OPEN and are not read or written by this API."
       }
     }
   }

@@ -18,13 +18,15 @@ import httpx
 from ._transport import AttemptState, default_transport, attempt_state
 from ._connection import ResponseCloseGuard, connection_error, is_transport_error
 from ._retry import _recover_workflow, _retry_context, _retry_response, _retry_wait
+from .decision_records import DecisionRecords, DecisionTrace
 from .errors import APIConnectionError, APIError, APITimeoutError, InvalidRequestError, LongContextNotAvailableError, SystemZeroError, error_class
+from .policy import validate_request_policy
 from .response import ResponseResult, response_metadata
 from .types import DecideReply, DecideRequest, ModelList
 from .enabled_types import EnabledDecideRequest, VideoRequest
 
 
-VERSION = "0.4.5"
+VERSION = "0.4.6"
 DEFAULT_BASE_URL = "https://api.rightnowai.co/v1"
 _MAX_TIMEOUT_SECONDS = 2_147_483_647 / 1000
 
@@ -169,6 +171,37 @@ class SystemZero:
                 raise connection_error(cause, "RightNow connection cleanup failed.",
                                        context_boundary=context_boundary) from None
 
+    def get_decision(self, id: str, *, client_request_id: Optional[str] = None,
+                     headers: Optional[Mapping[str, str]] = None,
+                     retry_budget: Optional[float] = None) -> DecideReply:
+        """Read a retained decision made with this API key."""
+        return DecisionRecords(self).get_decision(id, client_request_id=client_request_id,
+                                                 headers=headers, retry_budget=retry_budget)
+
+    def get_decision_with_response(self, id: str, *, client_request_id: Optional[str] = None,
+                                   headers: Optional[Mapping[str, str]] = None,
+                                   retry_budget: Optional[float] = None) -> ResponseResult[DecideReply]:
+        """Read a retained decision with HTTP response metadata."""
+        return DecisionRecords(self).get_decision_with_response(id, client_request_id=client_request_id,
+                                                               headers=headers, retry_budget=retry_budget)
+
+    def get_decision_trace(self, id: str, *, client_request_id: Optional[str] = None,
+                           headers: Optional[Mapping[str, str]] = None,
+                           retry_budget: Optional[float] = None) -> DecisionTrace:
+        """Read the content-free trace for a retained decision."""
+        return DecisionRecords(self).get_decision_trace(id, client_request_id=client_request_id,
+                                                       headers=headers, retry_budget=retry_budget)
+
+    def get_decision_trace_with_response(self, id: str, *, client_request_id: Optional[str] = None,
+                                         headers: Optional[Mapping[str, str]] = None,
+                                         retry_budget: Optional[float] = None) -> ResponseResult[DecisionTrace]:
+        """Read a retained trace with HTTP response metadata."""
+        return DecisionRecords(self).get_decision_trace_with_response(id, client_request_id=client_request_id,
+                                                                     headers=headers, retry_budget=retry_budget)
+
+    getDecision = get_decision
+    getDecisionTrace = get_decision_trace
+
     def decide(
         self, request: Union[DecideRequest, EnabledDecideRequest, VideoRequest, Mapping[str, Any]], *,
         idempotency_key: Optional[str] = None, client_request_id: Optional[str] = None,
@@ -196,6 +229,7 @@ class SystemZero:
             for name in ("policy", "mode", "route", "session_id", "prompt_cache_key"):
                 if name in request:
                     _long_context_unavailable(name)
+        validate_request_policy(request)
         outgoing = httpx.Headers(headers)
         if "SZ-Danger-Zone" in outgoing or (danger_zone is not None and danger_zone not in ("accept", "long_context_64k", "long_context_128k", "long_context_1m")):
             raise InvalidRequestError("Use danger_zone with accept, long_context_64k, long_context_128k or long_context_1m; do not supply its header.",

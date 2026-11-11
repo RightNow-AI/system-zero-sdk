@@ -6,6 +6,7 @@ import type { Attachment, JsonValue, StructuredJson } from './api-types.js';
 import { APIConnectionError, responseError, SystemZeroError } from './errors.js';
 import { validateAttachments } from './media.js';
 import { retryAfterMs, shouldRetry } from './retry.js';
+import { validateRequestPolicy } from './policy.js';
 import type {
   ClientMutation, EventLatency, PossiblyDecided, StreamAck, StreamClientOptions,
   StreamDecision, StreamError, StreamEvent, StreamHello, StreamRequest,
@@ -293,6 +294,7 @@ export class SystemZeroStreamClient implements AsyncIterable<StreamEvent> {
     const mode = options.decisionMode ?? 'on_change';
     if (!['on_change', 'on_request'].includes(mode)) return Promise.reject(new TypeError('decisionMode must be on_change or on_request.'));
     try {
+      validateRequestPolicy(request);
       if (request.attachments != null) validateStreamAttachments(request.attachments);
       this.#request = copy(request);
     } catch (error) { return Promise.reject(error); }

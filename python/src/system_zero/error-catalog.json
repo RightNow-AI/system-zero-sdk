@@ -31,6 +31,10 @@
     "status": 429,
     "message": "This account reached today's request limit. It resets at 00:00 UTC."
   },
+  "decision_not_found": {
+    "status": 404,
+    "message": "The requested decision is not available."
+  },
   "deliberate_not_available": {
     "status": 404,
     "message": "This mode is not available."
@@ -218,6 +222,14 @@
   "payload_too_large": {
     "status": 413,
     "message": "The request exceeds the body limit. Send fewer or smaller attachments."
+  },
+  "policy_confidence_failed": {
+    "status": 422,
+    "message": "The reply failed the confidence policy. The completed decision is counted toward the monthly cap and is not charged."
+  },
+  "policy_max_cost_exceeded": {
+    "status": 400,
+    "message": "The request's maximum possible cost exceeds max_cost_usd. The request was not dispatched, counted toward monthly usage or charged."
   },
   "question_not_grounded": {
     "status": 422,

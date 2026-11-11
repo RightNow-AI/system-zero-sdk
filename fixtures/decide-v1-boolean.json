@@ -1,0 +1,34 @@
+{
+  "id": "szd_00000000000000000000000000000001",
+  "model": "system-zero-3.0.0",
+  "served_by": "system-zero-3.0.0",
+  "created": 1792144800,
+  "context": {
+    "route": "direct",
+    "tokens": 100
+  },
+  "answers": {
+    "escalate": {
+      "type": "boolean",
+      "probability": 0.06,
+      "decision": false,
+      "confidence": 0.94,
+      "alternatives": [
+        {
+          "decision": true,
+          "confidence": 0.06
+        }
+      ],
+      "calibrated": false,
+      "calibration_version": "unpublished"
+    }
+  },
+  "usage": {
+    "input_tokens": 100,
+    "cached_input_tokens": 0,
+    "media_tokens": 0,
+    "long_input_tokens": 0,
+    "media_items": 0,
+    "thought_tokens": 0
+  }
+}

@@ -112,6 +112,9 @@ def score_reply(request: Mapping[str, Any], expected: Mapping[str, Any], reply: 
                 keys = labels if question['type'] == 'choice' else [str(index) for index in range(len(question['criteria']))]
                 if set(raw['probabilities']) != set(keys):
                     _reply_error()
+            if result.kind == 'abstained':
+                rows.append({'question_id': question_id, 'type': question['type'], 'outcome': 'abstained', 'expected_refusal': wanted is None, 'correct': False, 'confidence': None, 'choice_expected': labels.index(wanted) if question['type'] == 'choice' and isinstance(wanted, str) else None, 'choice_actual': None, 'choice_schema': schema, 'code': None})
+                continue
             correct = type(result.decision) is type(wanted) and result.decision == wanted
             actual = labels.index(result.decision) if question['type'] == 'choice' else None
             rows.append({'question_id': question_id, 'type': question['type'], 'outcome': 'correct' if correct else 'wrong', 'expected_refusal': wanted is None, 'correct': correct, 'confidence': result.confidence, 'choice_expected': labels.index(wanted) if question['type'] == 'choice' and isinstance(wanted, str) else None, 'choice_actual': actual, 'choice_schema': schema, 'code': None})
@@ -120,11 +123,13 @@ def score_reply(request: Mapping[str, Any], expected: Mapping[str, Any], reply: 
         _reply_error()
 
 def _project_question(value: Mapping[str, Any]):
-    if not isinstance(value, Mapping) or not isinstance(value.get('question_id'), str) or value.get('type') not in _TYPES or (value.get('outcome') not in ('correct', 'wrong', 'refused')) or (type(value.get('correct')) is not bool) or (type(value.get('expected_refusal')) is not bool):
+    if not isinstance(value, Mapping) or not isinstance(value.get('question_id'), str) or value.get('type') not in _TYPES or (value.get('outcome') not in ('correct', 'wrong', 'refused', 'abstained')) or (type(value.get('correct')) is not bool) or (type(value.get('expected_refusal')) is not bool):
         _input_error()
     confidence = value.get('confidence')
     code = value.get('code')
     if 'confidence' not in value or 'code' not in value or (confidence is not None and (not _nonnegative(confidence) or confidence > 1 or confidence != math.floor(confidence * 1000000 + 0.5) / 1000000)) or (code is not None and (not isinstance(code, str) or code not in _KNOWN_CODES)):
+        _input_error()
+    if value['outcome'] == 'abstained' and (value['correct'] or value['confidence'] is not None or value['code'] is not None or (value['choice_actual'] is not None)):
         _input_error()
     refused = value['outcome'] == 'refused'
     if value['correct'] != (value['expected_refusal'] if refused else value['outcome'] == 'correct') or (refused and (confidence is not None or code not in _SEMANTIC_REFUSAL_CODES)) or (not refused and code is not None) or (value['expected_refusal'] and (not refused) and value['correct']):
@@ -133,7 +138,7 @@ def _project_question(value: Mapping[str, Any]):
         if field not in value or (value[field] is not None and (not _integer(value[field]))):
             _input_error()
     if value['type'] == 'choice':
-        if not isinstance(value.get('choice_schema'), str) or re.fullmatch('[a-f0-9]{64}', value['choice_schema']) is None or value['expected_refusal'] != (value['choice_expected'] is None) or (refused != (value['choice_actual'] is None)):
+        if not isinstance(value.get('choice_schema'), str) or re.fullmatch('[a-f0-9]{64}', value['choice_schema']) is None or value['expected_refusal'] != (value['choice_expected'] is None) or ((refused or value['outcome'] == 'abstained') != (value['choice_actual'] is None)):
             _input_error()
     elif value['choice_expected'] is not None or value['choice_actual'] is not None or 'choice_schema' not in value or (value['choice_schema'] is not None):
         _input_error()
@@ -161,7 +166,7 @@ def _accuracy(rows: Sequence[Mapping[str, Any]]):
     correct = sum((row['correct'] for row in rows))
     expected_answers = sum((not row['expected_refusal'] for row in rows))
     false_refusals = sum((not row['expected_refusal'] and row['outcome'] == 'refused' for row in rows))
-    return {'questions': len(rows), 'correct': correct, 'wrong': sum((row['outcome'] == 'wrong' for row in rows)), 'refused': sum((row['outcome'] == 'refused' for row in rows)), 'expected_answers': expected_answers, 'false_refusals': false_refusals, 'accuracy': correct / len(rows) if rows else None, 'false_refusal_rate': false_refusals / expected_answers if expected_answers else None}
+    return {**({'abstained': sum((row['outcome'] == 'abstained' for row in rows))} if any((row['outcome'] == 'abstained' for row in rows)) else {}), 'questions': len(rows), 'correct': correct, 'wrong': sum((row['outcome'] == 'wrong' for row in rows)), 'refused': sum((row['outcome'] == 'refused' for row in rows)), 'expected_answers': expected_answers, 'false_refusals': false_refusals, 'accuracy': correct / len(rows) if rows else None, 'false_refusal_rate': false_refusals / expected_answers if expected_answers else None}
 
 def _percentile(ordered: Sequence[float], p: float) -> Optional[float]:
     if not ordered:

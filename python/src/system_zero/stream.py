@@ -28,6 +28,7 @@ from websockets.frames import OP_PONG
 from .errors import APIConnectionError, APIError, APITimeoutError, StreamLimitError, SystemZeroError, error_class
 from ._connection import connection_error, is_transport_error
 from ._retry import _retry_after_seconds as _capacity_retry_after_seconds, _retry_response
+from .policy import validate_request_policy
 from .stream_interfaces import (
     DecisionMode, EventLatency, ReconnectPolicy, StreamAck, StreamDecision,
     StreamEvent, StreamHello, StreamScheduled,
@@ -539,6 +540,7 @@ class SystemZeroStreamClient(AsyncIterator[StreamEvent]):
             raise ValueError("decision_mode must be on_change or on_request.")
         if not _integer(min_interval_ms, 0, 60000):
             raise ValueError("min_interval_ms must be an integer from 0 to 60000.")
+        validate_request_policy(request)
         await self._available()
         if self._request is not None:
             raise ValueError("start is allowed once per logical stream client.")

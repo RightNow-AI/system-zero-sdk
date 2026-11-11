@@ -11,7 +11,7 @@ export type Usage = V1DecideReply['usage'];
 export interface QuestionScore {
   question_id: string;
   type: QuestionType;
-  outcome: 'correct' | 'wrong' | 'refused';
+  outcome: 'correct' | 'wrong' | 'refused' | 'abstained';
   expected_refusal: boolean;
   correct: boolean;
   confidence: number | null;
@@ -29,6 +29,7 @@ export interface EvaluationRecord {
   code: string | null;
 }
 export interface AccuracyMetrics {
+  abstained?: number;
   questions: number;
   correct: number;
   wrong: number;
@@ -173,6 +174,11 @@ export function scoreReply(request: Pick<DecideRequest, 'questions'>, expected: 
         const actualKeys = Object.keys(raw.probabilities);
         if (actualKeys.length !== expectedKeys.length || expectedKeys.some(key => !Object.hasOwn(raw.probabilities, key))) replyError();
       }
+      if (result.kind === 'abstained') return {
+        question_id, type: question.type, outcome: 'abstained', expected_refusal: wanted === null,
+        correct: false, confidence: null, choice_expected: question.type === 'choice' && typeof wanted === 'string' ? labels.indexOf(wanted) : null,
+        choice_actual: null, choice_schema: schema, code: null,
+      };
       const correct = result.decision === wanted;
       const actual = question.type === 'choice' ? labels.indexOf(String(result.decision)) : null;
       if (actual !== null && actual < 0) replyError();
@@ -189,11 +195,12 @@ export function scoreReply(request: Pick<DecideRequest, 'questions'>, expected: 
 }
 function projectQuestion(value: QuestionScore): QuestionScore {
   if (!object(value) || typeof value.question_id !== 'string' || !types.includes(value.type) ||
-    !['correct', 'wrong', 'refused'].includes(value.outcome) || typeof value.correct !== 'boolean' ||
+    !['correct', 'wrong', 'refused', 'abstained'].includes(value.outcome) || typeof value.correct !== 'boolean' ||
     typeof value.expected_refusal !== 'boolean' ||
     (value.confidence !== null && (!nonnegative(value.confidence) || value.confidence > 1 ||
       value.confidence !== Math.round(value.confidence * 1_000_000) / 1_000_000)) ||
     (value.code !== null && !knownCodes.has(value.code))) inputError();
+  if (value.outcome === 'abstained' && (value.correct || value.confidence !== null || value.code !== null || value.choice_actual !== null)) inputError();
   const refused = value.outcome === 'refused';
   if (value.correct !== (refused ? value.expected_refusal : value.outcome === 'correct') ||
     (refused && (value.confidence !== null || value.code === null || !semanticRefusalCodes.has(value.code))) || (!refused && value.code !== null) ||
@@ -201,7 +208,7 @@ function projectQuestion(value: QuestionScore): QuestionScore {
   for (const index of [value.choice_expected, value.choice_actual]) if (index !== null && !integer(index)) inputError();
   if (value.type === 'choice') {
     if (typeof value.choice_schema !== 'string' || !/^[a-f0-9]{64}$/u.test(value.choice_schema) ||
-      (value.expected_refusal !== (value.choice_expected === null)) || (refused !== (value.choice_actual === null))) inputError();
+      (value.expected_refusal !== (value.choice_expected === null)) || ((refused || value.outcome === 'abstained') !== (value.choice_actual === null))) inputError();
   } else if (value.choice_expected !== null || value.choice_actual !== null || value.choice_schema !== null) inputError();
   return {
     question_id: value.question_id, type: value.type, outcome: value.outcome,
@@ -236,6 +243,7 @@ function accuracy(rows: QuestionScore[]): AccuracyMetrics {
   const expectedAnswers = rows.filter(row => !row.expected_refusal).length;
   const falseRefusals = rows.filter(row => !row.expected_refusal && row.outcome === 'refused').length;
   return {
+    ...(rows.some(row => row.outcome === 'abstained') ? { abstained: rows.filter(row => row.outcome === 'abstained').length } : {}),
     questions: rows.length, correct, wrong: rows.filter(row => row.outcome === 'wrong').length,
     refused: rows.filter(row => row.outcome === 'refused').length, expected_answers: expectedAnswers,
     false_refusals: falseRefusals, accuracy: rows.length ? correct / rows.length : null,

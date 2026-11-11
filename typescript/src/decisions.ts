@@ -1,8 +1,9 @@
 import { Buffer } from 'node:buffer';
+import { policyDecisionFor, type AbstainedAnswer, type PolicyAbstention } from './policy.js';
 import type { Answer, AuthoritativeAnswer, DecideReply, DecideRequest, DecisionAlternative, LegacyAnswer, Question, QuestionRefusalData } from './api-types.js';
 
 export type Alternative = DecisionAlternative;
-export type AnswerOrRefusal = Answer | QuestionRefusalData | { error: { code: string; retryable: false } };
+export type AnswerOrRefusal = Answer | AbstainedAnswer | QuestionRefusalData | { error: { code: string; retryable: false } };
 export type SystemZeroReply = Omit<DecideReply, 'answers'> & { answers: Record<string, AnswerOrRefusal> };
 
 export interface DecisionSummary {
@@ -41,7 +42,7 @@ export class QuestionRefusal {
   }
 }
 
-export type DecisionResult = DecisionSummary | LegacyDecision | QuestionRefusal;
+export type DecisionResult = DecisionSummary | LegacyDecision | QuestionRefusal | PolicyAbstention;
 
 const markers = ['decision', 'alternatives', 'calibrated'] as const;
 const million = 1_000_000;
@@ -232,6 +233,7 @@ function alternatives(answer: Record<string, unknown>, expected: Alternative[]):
 export function decisionFor(answer: AnswerOrRefusal, _question?: Question): DecisionResult {
   if (!record(answer)) invalid('answer must be an object');
   const source = answer as Record<string, unknown>;
+  if (Object.hasOwn(source, 'abstained') || Object.hasOwn(source, 'abstention_reason')) return policyDecisionFor(answer, _question);
   if (Object.hasOwn(source, 'error')) {
     const error = source.error;
     if (Object.keys(source).length !== 1 || !record(error) || Object.keys(error).length !== 2 || typeof error.code !== 'string' || error.retryable !== false) invalid('question refusal shape');
@@ -289,8 +291,9 @@ export function decisionsFor(reply: SystemZeroReply, request?: Pick<DecideReques
   const entries = Object.entries(reply.answers).map(([name, answer]) => {
     const result = decisionFor(answer, request?.questions[name]);
     if (result.kind !== 'refusal') {
-      if (version !== undefined && version !== result.kind) invalid('reply cannot mix successful answer versions');
-      version = result.kind;
+      const current = result.kind === 'abstained' ? 'v1' : result.kind;
+      if (version !== undefined && version !== current) invalid('reply cannot mix successful answer versions');
+      version = current;
     }
     return [name, result] as const;
   });

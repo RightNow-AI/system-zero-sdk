@@ -4,6 +4,8 @@ from dataclasses import dataclass, field
 import math
 from typing import Any, Callable, Dict, List, Literal, Mapping, Optional, Sequence, Union
 
+from .types import AbstentionReason
+
 
 DecisionValue = Union[bool, str]
 _MILLION = 1_000_000
@@ -58,6 +60,22 @@ class LegacyDecision:
     calibrated: None = None
     refusal: None = None
     kind: Literal["legacy"] = "legacy"
+
+
+@dataclass(frozen=True)
+class PolicyAbstention:
+    """A completed and counted answer with no public decision attribute."""
+
+    abstention_reason: AbstentionReason
+    confidence: float
+    probability: float
+    alternatives: Sequence[Any]
+    calibrated: bool
+    raw: Mapping[str, Any]
+    kind: Literal["abstained"] = "abstained"
+    abstained: Literal[True] = True
+    preview: Optional[Literal[True]] = None
+    calibration_version: Optional[str] = None
 
 
 def _invalid(detail: str):
@@ -323,7 +341,7 @@ def _alternatives(answer: Mapping[str, Any], expected: Sequence[Mapping[str, Any
             _invalid("alternatives must match complete outcomes in probability and tie order")
 
 
-def decision_for(answer: Mapping[str, Any], question: Optional[Mapping[str, Any]] = None) -> Union[Decision, LegacyDecision]:
+def decision_for(answer: Mapping[str, Any], question: Optional[Mapping[str, Any]] = None) -> Union[Decision, LegacyDecision, PolicyAbstention]:
     """Read complete v1 fields, or return a distinctly tagged legacy replay.
 
     Question is retained for call compatibility; request order never orders v1
@@ -331,6 +349,10 @@ def decision_for(answer: Mapping[str, Any], question: Optional[Mapping[str, Any]
     """
     if not isinstance(answer, Mapping):
         _invalid("answer must be an object")
+    if "abstained" in answer or "abstention_reason" in answer:
+        # Policy imports the ordinary reader; load only this branch lazily.
+        from .policy import policy_decision_for
+        return policy_decision_for(answer, question)
     if "error" in answer:
         error = answer["error"]
         if set(answer) != {"error"} or not isinstance(error, Mapping) or set(error) != {"code", "retryable"} or not isinstance(error["code"], str) or error["retryable"] is not False:
@@ -381,7 +403,7 @@ def decision_for(answer: Mapping[str, Any], question: Optional[Mapping[str, Any]
                     calibration_version=answer["calibration_version"])
 
 
-def decisions_for(reply: Mapping[str, Any], request: Optional[Mapping[str, Any]] = None) -> Dict[str, Union[Decision, LegacyDecision]]:
+def decisions_for(reply: Mapping[str, Any], request: Optional[Mapping[str, Any]] = None) -> Dict[str, Union[Decision, LegacyDecision, PolicyAbstention]]:
     """Refusals may accompany either version; successful answer versions cannot mix."""
     answers = reply.get("answers")
     if not isinstance(answers, Mapping):
@@ -391,7 +413,7 @@ def decisions_for(reply: Mapping[str, Any], request: Optional[Mapping[str, Any]]
     for name, answer in answers.items():
         result = decision_for(answer, request.get("questions", {}).get(name) if request is not None else None)
         if result.kind != "refusal":
-            current = result.kind
+            current = "v1" if result.kind == "abstained" else result.kind
             if version is not None and version != current:
                 _invalid("reply cannot mix successful answer versions")
             version = current

@@ -46,7 +46,7 @@ def test_ordinary_helper_requests_and_large_states_add_no_opt_in():
         client.decide({**REQUEST, "state": "x" * 140000})
     assert all("SZ-Danger-Zone" not in request.headers for request in seen)
 
-@pytest.mark.parametrize("rule", ["billing", "opt_in", "class", "deny_list", "global_switch", "account_deleted", "future_rule"])
+@pytest.mark.parametrize("rule", ["billing", "class", "deny_list", "global_switch", "account_deleted", "future_rule"])
 def test_typed_eligibility_and_refusal_envelope(rule):
     seen = []
     def send(request):

@@ -1,0 +1,110 @@
+{
+  "id": "szd_00000000000000000000000000000001",
+  "decision_path": "/system-zero/decisions/szd_00000000000000000000000000000001",
+  "trace_path": "/system-zero/decisions/szd_00000000000000000000000000000001/trace",
+  "decision_fixtures": [
+    "decide-v1-boolean.json",
+    "decide-v1-choice.json",
+    "decide-v1-score.json",
+    "decide-boolean.json",
+    "decide-refusal.json"
+  ],
+  "invalid_ids": [
+    "",
+    "szd_short",
+    "../models",
+    "szd_00000000000000000000000000000001/trace",
+    "szd_00000000000000000000000000000001?x=y",
+    "szd_0000000000000000000000000000000A",
+    "szd_00000000000000000000000000000001\n"
+  ],
+  "trace": {
+    "object": "system_zero.decision_trace",
+    "id": "szd_00000000000000000000000000000001",
+    "request_id": null,
+    "created": 1792144800,
+    "model": "system-zero-2.0.0",
+    "model_version": "system-zero-2.0.0",
+    "render_id": null,
+    "route": "direct",
+    "attachments": null,
+    "timings": {
+      "queue_ms": null,
+      "node_ms": null,
+      "settle_ms": null
+    },
+    "usage_units": {
+      "input_tokens": 100,
+      "cached_input_tokens": 0,
+      "media_tokens": 0,
+      "cached_media_tokens": null,
+      "long_input_tokens": 0,
+      "media_items": 0,
+      "thought_tokens": 0
+    },
+    "refusal_code": null,
+    "refusal_codes": [],
+    "idempotency": null,
+    "stream_id": null,
+    "state_version": null
+  },
+  "trace_variants": [
+    {
+      "route": "long",
+      "idempotency": null,
+      "stream_id": null,
+      "state_version": null
+    },
+    {
+      "refusal_code": "question_not_grounded",
+      "refusal_codes": [
+        "question_not_grounded"
+      ]
+    },
+    {
+      "refusal_code": null,
+      "refusal_codes": [
+        "injection_suspected",
+        "question_not_grounded"
+      ]
+    }
+  ],
+  "not_found": {
+    "error": {
+      "message": "The requested decision is not available.",
+      "type": "not_found_error",
+      "code": "decision_not_found",
+      "param": null,
+      "retryable": false
+    },
+    "request_id": "req_synthetic_lookup"
+  },
+  "response_headers": {
+    "cache-control": "no-store",
+    "content-type": "application/json",
+    "server-timing": "auth;dur=0.000, limit;dur=0.000, total;dur=0.000",
+    "x-latency-ms": "1",
+    "x-request-id": "req_synthetic_lookup",
+    "x-client-request-id": "synthetic-client",
+    "x-ratelimit-limit": "10",
+    "x-ratelimit-limit-requests": "10",
+    "x-ratelimit-remaining": "9",
+    "x-ratelimit-remaining-requests": "9",
+    "x-ratelimit-reset": "1792144860",
+    "x-ratelimit-reset-requests": "1792144860"
+  },
+  "not_found_headers": {
+    "cache-control": "no-store",
+    "content-type": "application/json",
+    "server-timing": "auth;dur=0.000, limit;dur=0.000, total;dur=0.000",
+    "x-request-id": "req_synthetic_lookup",
+    "x-client-request-id": "synthetic-client",
+    "x-should-retry": "false",
+    "x-ratelimit-limit": "10",
+    "x-ratelimit-limit-requests": "10",
+    "x-ratelimit-remaining": "9",
+    "x-ratelimit-remaining-requests": "9",
+    "x-ratelimit-reset": "1792144860",
+    "x-ratelimit-reset-requests": "1792144860"
+  }
+}

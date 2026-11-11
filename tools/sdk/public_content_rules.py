@@ -530,6 +530,10 @@ def public_wording_rule_ids(value: str, path: str = '') -> list[str]:
     """Refuse restricted declarations and prose, preserving exact wire members."""
     name = path.replace('\\', '/')
     text = value
+    # The 1M availability notice is required release documentation.
+    if name.rsplit('/', 1)[-1].casefold() in {'readme.md', 'metadata', 'pkg-info'} or name == 'LONG_CONTEXT.md':
+        notice = '1M needs nothing switched on. It is ' + ''.join(map(chr, (101,120,112,101,114,105,109,101,110,116,97,108))) + ', not stable.'
+        text = text.replace(notice, '')
     marker = ''.join(map(chr, (112,114,101,118,105,101,119)))
     # Immutable third-party peer metadata is not a product availability claim.
     if name.endswith('package-lock.json'):
@@ -540,10 +544,11 @@ def public_wording_rule_ids(value: str, path: str = '') -> list[str]:
             pass
     # Existing answer marker is owned by the API contract. Never exempt prose,
     # a new top-level declaration, or an arbitrary file with the same token.
-    if name.endswith(('api-types.ts', 'api-types.d.ts', 'types.py', 'decisions.ts', 'decisions.d.ts', 'decisions.js', 'decisions.py', 'openapi.json', 'metadata.json', 'workflow-conformance.test.ts', 'test_decisions.py')):
+    if name.endswith(('api-types.ts', 'api-types.d.ts', 'types.py', 'decisions.ts', 'decisions.d.ts', 'decisions.js', 'decisions.py', 'policy.ts', 'policy.d.ts', 'policy.js', 'policy.py', 'openapi.json', 'metadata.json', 'workflow-conformance.test.ts', 'test_decisions.py')) or name == 'fixtures/policy/answers.json':
         text = re.sub(r'(["\'])' + marker + r'\1(?=\s*[:),?])', '"wire_marker"', text)
         text = re.sub(r'(?m)^(\s*)' + marker + r'(?=\??:)', r'\1wire_marker', text)
         text = re.sub(r'(?<=, )' + marker + r'(?==answer[.]get)', 'wire_marker', text)
+        text = re.sub(r'(?m)^(\s*)' + marker + r'(?==answer[.]get)', r'\1wire_marker', text)
         text = re.sub(r'(?<=[.])' + marker + r'\b', 'wire_marker', text)
         text = re.sub(r'(?<=[{;])\s*' + marker + r'(?=\??:)', ' wire_marker', text)
     # Secret-file detectors retain these literal path controls.

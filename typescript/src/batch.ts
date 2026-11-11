@@ -20,7 +20,7 @@ export interface BatchRecord extends Admission {
   usage: BatchUsage | null; questions: QuestionScore[];
 }
 export interface BatchOptions {
-  /** Explicit LongContextRequest option; workspace opt-in is also required. */
+  /** Explicit LongContextRequest option; workspace eligibility still applies. */
   dangerZone?: 'accept' | 'long_context_64k' | 'long_context_128k' | 'long_context_1m';
   runId: string; resultsPath: string; deadlineMs: number; concurrency?: number; maxRetries?: number;
   /** Admission count cap; defaults to 1,000 and includes durable admissions on resume. */

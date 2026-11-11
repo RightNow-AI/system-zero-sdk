@@ -42,7 +42,7 @@ it('ordinary helper requests and large states add no opt-in', async () => {
   await client.decide({ ...request, state: 'x'.repeat(140000) });
   expect(seen.every(headers => !headers.has('SZ-Danger-Zone'))).toBe(true);
 });
-it.each(['billing', 'opt_in', 'class', 'deny_list', 'global_switch', 'account_deleted', 'future_rule'])('keeps typed eligibility %s and the refusal envelope', async eligibility => {
+it.each(['billing', 'class', 'deny_list', 'global_switch', 'account_deleted', 'future_rule'])('keeps typed eligibility %s and the refusal envelope', async eligibility => {
   let calls = 0;
   const client = new SystemZeroClient({ apiKey: 'synthetic', fetch: async () => { calls++; return Response.json({ request_id: 'req_held', error: { code: 'long_context_not_available', type: 'not_found_error', message: 'This route is not available.', details: { eligibility } } }, { status: 404 }); } });
   try { await client.decide(request); throw new Error('Expected refusal.'); } catch (error) {

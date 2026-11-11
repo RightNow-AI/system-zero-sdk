@@ -27,5 +27,13 @@ class PublicWordingTests(unittest.TestCase):
     def test_neutral_prose_passes(self):
         self.assertEqual(rules.public_wording_rule_ids('Function definitions. Production/Stable. Evaluate input.', 'README.md'), [])
 
+    def test_required_1m_notice_is_limited_to_release_docs(self):
+        term = ''.join(map(chr, (101,120,112,101,114,105,109,101,110,116,97,108)))
+        notice = '1M needs nothing switched on. It is ' + term + ', not stable.'
+        for name in ('README.md', 'typescript/README.md', 'python/README.md', 'LONG_CONTEXT.md', 'package.dist-info/METADATA', 'package/PKG-INFO'):
+            self.assertEqual(rules.public_wording_rule_ids(notice, name), [])
+            self.assertIn('public-wording', rules.public_wording_rule_ids(notice + '\nOther ' + term + ' feature.', name))
+        self.assertIn('public-wording', rules.public_wording_rule_ids(notice, 'typescript/src/example.ts'))
+
 if __name__ == '__main__':
     unittest.main()

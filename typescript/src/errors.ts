@@ -46,6 +46,10 @@ export class SystemZeroError extends Error {
 }
 
 export class InvalidRequestError extends SystemZeroError {}
+/** Admission estimate exceeded the cap before any node work or usage counting. */
+export class PolicyMaxCostExceededError extends InvalidRequestError { readonly counted = false; }
+/** Completed work counts toward usage and computed cost despite the confidence refusal. */
+export class PolicyConfidenceFailedError extends InvalidRequestError { readonly counted = true; }
 export class AuthenticationError extends SystemZeroError {}
 export class PermissionError extends SystemZeroError {}
 export class NotFoundError extends SystemZeroError {}
@@ -125,7 +129,7 @@ export class ImageNotAvailableError extends CapabilityNotAvailableError {}
 export class AudioNotAvailableError extends CapabilityNotAvailableError {}
 export class DocumentNotAvailableError extends CapabilityNotAvailableError {}
 export class VideoNotAvailableError extends CapabilityNotAvailableError {}
-/** Workspace opt-in lives in console Settings; details.eligibility names a refused rule. */
+/** 1M needs no Console switch; a completed payment and request option are required. details.eligibility names a refused rule. */
 export class LongContextNotAvailableError extends CapabilityNotAvailableError {
   get eligibility(): 'billing' | 'opt_in' | 'class' | 'deny_list' | 'global_switch' | 'account_deleted' | (string & Record<never, never>) | null {
     const value = this.details?.eligibility;
@@ -139,6 +143,8 @@ export class DeliberateNotAvailableError extends CapabilityNotAvailableError {}
 const codeClasses = {
   payload_too_large: PayloadTooLargeError, invalid_criteria: InvalidCriteriaError,
   service_unavailable: ServiceUnavailableError,
+  policy_max_cost_exceeded: PolicyMaxCostExceededError,
+  policy_confidence_failed: PolicyConfidenceFailedError,
   image_not_available: ImageNotAvailableError, audio_not_available: AudioNotAvailableError,
   document_not_available: DocumentNotAvailableError, video_not_available: VideoNotAvailableError,
   long_context_not_available: LongContextNotAvailableError, long_recording_not_available: LongRecordingNotAvailableError,
