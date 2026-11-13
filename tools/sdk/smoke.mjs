@@ -12,7 +12,7 @@ const tools = await load('integrations/function-tools/index.js');
 const mcp = await load('integrations/mcp-server/server.js');
 
 assert.equal(core.VERSION, pkg.version);
-assert.equal(stream.STREAM_PROTOCOL, 'system-zero.stream.v1');
+assert.equal(stream.STREAM_PROTOCOL, 'rightnow-decision.stream.v1');
 assert.deepEqual(tools.validateToolArguments('system_zero_list_models', {}), {});
 const request = {
   model: 'rightnow-decision', state: 'SYNTHETIC package smoke.',

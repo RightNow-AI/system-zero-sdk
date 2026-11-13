@@ -18,7 +18,7 @@ API_CODES = set("""
   long_question_unsupported long_recording_not_available long_state_unsupported long_too_many_phrases
   media_decode_failed media_too_large media_unpriced media_unsupported
   payload_too_large question_not_grounded question_too_large questions_too_large
-  rate_limit_exceeded request_refused service_unavailable staging_attempt_ceiling
+  rate_limit_exceeded request_refused service_unavailable spend_limit_reached staging_attempt_ceiling
   starter_attempt_limit starter_concurrency_limit starter_credit_held starter_rate_limit starter_spend_limit starter_unavailable
   stream_limit_exceeded state_too_large state_too_large_unguarded system_zero_timeout system_zero_unavailable
   upload_in_use upload_not_found upload_not_ready video_not_available
@@ -68,7 +68,7 @@ API_CODES.update(['webhook_invalid', 'webhook_limit_exceeded', 'webhook_not_foun
 class PublicSurfaceTests(unittest.TestCase):
     def test_error_conveniences_equal_the_api_catalog(self):
         self.assertEqual(len(API_CODES), 72)
-        self.assertEqual(len(GATEWAY_CODES), 16)
+        self.assertEqual(len(GATEWAY_CODES), 19)
         self.assertEqual(set(rightnow.SYSTEM_ZERO_ERROR_CODES), API_CODES)
         self.assertEqual(len(rightnow.SYSTEM_ZERO_ERROR_CODES), len(API_CODES))
         self.assertEqual(set(rightnow.GATEWAY_ERROR_CODES), GATEWAY_CODES)
@@ -97,7 +97,7 @@ class PublicSurfaceTests(unittest.TestCase):
         with rightnow.RightNow(api_key="surface-test", max_retries=0,
                                     transport=httpx.MockTransport(respond)) as client:
             self.assertEqual({name for name in vars(client) if not name.startswith("_")},
-                             {"base_url", "timeout", "max_retries", "max_retry_wait", "retry_budget", "models", "webhooks"})
+                             {"base_url", "timeout", "max_retries", "max_retry_wait", "idempotency", "retry_budget", "models", "webhooks"})
             self.assertEqual({name for name, value in vars(type(client)).items()
                               if not name.startswith("_") and callable(value)},
                              set(['close', 'decide', 'decide_with_response', 'getDecision', 'getDecisionTrace', 'get_decision', 'get_decision_trace', 'get_decision_trace_with_response', 'get_decision_with_response']))

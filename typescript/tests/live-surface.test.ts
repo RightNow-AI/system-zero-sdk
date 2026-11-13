@@ -16,7 +16,7 @@ const apiCodes = names(`webhook_invalid webhook_limit_exceeded webhook_not_found
   long_question_unsupported long_recording_not_available long_state_unsupported long_too_many_phrases
   media_decode_failed media_too_large media_unpriced media_unsupported output_limit_exceeded
   payload_too_large question_not_grounded question_too_large questions_too_large
-  rate_limit_exceeded request_refused service_unavailable staging_attempt_ceiling
+  rate_limit_exceeded request_refused service_unavailable spend_limit_reached staging_attempt_ceiling
   starter_attempt_limit starter_concurrency_limit starter_credit_held starter_rate_limit starter_spend_limit starter_unavailable
   stream_limit_exceeded state_too_large state_too_large_unguarded system_zero_timeout system_zero_unavailable
   upload_in_use upload_not_found upload_not_ready video_not_available
@@ -44,10 +44,10 @@ const rootNames = names(`WEBHOOK_ERROR_CODES WEBHOOK_MAX_BODY_BYTES WEBHOOK_TIME
   RightNowError SystemZeroError InvalidRequestError AuthenticationError PermissionError NotFoundError RateLimitError
   OverloadedError APIError ServerError APIConnectionError APITimeoutError PayloadTooLargeError InvalidCriteriaError ServiceUnavailableError CapabilityNotAvailableError RouteNotAvailableError ImageNotAvailableError AudioNotAvailableError
   DocumentNotAvailableError VideoNotAvailableError LongContextNotAvailableError LongRecordingNotAvailableError CommitteeNotAvailableError DeliberateNotAvailableError
-  ErrorFields ConnectionErrorFields responseError
+  ErrorFields ConnectionErrorFields responseError Idempotency idempotencyMode StreamMutationOptions
 `);
 const entries = {
-  './stream': ['stream.ts', names(`STREAM_PROTOCOL STREAM_CLIENT_IMPLEMENTED STREAM_RECEIPT_TIMEOUT_MS StreamProtocolError StreamDisconnectedError RightNowStreamClient SystemZeroStreamClient DecisionMode ReconnectPolicy StreamRequest StreamStartOptions StreamRateLimit StreamBase StreamHello StreamAck StreamScheduled StreamDecision StreamError StreamGoodbye PossiblyDecided StreamEvent EventLatency StreamWebSocket StreamWebSocketConstructor StreamClientOptions ClientMutation`)],
+  './stream': ['stream.ts', names(`STREAM_PROTOCOL STREAM_CLIENT_IMPLEMENTED STREAM_RECEIPT_TIMEOUT_MS StreamProtocolError StreamDisconnectedError RightNowStreamClient SystemZeroStreamClient DecisionMode ReconnectPolicy StreamRequest StreamStartOptions StreamRateLimit StreamBase StreamHello StreamAck StreamScheduled StreamDecision StreamError StreamGoodbye PossiblyDecided StreamEvent EventLatency StreamWebSocket StreamWebSocketConstructor StreamClientOptions ClientMutation StreamMutationOptions`)],
   '.': ['index.ts', rootNames],
   './integrations/function-tools': ['integrations/function-tools/index.ts', names(`
     ToolResult ToolHandlerOptions ToolHandler NESTED_FUNCTION_TOOLS FLAT_FUNCTION_TOOLS INPUT_SCHEMA_TOOLS
@@ -62,7 +62,7 @@ const entries = {
 describe('public package surface', () => {
   it('publishes exactly the API error conveniences', () => {
     expect(apiCodes).toHaveLength(72);
-    expect(gatewayCodes).toHaveLength(16);
+    expect(gatewayCodes).toHaveLength(19);
     expect([...sdk.SYSTEM_ZERO_ERROR_CODES].sort()).toEqual(apiCodes);
     expect([...sdk.GATEWAY_ERROR_CODES].sort()).toEqual(gatewayCodes);
     expect(Object.values(sdk.ERROR_CODES).sort()).toEqual([...apiCodes, ...gatewayCodes].sort());

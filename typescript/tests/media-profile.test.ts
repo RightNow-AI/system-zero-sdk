@@ -24,7 +24,7 @@ describe('published media encoding and API availability', () => {
     expect(sdk.VERSION).toBe('0.5.0');
     expect(sdk.MEDIA_MIMES).toEqual({ image: ['image/jpeg', 'image/png'], audio: ['audio/wav'], document: ['application/pdf'], video: ['video/mp4'] });
     expect(sdk.MEDIA_LIMITS.maxAudioDurationMs).toBe(60_000);
-    const spec = JSON.parse(readFileSync(new URL('../../decision-model/openapi.json', import.meta.url), 'utf8'));
+    const spec = JSON.parse(readFileSync(new URL('../../openapi.json', import.meta.url), 'utf8'));
     expect(spec.components.schemas.Attachment.properties.type.enum).toEqual(['image', 'audio', 'document', 'video']);
     expect(spec.components.schemas.DecideRequest.properties.attachments.anyOf).toContainEqual({ type: 'null' });
   });

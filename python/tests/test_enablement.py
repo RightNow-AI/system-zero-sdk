@@ -140,7 +140,7 @@ def test_native_class_survives_retry_and_exposes_response_class(selected):
         if len(seen) == 1:
             return httpx.Response(503, json={"error": {"code": "model_unavailable", "retryable": True}}, headers={"Retry-After-Ms": "1"})
         return httpx.Response(200, json={"answers": {}, "usage": {"long_input_tokens": 48000}}, headers={"rightnow-danger-zone": selected})
-    with RightNow(api_key="SYNTHETIC", transport=httpx.MockTransport(send), random=lambda: 0, sleep=lambda _: None) as client:
+    with RightNow(idempotency="auto", api_key="SYNTHETIC", transport=httpx.MockTransport(send), random=lambda: 0, sleep=lambda _: None) as client:
         result = client.decide_with_response(REQUEST, danger_zone=selected)
     assert [request.headers["rightnow-danger-zone"] for request in seen] == [selected, selected]
     assert seen[0].headers["idempotency-key"] == seen[1].headers["idempotency-key"]

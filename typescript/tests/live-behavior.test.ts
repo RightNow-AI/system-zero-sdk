@@ -309,16 +309,18 @@ describe('live HTTP and local helper behavior', () => {
     const transport = vi.fn(async () => Response.json({
       error: { code, type, message: 'Synthetic refusal.', retryable },
     }, { status }));
-    const client = new sdk.SystemZeroClient({ apiKey: 'SYNTHETIC', fetch: transport });
+    const client = new sdk.SystemZeroClient({ apiKey: 'SYNTHETIC', fetch: transport, random: () => 0, sleep: async () => {} });
+    // Since 0.5.0 an unkeyed decide is resent on a retryable 429, never on another refusal here.
+    const sends = status === 429 && retryable ? 6 : 1;
     await expect(client.decide(request)).rejects.toBeInstanceOf(sdk[className]);
-    expect(transport).toHaveBeenCalledTimes(1);
+    expect(transport).toHaveBeenCalledTimes(sends);
     await expect(client.decide(request)).rejects.toMatchObject({ code, status, retryable });
-    expect(transport).toHaveBeenCalledTimes(2);
+    expect(transport).toHaveBeenCalledTimes(2 * sends);
     expect(await createToolHandler({ client })('system_zero_decide', toolArguments)).toMatchObject({
       status: ['document_controls_not_available', 'document_pictures_not_available'].includes(code) ? 'held' : 'error',
       error: { code, message: 'Synthetic refusal.' },
     });
-    expect(transport).toHaveBeenCalledTimes(3);
+    expect(transport).toHaveBeenCalledTimes(2 * sends + 1);
   });
 
   it.each([

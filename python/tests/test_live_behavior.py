@@ -143,17 +143,19 @@ class LiveBehaviorTests(unittest.TestCase):
                     seen.append(request)
                     return httpx.Response(status, json={"error": {
                         "code": code, "type": kind, "message": "Synthetic refusal.", "retryable": retryable}})
-                with sdk.RightNow(api_key="SYNTHETIC", transport=httpx.MockTransport(send)) as client:
+                with sdk.RightNow(api_key="SYNTHETIC", transport=httpx.MockTransport(send), random=lambda: 0, sleep=lambda _: None) as client:
                     with self.assertRaises(getattr(sdk, class_name)) as caught:
                         client.decide(REQUEST)
                     self.assertEqual((caught.exception.code, caught.exception.status, caught.exception.retryable),
                                      (code, status, retryable))
-                    self.assertEqual(len(seen), 1)
+                    # Since 0.5.0 an unkeyed decide is resent on a retryable 429, never on another refusal here.
+                    sends = 1 + client.max_retries if status == 429 and retryable else 1
+                    self.assertEqual(len(seen), sends)
                     result = tools.create_tool_handler(client)("system_zero_decide", TOOL_ARGUMENTS)
                     self.assertEqual(result["error"], {"code": code, "message": "Synthetic refusal."})
                     self.assertEqual(result["status"], "held" if code in
                                      ("document_controls_not_available", "document_pictures_not_available") else "error")
-                    self.assertEqual(len(seen), 2)
+                    self.assertEqual(len(seen), sends + 1)
         for status, kind, class_name, retryable in ((422, "invalid_request_error", "InvalidRequestError", False),
                                                    (503, "api_error", "APIError", True)):
             with self.subTest(future_status=status):
