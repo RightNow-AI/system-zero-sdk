@@ -93,7 +93,8 @@ def prepare(root: Path, output: Path) -> None:
     for language, destination in (("typescript", "npm-shim"), ("python", "python-shim")):
         directory = root / "shims" / language
         regular(directory, directory=True)
-        for path in sources(directory, {".js", ".ts", ".py", ".toml", ".json", ".md", ""}):
+        # ".typed": the Python shim ships py.typed, as its pyproject declares and check_release requires of a wheel.
+        for path in sources(directory, {".js", ".ts", ".py", ".typed", ".toml", ".json", ".md", ""}):
             staged[destination + "/" + path.relative_to(directory).as_posix()] = read(path)
     for filename, value in sorted(staged.items()):
         path = output / filename
