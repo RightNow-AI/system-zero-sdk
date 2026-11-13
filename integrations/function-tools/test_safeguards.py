@@ -6,8 +6,8 @@ import json
 import httpx
 import pytest
 
-from system_zero import SystemZero
-from system_zero.tools import create_tool_handler
+from rightnow import RightNow
+from rightnow.tools import create_tool_handler
 
 
 ARGS = {"state": "SYNTHETIC", "questions": [{"name": "ready", "type": "boolean", "instructions": "Ready?"}]}
@@ -29,7 +29,7 @@ def test_tool_redacts_every_field_and_object_key(tool, monkeypatch):
     echo = "%s %s %s Bearer %s" % (api_key, environment_key, shaped, bearer)
     clean = "[redacted] [redacted] [redacted] Bearer [redacted]"
     body = {"id": echo, "answers": {}, "data": [{echo: {"nested": [echo]}}]}
-    with SystemZero(api_key=api_key, max_retries=0, transport=httpx.MockTransport(
+    with RightNow(api_key=api_key, max_retries=0, transport=httpx.MockTransport(
             lambda _request: httpx.Response(200, json=body, headers={"x-request-id": echo}))) as client:
         result = create_tool_handler(client, **LIMITS)(tool, ARGS if tool == "system_zero_decide" else {})
     assert result == {"id": clean, "answers": {}, "data": [{clean: {"nested": [clean]}}],
@@ -48,7 +48,7 @@ def test_tool_redacts_client_credentials_from_errors_and_refusal_payloads(status
     body = {"request_id": echo, "error": refusal} if status == 400 else {
         "id": echo, "answers": {echo: {"error": refusal, "extra": [echo]}},
     }
-    with SystemZero(api_key=api_key, max_retries=0, transport=httpx.MockTransport(
+    with RightNow(api_key=api_key, max_retries=0, transport=httpx.MockTransport(
             lambda _request: httpx.Response(status, json=body))) as client:
         result = create_tool_handler(client, **LIMITS)("system_zero_decide", ARGS)
     assert result["status"] == "error"
@@ -59,11 +59,11 @@ def test_tool_redacts_client_credentials_from_errors_and_refusal_payloads(status
 
 @pytest.mark.parametrize("code,status", GATEWAY_CODES)
 def test_tool_catalog_publishes_and_preserves_gateway_code(code, status):
-    catalog = json.loads(importlib.resources.files("system_zero").joinpath("error-catalog.json").read_text(encoding="utf-8"))
+    catalog = json.loads(importlib.resources.files("rightnow").joinpath("error-catalog.json").read_text(encoding="utf-8"))
     assert code in catalog
     assert catalog[code]["status"] == status
     for tool in ("system_zero_decide", "system_zero_list_models"):
-        with SystemZero(api_key="SYNTHETIC", max_retries=0, transport=httpx.MockTransport(
+        with RightNow(api_key="SYNTHETIC", max_retries=0, transport=httpx.MockTransport(
                 lambda _request: httpx.Response(status, json={"request_id": "req_synthetic", "error": {
                     "code": code, "type": "api_error", "message": "Synthetic refusal.", "retryable": False}}))) as client:
             result = create_tool_handler(client, **LIMITS)(tool, ARGS if tool == "system_zero_decide" else {})
@@ -74,7 +74,7 @@ def test_tool_catalog_publishes_and_preserves_gateway_code(code, status):
 
 @pytest.mark.parametrize("code,_status", GATEWAY_CODES[3:])
 def test_tool_keeps_gateway_code_when_every_answer_is_refused(code, _status):
-    with SystemZero(api_key="SYNTHETIC", max_retries=0, transport=httpx.MockTransport(
+    with RightNow(api_key="SYNTHETIC", max_retries=0, transport=httpx.MockTransport(
             lambda _request: httpx.Response(200, json={"answers": {"ready": {"error": {
                 "code": code, "message": "Synthetic refusal.", "retryable": False,
             }}}}, headers={"x-request-id": "req_synthetic"}))) as client:

@@ -13,7 +13,7 @@ import zlib
 
 # Keep the same physical-container bound as check_release.py without loading its scanner.
 MAX_CONTAINER_BYTES = 64 * 1024 * 1024 + 10000 * 1024 + 65536
-SDIST_NAME = re.compile(r"rightnow_system_zero-(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.tar\.gz")
+SDIST_NAME = re.compile(r"rightnow_(?:sdk|system_zero)-(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.(?:0|[1-9][0-9]*)\.tar\.gz")
 
 
 def canonicalize(path: Path) -> None:

@@ -2,12 +2,12 @@
 import json
 from pathlib import Path
 import pytest
-from system_zero.decisions import decision_for, decisions_for
-from system_zero.errors import InvalidRequestError
-from system_zero.policy import policy_decision_for, validate_policy
-from system_zero.evaluate import score_reply
-from system_zero.flows import run_flow
-from system_zero import SystemZero
+from rightnow.decisions import decision_for, decisions_for
+from rightnow.errors import InvalidRequestError
+from rightnow.policy import policy_decision_for, validate_policy
+from rightnow.evaluate import score_reply
+from rightnow.flows import run_flow
+from rightnow import SystemZero
 import httpx
 
 FIXTURES = json.loads((Path(__file__).parents[2] / "fixtures/policy/answers.json").read_text(encoding="utf-8"))
@@ -37,13 +37,13 @@ def test_evaluation_keeps_abstention_separate():
     assert scores[0]["confidence"] is None
 
 def test_flow_preserves_abstention_without_a_decision():
-    reply = {"id": "szd_synthetic", "model": "system-zero", "served_by": "synthetic", "created": 1,
+    reply = {"id": "szd_synthetic", "model": "rightnow-decision", "served_by": "synthetic", "created": 1,
              "context": {"route": "direct", "tokens": 1}, "answers": {"q": FIXTURES["abstained"][0]["answer"]},
              "usage": {"input_tokens": 1, "cached_input_tokens": 0, "media_tokens": 0,
                        "long_input_tokens": 0, "media_items": 0, "thought_tokens": 1}}
     with SystemZero(api_key="SYNTHETIC", max_retries=0, timeout=1,
                     transport=httpx.MockTransport(lambda request: httpx.Response(200, json=reply))) as client:
-        trace = run_flow(client, {"version": 1, "request": {"model": "system-zero", "state": "SYNTHETIC"},
+        trace = run_flow(client, {"version": 1, "request": {"model": "rightnow-decision", "state": "SYNTHETIC"},
                                   "steps": [{"id": "first", "questions": {"q": {"type": "boolean", "instructions": "SYNTHETIC"}},
                                              "next": {"rules": [], "default": None}}]},
                          run_id="policy-on-flow", deadline_ms=10000, include_content=True, now=lambda: 0)

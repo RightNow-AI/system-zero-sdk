@@ -6,8 +6,8 @@ from pathlib import Path
 import httpx
 import pytest
 
-from system_zero import AuthenticationError, NotFoundError, SystemZero
-from system_zero.decision_records import (
+from rightnow import AuthenticationError, NotFoundError, SystemZero
+from rightnow.decision_records import (
     DECISION_RECORD_ERROR_CODES, DecisionNotFoundError, DecisionRecords,
 )
 

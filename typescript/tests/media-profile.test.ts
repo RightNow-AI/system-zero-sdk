@@ -4,7 +4,7 @@ import * as sdk from '../src/index.js';
 import { createMcpServer } from '../src/integrations/mcp-server/server.js';
 import { createToolHandler, validateToolArguments } from '../src/integrations/function-tools/index.js';
 
-const request = { model: 'system-zero', state: 'Synthetic media', questions: { ready: { type: 'boolean' as const, instructions: 'Is it ready?' } } };
+const request = { model: 'rightnow-decision', state: 'Synthetic media', questions: { ready: { type: 'boolean' as const, instructions: 'Is it ready?' } } };
 const png = Buffer.from('89504e470d0a1a0a', 'hex');
 const dataUrl = (mime: string, bytes: Uint8Array) => `data:${mime};base64,${Buffer.from(bytes).toString('base64')}`;
 const image = { name: 'picture', type: 'image' as const, data: dataUrl('image/png', png) };
@@ -20,11 +20,11 @@ function wav(codec = 1, channels = 1, rate = 16000, bits = 16, frames = 160): Bu
 const audio = { name: 'recording', type: 'audio' as const, data: dataUrl('audio/wav', wav()) };
 
 describe('published media encoding and API availability', () => {
-  it('exposes the selected MIME registry at version 0.4.7', () => {
-    expect(sdk.VERSION).toBe('0.4.7');
+  it('exposes the selected MIME registry at version 0.5.0', () => {
+    expect(sdk.VERSION).toBe('0.5.0');
     expect(sdk.MEDIA_MIMES).toEqual({ image: ['image/jpeg', 'image/png'], audio: ['audio/wav'], document: ['application/pdf'], video: ['video/mp4'] });
     expect(sdk.MEDIA_LIMITS.maxAudioDurationMs).toBe(60_000);
-    const spec = JSON.parse(readFileSync(new URL('../../openapi.json', import.meta.url), 'utf8'));
+    const spec = JSON.parse(readFileSync(new URL('../../decision-model/openapi.json', import.meta.url), 'utf8'));
     expect(spec.components.schemas.Attachment.properties.type.enum).toEqual(['image', 'audio', 'document', 'video']);
     expect(spec.components.schemas.DecideRequest.properties.attachments.anyOf).toContainEqual({ type: 'null' });
   });

@@ -3,7 +3,7 @@
 import httpx
 import pytest
 
-from system_zero import SystemZero
+from rightnow import SystemZero
 
 
 @pytest.mark.parametrize("option", ["timeout", "max_retry_wait", "retry_budget"])

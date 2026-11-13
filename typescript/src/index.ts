@@ -1,4 +1,4 @@
-// RightNow System Zero API client and client-side helpers.
+// RightNow decision model API client and client-side helpers.
 export * from './api-types.js';
 export * from './policy.js';
 export * from './decision-records.js';
@@ -6,7 +6,9 @@ export * from './provenance.js';
 export * from './webhooks.js';
 export * from './webhook-errors.js';
 export * from './enabled-types.js';
-export { VERSION, DEFAULT_BASE_URL, APIPromise, SystemZeroClient, withRetryContext } from './client.js';
+export { VERSION, DEFAULT_BASE_URL, APIPromise, RightNowClient, withRetryContext } from './client.js';
+/** @deprecated Use RightNowClient. */
+export { SystemZeroClient } from './client.js';
 export type { Fetch, ClientOptions, RequestOptions, ResponseMetadata, ResponseResult } from './client.js';
 export * from './decisions.js';
 export * from './retry.js';
@@ -20,5 +22,7 @@ export * from './public-error-codes.js';
 export * from './stream.js';
 export * from './stream-interface.js';
 export * from './media.js';
-export type { PolicyDecideRequest as DecideRequest, PolicyReply as DecideReply, PolicyV1DecideReply as V1DecideReply, PolicyDecideReplyFields as DecideReplyFields, PolicyAnswer as Answer, PolicyReply as SystemZeroReply, PolicyAnswerOrRefusal as AnswerOrRefusal, PolicyDecisionResult as DecisionResult } from './policy.js';
+export type { PolicyDecideRequest as DecideRequest, PolicyReply as DecideReply, PolicyV1DecideReply as V1DecideReply, PolicyDecideReplyFields as DecideReplyFields, PolicyAnswer as Answer, PolicyReply as RightNowReply, PolicyAnswerOrRefusal as AnswerOrRefusal, PolicyDecisionResult as DecisionResult } from './policy.js';
+/** @deprecated Use RightNowReply. */
+export type { PolicyReply as SystemZeroReply } from './policy.js';
 export type { DecisionTrace } from './decision-records.js';

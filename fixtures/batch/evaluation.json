@@ -4,7 +4,7 @@
     "bins": 100,
     "expected_bin": 29,
     "request": {
-      "model": "system-zero",
+      "model": "rightnow-decision",
       "state": "synthetic",
       "questions": {
         "q": {
@@ -24,7 +24,7 @@
     },
     "reply": {
       "id": "boundary-reply",
-      "model": "system-zero",
+      "model": "rightnow-decision",
       "served_by": "synthetic",
       "created": 0,
       "context": {
@@ -83,7 +83,7 @@
       "id": "one",
       "outcome": "completed",
       "request": {
-        "model": "system-zero",
+        "model": "rightnow-decision",
         "state": "PRIVATE_STATE",
         "questions": {
           "b": {
@@ -120,7 +120,7 @@
       },
       "reply": {
         "id": "reply-1",
-        "model": "system-zero",
+        "model": "rightnow-decision",
         "served_by": "private-test",
         "created": 0,
         "context": {
@@ -205,7 +205,7 @@
       "id": "two",
       "outcome": "completed",
       "request": {
-        "model": "system-zero",
+        "model": "rightnow-decision",
         "state": "PRIVATE_STATE",
         "questions": {
           "b": {
@@ -242,7 +242,7 @@
       },
       "reply": {
         "id": "reply-2",
-        "model": "system-zero",
+        "model": "rightnow-decision",
         "served_by": "private-test",
         "created": 0,
         "context": {
@@ -327,7 +327,7 @@
       "id": "three",
       "outcome": "completed",
       "request": {
-        "model": "system-zero",
+        "model": "rightnow-decision",
         "state": "PRIVATE_STATE",
         "questions": {
           "b": {
@@ -341,7 +341,7 @@
       },
       "reply": {
         "id": "reply-3",
-        "model": "system-zero",
+        "model": "rightnow-decision",
         "served_by": "private-test",
         "created": 0,
         "context": {
@@ -372,7 +372,7 @@
       "id": "four",
       "outcome": "refused",
       "request": {
-        "model": "system-zero",
+        "model": "rightnow-decision",
         "state": "PRIVATE_STATE",
         "questions": {
           "b": {
@@ -386,7 +386,7 @@
       },
       "reply": {
         "id": "reply-0",
-        "model": "system-zero",
+        "model": "rightnow-decision",
         "served_by": "private-test",
         "created": 0,
         "context": {

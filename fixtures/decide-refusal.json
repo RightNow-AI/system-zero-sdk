@@ -1,6 +1,6 @@
 {
   "id": "szd_00000000000000000000000000000001",
-  "model": "system-zero",
+  "model": "rightnow-decision",
   "served_by": "system-zero-synthetic-v1",
   "created": 1760000000,
   "context": {

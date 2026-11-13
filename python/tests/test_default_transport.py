@@ -12,15 +12,15 @@ import time
 import httpx
 import pytest
 
-from system_zero import APIConnectionError, APIError, InvalidRequestError, SystemZero
-from system_zero.batch import run_batch
+from rightnow import APIConnectionError, APIError, InvalidRequestError, SystemZero
+from rightnow.batch import run_batch
 
 
 HOST = ".".join(str(part) for part in (127, 0, 0, 1))
-REQUEST = {"model": "system-zero", "state": "SYNTHETIC \u00e9",
+REQUEST = {"model": "rightnow-decision", "state": "SYNTHETIC \u00e9",
            "questions": {"ready": {"type": "boolean", "instructions": "Ready?"}}}
 MODELS = {"object": "list", "data": []}
-DECISION = {"id": "szd_synthetic", "model": "system-zero", "served_by": "synthetic", "created": 0,
+DECISION = {"id": "szd_synthetic", "model": "rightnow-decision", "served_by": "synthetic", "created": 0,
             "context": {"route": "direct", "tokens": 1}, "answers": {},
             "usage": {"input_tokens": 1, "cached_input_tokens": 0, "media_tokens": 0,
                       "long_input_tokens": 0, "media_items": 0, "thought_tokens": 0}}

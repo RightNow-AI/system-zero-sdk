@@ -1,7 +1,7 @@
 {
   "id": "szd_00000000000000000000000000000001",
-  "model": "system-zero-3.0.0",
-  "served_by": "system-zero-3.0.0",
+  "model": "rightnow-decision-3.0.0",
+  "served_by": "rightnow-decision-3.0.0",
   "created": 1792144800,
   "context": {
     "route": "direct",
@@ -35,15 +35,15 @@
     "decision_id": "szd_00000000000000000000000000000001",
     "request_id": "req_00000000000000000000000000000001",
     "created": 1792144800,
-    "model": "system-zero",
-    "resolved_release": "system-zero-3.0.0",
+    "model": "rightnow-decision",
+    "resolved_release": "rightnow-decision-3.0.0",
     "render_id": "unpublished",
     "numeric_fingerprint": "0000000000000000000000000000000000000000000000000000000000000000",
     "calibration_version": {
       "escalate": "cal-2026-11-a"
     },
     "route": "direct",
-    "served_by": "system-zero-3.0.0",
+    "served_by": "rightnow-decision-3.0.0",
     "attachment_classes": [],
     "keyed_replay": false
   }

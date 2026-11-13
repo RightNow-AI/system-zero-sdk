@@ -1,6 +1,6 @@
 # Tool selection
 
-Tool selection: RightNow System Zero picks which of your tools to call next, or none, with a probability for each. It does not write arguments or messages, and it does not run tools.
+Tool selection: RightNow decision model picks which of your tools to call next, or none, with a probability for each. It does not write arguments or messages, and it does not run tools.
 
 `toolQuestions` / `tool_questions` builds one ordinary choice question named
 `sz_tool`. Pass tools in the order you want, with a name and optional description.
@@ -12,7 +12,7 @@ The default mode is `auto`, which adds `none` last. `required` omits `none`.
 In TypeScript:
 
 ```ts
-import { selectTool, toolQuestions } from '@rightnowai/system-zero';
+import { selectTool, toolQuestions } from '@rightnowai/rightnow';
 
 const tools = [
   { name: 'lookup_order', description: 'Read order status.' },
@@ -20,14 +20,14 @@ const tools = [
 ];
 const questions = toolQuestions(tools, 'auto');
 const selection = await selectTool(client,
-  { model: 'system-zero', state: 'The order arrived damaged.' },
+  { model: 'rightnow-decision', state: 'The order arrived damaged.' },
   tools, 'auto', { idempotencyKey: 'order-selection-1' });
 ```
 
 In Python:
 
 ```python
-from system_zero import select_tool, tool_questions
+from rightnow import select_tool, tool_questions
 
 tools = [
     {"name": "lookup_order", "description": "Read order status."},
@@ -35,7 +35,7 @@ tools = [
 ]
 questions = tool_questions(tools, "auto")
 selection = select_tool(client,
-    {"model": "system-zero", "state": "The order arrived damaged."},
+    {"model": "rightnow-decision", "state": "The order arrived damaged."},
     tools, "auto", idempotency_key="order-selection-1")
 ```
 

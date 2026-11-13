@@ -5,11 +5,11 @@ from typing import Literal, get_type_hints
 import httpx
 import pytest
 
-import system_zero as sdk
+import rightnow as sdk
 
 
 REQUEST = {
-    "model": "system-zero", "state": "SYNTHETIC policy count.",
+    "model": "rightnow-decision", "state": "SYNTHETIC policy count.",
     "questions": {"ready": {"type": "boolean", "instructions": "Is it ready?"}},
 }
 CASES = [

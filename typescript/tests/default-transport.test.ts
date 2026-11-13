@@ -7,10 +7,10 @@ import { SystemZeroClient } from '../src/client.js';
 import { runBatch } from '../src/batch.js';
 
 const host = [127, 0, 0, 1].join('.');
-const requestBody = { model: 'system-zero', state: 'SYNTHETIC \u00e9',
+const requestBody = { model: 'rightnow-decision', state: 'SYNTHETIC \u00e9',
   questions: { ready: { type: 'boolean' as const, instructions: 'Ready?' } } };
 const models = { object: 'list', data: [] };
-const decision = { id: 'szd_synthetic', model: 'system-zero', served_by: 'synthetic', created: 0,
+const decision = { id: 'szd_synthetic', model: 'rightnow-decision', served_by: 'synthetic', created: 0,
   context: { route: 'direct', tokens: 1 }, answers: {},
   usage: { input_tokens: 1, cached_input_tokens: 0, media_tokens: 0, long_input_tokens: 0, media_items: 0, thought_tokens: 0 } };
 type ObservedRequest = { method: string; headers: IncomingMessage['headers']; bytes: Buffer };

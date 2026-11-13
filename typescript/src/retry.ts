@@ -1,3 +1,9 @@
+export type Idempotency = 'off' | 'auto';
+export function idempotencyMode(value: unknown): Idempotency {
+  if (value !== 'off' && value !== 'auto') throw new TypeError('idempotency must be off or auto.');
+  return value;
+}
+
 const capacityCodes = new Set(['capacity_exhausted', 'rate_limit_exceeded', 'concurrency_limit_exceeded', 'workspace_limit_exceeded']);
 
 /** Keyed calls and safe reads can recover marked server failures inside their budget. */

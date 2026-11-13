@@ -15,7 +15,7 @@ const argumentsValue = {
 describe('public function integrations', () => {
   it('normalizes provider arguments and rejects unknown fields before dispatch', () => {
     expect(validateToolArguments('system_zero_decide', argumentsValue)).toEqual({
-      model: 'system-zero', state: { status: 'ready' },
+      model: 'rightnow-decision', state: { status: 'ready' },
       questions: { ready: { type: 'boolean', instructions: 'Is the status ready?' } },
     });
     expect(validateToolArguments('system_zero_list_models', '{}')).toEqual({});
@@ -26,7 +26,7 @@ describe('public function integrations', () => {
   });
 
   it('shares packaged argument limits and enforces the embedded document depth', () => {
-    const pythonLimits = JSON.parse(readFileSync(new URL('../../python/src/system_zero/argument-limits.json', import.meta.url), 'utf8'));
+    const pythonLimits = JSON.parse(readFileSync(new URL('../../python/src/rightnow/argument-limits.json', import.meta.url), 'utf8'));
     expect(limits).toEqual({ maxBytes: 24 * 1024 * 1024, maxDepth: 256, maxValues: 2_000_000 });
     expect(pythonLimits).toEqual(limits);
     const document = '['.repeat(limits.maxDepth) + '"x"' + ']'.repeat(limits.maxDepth);

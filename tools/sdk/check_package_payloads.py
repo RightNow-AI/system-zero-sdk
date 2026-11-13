@@ -70,7 +70,7 @@ def payloads(path):
 
 
 def write_payloads(directory, contents):
-    directory.mkdir()
+    directory.mkdir(parents=True)
     for name, raw in contents.items():
         relative = PurePosixPath(name)
         require(not relative.is_absolute() and ".." not in relative.parts and "\\" not in name, "payload-path")
@@ -87,7 +87,7 @@ def offline(event, args):
 sys.addaudithook(offline)
 directory = pathlib.Path(sys.argv[1]).resolve(strict=True)
 sys.path.insert(0, str(directory))
-module = importlib.import_module('system_zero.tools')
+module = importlib.import_module('rightnow.tools')
 assert isinstance(module.NESTED_FUNCTION_TOOLS, list) and module.NESTED_FUNCTION_TOOLS
 assert pathlib.Path(module.__file__).resolve().is_relative_to(directory)
 '''
@@ -113,15 +113,22 @@ def check(args):
     npm = json.loads(prepare.read(stage / "npm/package.json"))
     python = tomllib.loads(prepare.read(stage / "python/pyproject.toml"))["project"]
     version = npm["version"]
-    require(npm["name"] == "@rightnowai/system-zero" and python["name"] == "rightnow-system-zero"
+    require(npm["name"] == "@rightnowai/rightnow" and python["name"] == "rightnow-sdk"
             and python["version"] == version, "package-identities")
     with contextlib.redirect_stdout(io.StringIO()):
         checker.check_artifacts(artifacts, "sdk-v" + version, version, False)
     paths = {
-        "npm": artifacts / "npm" / ("rightnowai-system-zero-" + version + ".tgz"),
-        "wheel": artifacts / "python" / ("rightnow_system_zero-" + version + "-py3-none-any.whl"),
-        "sdist": artifacts / "python" / ("rightnow_system_zero-" + version + ".tar.gz"),
+        "npm": artifacts / "npm" / ("rightnowai-rightnow-" + version + ".tgz"),
+        "wheel": artifacts / "python" / ("rightnow_sdk-" + version + "-py3-none-any.whl"),
+        "sdist": artifacts / "python" / ("rightnow_sdk-" + version + ".tar.gz"),
     }
+    compatible = tuple(map(int, version.split('.'))) >= (0, 5, 0)
+    if compatible:
+        paths.update({
+            "npm-shim": artifacts / "npm-shim" / ("rightnowai-system-zero-" + version + ".tgz"),
+            "wheel-shim": artifacts / "python-shim" / ("rightnow_system_zero-" + version + "-py3-none-any.whl"),
+            "sdist-shim": artifacts / "python-shim" / ("rightnow_system_zero-" + version + ".tar.gz"),
+        })
     manifest = (artifacts / "manifest.json").read_bytes()
     digests = {kind: hashlib.sha256(path.read_bytes()).digest() for kind, path in paths.items()}
     contents = {kind: payloads(path) for kind, path in paths.items()}
@@ -136,11 +143,11 @@ def check(args):
         path = stage / "npm" / name
         prepare.regular(path)
         npm_expected["package/" + name] = path.read_bytes()
-    python_expected = {"system_zero/" + name: raw for name, raw in files(
-        stage / "python/src/system_zero", prepare.regular,
+    python_expected = {"rightnow/" + name: raw for name, raw in files(
+        stage / "python/src/rightnow", prepare.regular,
     ).items()}
-    require("system_zero/tools.py" in python_expected, "python-input")
-    prefix = "rightnow_system_zero-" + version + "/"
+    require("rightnow/tools.py" in python_expected, "python-input")
+    prefix = "rightnow_sdk-" + version + "/"
     sdist_expected = {prefix + "src/" + name: raw for name, raw in python_expected.items()}
     for name in ("pyproject.toml", "README.md", "LICENSE", "NOTICE"):
         path = stage / "python" / name
@@ -170,12 +177,92 @@ def check(args):
             result = subprocess.run(command, cwd=work, env=environment, capture_output=True, timeout=30,
                                     creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
             require(result.returncode == 0, "archived-import")
+    if compatible:
+        check_compatibility(stage, artifacts, checker, prepare, node, runtime, version, environment, base)
     with contextlib.redirect_stdout(io.StringIO()):
         checker.check_artifacts(artifacts, "sdk-v" + version, version, False)
     require((artifacts / "manifest.json").read_bytes() == manifest
             and all(hashlib.sha256(path.read_bytes()).digest() == digests[kind] for kind, path in paths.items()),
             "artifact-changed")
-    return {"verified": 3, "imports": {"npm": True, "wheel": True, "sdist": True}, "unchanged": True}
+    return {"verified": 6 if compatible else 3, "imports": {"npm": True, "wheel": True, "sdist": True}, "unchanged": True}
+
+
+def check_compatibility(stage, artifacts, checker, prepare, node, runtime, version, environment, base):
+    """Check the forwarding bytes and import them beside the preferred packages."""
+    npm = artifacts / 'npm-shim' / ('rightnowai-system-zero-' + version + '.tgz')
+    wheel = artifacts / 'python-shim' / ('rightnow_system_zero-' + version + '-py3-none-any.whl')
+    sdist = artifacts / 'python-shim' / ('rightnow_system_zero-' + version + '.tar.gz')
+    expected_npm = {'package/' + name: raw for name, raw in files(stage / 'npm-shim', prepare.regular).items()}
+    expected_py = {'system_zero/' + name: raw for name, raw in files(
+        stage / 'python-shim/src/system_zero', prepare.regular).items()}
+    prefix = 'rightnow_system_zero-' + version + '/'
+    expected_sdist = {prefix + 'src/' + name: raw for name, raw in expected_py.items()}
+    for name in ('pyproject.toml', 'README.md', 'LICENSE', 'NOTICE'):
+        expected_sdist[prefix + name] = (stage / 'python-shim' / name).read_bytes()
+    notices = {name: (stage / 'npm-shim' / name).read_bytes() for name in ('LICENSE', 'NOTICE')}
+    with checker.compatibility_identity():
+        for kind, archive, expected in (('npm', npm, expected_npm), ('wheel', wheel, expected_py), ('sdist', sdist, expected_sdist)):
+            checker.check_payload_inventory(kind, payloads(archive), expected, version, notices)
+    with tempfile.TemporaryDirectory(prefix='compat-', dir=base) as temporary:
+        work = Path(temporary)
+        new_npm = artifacts / 'npm' / ('rightnowai-rightnow-' + version + '.tgz')
+        for name, archive in (('rightnow', new_npm), ('system-zero', npm)):
+            write_payloads(work / 'node_modules/@rightnowai' / name,
+                           {key.removeprefix('package/'): raw for key, raw in payloads(archive).items() if not key.endswith('/')})
+        for suffix, archive in (('wheel', wheel), ('sdist', sdist)):
+            primary = payloads(artifacts / 'python' / ('rightnow_sdk-' + version + '-py3-none-any.whl'))
+            legacy = payloads(archive)
+            if suffix == 'sdist':
+                legacy = {key.removeprefix(prefix + 'src/'): raw for key, raw in legacy.items() if key.startswith(prefix + 'src/system_zero/')}
+            combined = {key: raw for key, raw in {**primary, **legacy}.items() if key.startswith(('rightnow/', 'system_zero/')) and not key.endswith('/')}
+            write_payloads(work / suffix, combined)
+            script = """import importlib, sys, warnings
+def offline(event, args):
+    if event in ('socket.connect', 'socket.getaddrinfo'):
+        raise RuntimeError('offline import')
+sys.addaudithook(offline)
+sys.path.insert(0, sys.argv[1])
+with warnings.catch_warnings(record=True) as caught:
+    warnings.simplefilter('always')
+    import rightnow, system_zero, system_zero.stream, system_zero.tools
+    importlib.reload(system_zero)
+assert len(caught) == 1 and caught[0].category is DeprecationWarning
+assert system_zero.SystemZero is system_zero.RightNow
+assert issubclass(system_zero.RightNow, rightnow.RightNow)
+assert system_zero.stream.SystemZeroStreamClient is system_zero.RightNowStreamClient
+assert issubclass(system_zero.RightNowStreamClient, rightnow.RightNowStreamClient)
+assert issubclass(system_zero.tools.ToolHandler, importlib.import_module('rightnow.tools').ToolHandler)
+assert system_zero.tools.ToolHandler._wire.name == 'system-zero'
+if hasattr(rightnow, 'ToolHandler'):
+    assert system_zero.ToolHandler is system_zero.tools.ToolHandler
+assert system_zero.RightNow._wire.name == 'system-zero'
+for Client in (system_zero.RightNowStreamClient, system_zero.stream.stream_client, system_zero.stream_client):
+    assert Client(api_key='fixture-key')._wire.name == 'system-zero'
+"""
+            result = subprocess.run([str(runtime), '-I', '-B', '-c', script, str(work / suffix)], cwd=work,
+                                    env=environment, capture_output=True, timeout=30,
+                                    creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))
+            require(result.returncode == 0, 'compatibility-import')
+        script = """import assert from 'node:assert/strict';
+import * as old from '@rightnowai/system-zero';
+import * as current from '@rightnowai/rightnow';
+import * as stream from '@rightnowai/system-zero/stream';
+import * as tools from '@rightnowai/system-zero/integrations/function-tools';
+import * as currentTools from '@rightnowai/rightnow/integrations/function-tools';
+// The clients and the stream subprotocol are the shim's own: the legacy wire keeps system-zero.stream.v1.
+const clients = new Set(['RightNowClient', 'SystemZeroClient', 'RightNowStreamClient', 'SystemZeroStreamClient', 'STREAM_PROTOCOL']);
+for (const name of Object.keys(current)) if (!clients.has(name)) assert.equal(old[name], current[name]);
+assert.equal(old.STREAM_PROTOCOL, 'system-zero.stream.v1');
+assert.equal(old.RightNowClient, old.SystemZeroClient);
+assert.ok(old.RightNowClient.prototype instanceof current.RightNowClient);
+assert.equal(stream.SystemZeroStreamClient, old.RightNowStreamClient);
+assert.ok(stream.RightNowStreamClient.prototype instanceof current.RightNowStreamClient);
+assert.equal(tools.NESTED_FUNCTION_TOOLS, currentTools.NESTED_FUNCTION_TOOLS);
+"""
+        result = subprocess.run([str(node), '--input-type=module', '--eval', script], cwd=work,
+                                env=environment, capture_output=True, timeout=30,
+                                creationflags=getattr(subprocess, 'CREATE_NO_WINDOW', 0))
+        require(result.returncode == 0, 'compatibility-import')
 
 
 def main():

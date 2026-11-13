@@ -2,8 +2,8 @@
 import json
 import httpx
 import pytest
-from system_zero import AuthenticationError, InvalidRequestError, NotFoundError, PermissionError, ServerError, SystemZero, SystemZeroError, KNOWN_ERROR_CODES, evaluate, run_batch, run_flow
-REQUEST = {'model': 'system-zero', 'state': 'synthetic', 'questions': {'q': {'type': 'boolean', 'instructions': 'Is it set?'}}}
+from rightnow import AuthenticationError, InvalidRequestError, NotFoundError, PermissionError, ServerError, SystemZero, SystemZeroError, KNOWN_ERROR_CODES, evaluate, run_batch, run_flow
+REQUEST = {'model': 'rightnow-decision', 'state': 'synthetic', 'questions': {'q': {'type': 'boolean', 'instructions': 'Is it set?'}}}
 FLOW = {'version': 1, 'request': {'model': REQUEST['model'], 'state': REQUEST['state']}, 'steps': [{'id': 'first', 'questions': REQUEST['questions'], 'next': {'rules': [], 'default': None}}]}
 HELD_CODES = {'long_context_not_available', 'long_recording_not_available', 'video_not_available', 'image_not_available', 'audio_not_available', 'document_not_available', 'committee_not_available', 'deliberate_not_available'}
 REFUSED_CODES = {'injection_suspected', 'request_refused', 'question_not_grounded'}
@@ -92,7 +92,7 @@ def test_batch_keeps_gateway_code(tmp_path, status, code, error_type, outcome):
         calls.append(request)
         return httpx.Response(status, json={'error': {'message': 'Synthetic gateway response.', 'code': code, 'type': error_type, 'retryable': False, 'param': 'model' if code == 'model_not_found' else None}})
     path = tmp_path / 'rows.jsonl'
-    request = {'model': 'system-zero', 'state': 'synthetic', 'questions': {'q': {'type': 'boolean', 'instructions': 'Is it set?'}}}
+    request = {'model': 'rightnow-decision', 'state': 'synthetic', 'questions': {'q': {'type': 'boolean', 'instructions': 'Is it set?'}}}
     with SystemZero(api_key='synthetic', base_url='https://api.example.com/v1', timeout=1, max_retries=0, transport=httpx.MockTransport(send)) as client:
         result = run_batch(client, [{'id': 'one', 'request': request, 'expected': {'q': True}}], run_id='gateway-code', results_path=path, deadline_ms=10000, concurrency=1)
     saved = json.loads(path.read_text(encoding='ascii'))
@@ -122,7 +122,7 @@ def test_enabled_batch_retries_keep_exact_gateway_error(tmp_path, status, code, 
         calls.append(request)
         return httpx.Response(status, json={'request_id': 'req_batch_code', 'error': {'message': 'Synthetic gateway response.', 'code': code, 'type': error_type, 'retryable': True}}, headers={'x-should-retry': 'true', 'retry-after-ms': '1'})
     path = tmp_path / 'rows.jsonl'
-    request = {'model': 'system-zero', 'state': 'synthetic', 'questions': {'q': {'type': 'boolean', 'instructions': 'Is it set?'}}}
+    request = {'model': 'rightnow-decision', 'state': 'synthetic', 'questions': {'q': {'type': 'boolean', 'instructions': 'Is it set?'}}}
     with RecordingSystemZero(api_key='synthetic', base_url='https://api.example.com/v1', timeout=1, max_retries=3, sleep=waits.append, transport=httpx.MockTransport(send)) as client:
         result = run_batch(client, [{'id': 'one', 'request': request, 'expected': {'q': True}}], run_id='gateway-code-retries', results_path=path, deadline_ms=10000, concurrency=1, max_retries=3, sleep_ms=waits.append)
     assert len(calls) == len(observed) == 1

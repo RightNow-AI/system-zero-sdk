@@ -1,3 +1,4 @@
+import { WIRES, setWire, wireFor, type WireName } from './wire.js';
 import { assertSafeNativeDebug, redact, registerErrorPrototype } from './redaction.js';
 import { randomUUID } from 'node:crypto';
 import type { IncomingMessage } from 'node:http';
@@ -5,16 +6,16 @@ import { isIP } from 'node:net';
 import type { Attachment, JsonValue, StructuredJson } from './api-types.js';
 import { APIConnectionError, responseError, SystemZeroError } from './errors.js';
 import { validateAttachments } from './media.js';
-import { retryAfterMs, shouldRetry } from './retry.js';
+import { idempotencyMode, type Idempotency, retryAfterMs, shouldRetry } from './retry.js';
 import { validateRequestPolicy } from './policy.js';
 import type {
   ClientMutation, EventLatency, PossiblyDecided, StreamAck, StreamClientOptions,
   StreamDecision, StreamError, StreamEvent, StreamHello, StreamRequest,
-  StreamScheduled, StreamStartOptions, StreamWebSocket,
+  StreamScheduled, StreamStartOptions, StreamMutationOptions, StreamWebSocket,
 } from './stream-interface.js';
 
 export * from './stream-interface.js';
-export const STREAM_PROTOCOL = 'system-zero.stream.v1' as const;
+export const STREAM_PROTOCOL = WIRES['rightnow-decision'].streamProtocol;
 export const STREAM_CLIENT_IMPLEMENTED = true as const;
 const retryableCodes = new Set([1001, 1006, 1011, 1012, 1013]);
 const STREAM_TIMER_MAX_DELAY_MS = 2_147_483_647;
@@ -173,15 +174,15 @@ interface Timer {
 }
 interface StateSnapshot { state: StructuredJson; attachments?: Attachment[] }
 interface Mutation {
-  revision: number; key: string; apply: (state: StateSnapshot | undefined) => StateSnapshot;
+  revision: number; key: string | undefined; ownKey: string | undefined; reuseKey: boolean; apply: (state: StateSnapshot | undefined) => StateSnapshot;
   frame: (eventId: string) => ClientMutation; ack: Deferred<StreamAck>; timer?: Timer;
 }
 interface PendingAck { eventId: string; version: number; timers: Timer[]; resolve: (ack: StreamAck) => void; reject: (error: unknown) => void }
 
 /** Server-side protocol v1 client. Replayed state retains ordinary HTTP idempotency ownership. */
-export class SystemZeroStreamClient implements AsyncIterable<StreamEvent> {
-  readonly protocol = STREAM_PROTOCOL;
-  readonly options: Readonly<{ streamURL: string; reconnectPolicy: 'latest' | 'never'; timeout: number; maxReconnectAttempts: number; reconnectTimeout: number }>;
+export class RightNowStreamClient implements AsyncIterable<StreamEvent> {
+  get protocol() { return wireFor(this).streamProtocol; }
+  readonly options: Readonly<{ streamURL: string; idempotency: Idempotency; reconnectPolicy: 'latest' | 'never'; timeout: number; maxReconnectAttempts: number; reconnectTimeout: number }>;
   #key: string;
   #promptCacheKey = randomUUID();
   #webSocketConstructor: StreamClientOptions['WebSocket'];
@@ -219,7 +220,7 @@ export class SystemZeroStreamClient implements AsyncIterable<StreamEvent> {
   #resumeHint: { stream_id: string; resume_token: string; state_version: number; expiresAt: number } | undefined;
   #resuming: { stateVersion: number; result: Deferred<StreamDecision> } | undefined;
   #request: StreamRequest | undefined;
-  #startOptions: Required<Omit<StreamStartOptions, 'dangerZone'>> = { decisionMode: 'on_change', minIntervalMs: 0 };
+  #startOptions: Required<Pick<StreamStartOptions, 'decisionMode' | 'minIntervalMs'>> = { decisionMode: 'on_change', minIntervalMs: 0 };
   #connectionMode: 'on_change' | 'on_request' = 'on_change';
   #everStarted = false;
   #accepted: StateSnapshot | undefined;
@@ -255,13 +256,14 @@ export class SystemZeroStreamClient implements AsyncIterable<StreamEvent> {
   #ackTimers = new WeakMap<StreamAck, Timer>();
   #ambiguous = new Map<number, string>();
 
-  constructor(options: StreamClientOptions = {}) {
-    if (options.dangerZone === 'long_context_1m') throw responseError(404, new Headers(), { error: { code: 'long_context_not_available', type: 'not_found_error', message: 'The 1M class requires ordinary HTTP calls.', param: 'SZ-Danger-Zone' } }, false);
+  constructor(options: StreamClientOptions = {}, wire: WireName = 'rightnow-decision') {
+    setWire(this, wire);
+    if (options.dangerZone === 'long_context_1m') throw responseError(404, new Headers(), { error: { code: 'long_context_not_available', type: 'not_found_error', message: 'The 1M class requires ordinary HTTP calls.', param: wireFor(this).dangerZoneHeader } }, false);
     assertSafeNativeDebug();
-    const key = options.apiKey ?? process.env.SYSTEM_ZERO_API_KEY;
-    if (!key) throw new Error('Supply an apiKey or set SYSTEM_ZERO_API_KEY in the server environment.');
+    const key = options.apiKey ?? process.env.RIGHTNOW_API_KEY ?? process.env.SYSTEM_ZERO_API_KEY;
+    if (!key) throw new Error('Supply an apiKey or set RIGHTNOW_API_KEY in the server environment.');
     if (typeof key !== 'string' || !/^[\x21-\x7e]+$/u.test(key)) throw new TypeError('apiKey must contain only visible ASCII characters.');
-    const url = checkedStreamURL(options.streamURL ?? 'wss://api.rightnowai.co/v1/system-zero/stream');
+    const url = checkedStreamURL(options.streamURL ?? wireFor(this).streamURL);
     const timeout = options.timeout ?? 30_000;
     const reconnectTimeout = options.reconnectTimeout ?? 120_000;
     const maxReconnectAttempts = options.maxReconnectAttempts ?? 8;
@@ -270,7 +272,8 @@ export class SystemZeroStreamClient implements AsyncIterable<StreamEvent> {
     }
     if (!(Number.isSafeInteger(maxReconnectAttempts) && maxReconnectAttempts >= 1)) throw new RangeError('maxReconnectAttempts must be a positive safe integer.');
     if (options.reconnectPolicy !== undefined && !['latest', 'never'].includes(options.reconnectPolicy)) throw new TypeError('reconnectPolicy must be latest or never.');
-    this.options = Object.freeze({ streamURL: url.href, reconnectPolicy: options.reconnectPolicy ?? 'latest', timeout, maxReconnectAttempts, reconnectTimeout });
+    const idempotency = idempotencyMode(options.idempotency === undefined ? 'off' : options.idempotency);
+    this.options = Object.freeze({ idempotency, streamURL: url.href, reconnectPolicy: options.reconnectPolicy ?? 'latest', timeout, maxReconnectAttempts, reconnectTimeout });
     this.#key = key; this.#webSocketConstructor = options.WebSocket;
     this.#now = options.now ?? (() => performance.now()); this.#random = options.random ?? Math.random;
   }
@@ -287,7 +290,8 @@ export class SystemZeroStreamClient implements AsyncIterable<StreamEvent> {
   }
 
   start(request: StreamRequest, options: StreamStartOptions = {}): Promise<StreamAck> {
-    if (options.dangerZone === 'long_context_1m') return Promise.reject(responseError(404, new Headers(), { error: { code: 'long_context_not_available', type: 'not_found_error', message: 'The 1M class requires ordinary HTTP calls.', param: 'SZ-Danger-Zone' } }, false));
+    try { this.#keyOptions(options); } catch (error) { return Promise.reject(error); }
+    if (options.dangerZone === 'long_context_1m') return Promise.reject(responseError(404, new Headers(), { error: { code: 'long_context_not_available', type: 'not_found_error', message: 'The 1M class requires ordinary HTTP calls.', param: wireFor(this).dangerZoneHeader } }, false));
     if (this.#request) return Promise.reject(new Error('start may be called only once; use a new client to change questions or model.'));
     const interval = options.minIntervalMs ?? 0;
     if (!integer(interval) || interval > 60_000) return Promise.reject(new RangeError('minIntervalMs must be an integer from 0 through 60000.'));
@@ -301,25 +305,25 @@ export class SystemZeroStreamClient implements AsyncIterable<StreamEvent> {
     this.#request.prompt_cache_key ??= this.#promptCacheKey;
     this.#startOptions = { decisionMode: mode, minIntervalMs: interval };
     const state: StateSnapshot = { state: copy(this.#request.state), ...(this.#request.attachments == null ? {} : { attachments: copy(this.#request.attachments) }) };
-    return this.#mutate(() => copy(state), eventId => ({ type: 'start', event_id: eventId, request: copy(this.#request!), decision_mode: mode, min_interval_ms: interval }));
+    return this.#mutate(() => copy(state), eventId => ({ type: 'start', event_id: eventId, request: copy(this.#request!), decision_mode: mode, min_interval_ms: interval }), options);
   }
 
-  appendText(text: string): Promise<StreamAck> {
+  appendText(text: string, options: StreamMutationOptions = {}): Promise<StreamAck> {
     return this.#mutate(snapshot => {
       if (typeof snapshot?.state !== 'string' || typeof text !== 'string' || !text.length) throw new TypeError('appendText requires string state and non-empty text.');
       return { ...snapshot, state: snapshot.state + text };
-    }, eventId => ({ type: 'append_text', event_id: eventId, text }));
+    }, eventId => ({ type: 'append_text', event_id: eventId, text }), options);
   }
 
-  appendItems(items: JsonValue[]): Promise<StreamAck> {
+  appendItems(items: JsonValue[], options: StreamMutationOptions = {}): Promise<StreamAck> {
     const snapshot = copy(items);
     return this.#mutate(state => {
       if (!Array.isArray(state?.state) || !Array.isArray(snapshot) || !snapshot.length) throw new TypeError('appendItems requires array state and non-empty items.');
       return { ...state, state: [...state.state, ...snapshot] };
-    }, eventId => ({ type: 'append_items', event_id: eventId, items: snapshot }));
+    }, eventId => ({ type: 'append_items', event_id: eventId, items: snapshot }), options);
   }
 
-  appendAttachments(attachments: Attachment[]): Promise<StreamAck> {
+  appendAttachments(attachments: Attachment[], options: StreamMutationOptions = {}): Promise<StreamAck> {
     let snapshot: Attachment[];
     try {
       if (!Array.isArray(attachments) || !attachments.length) throw responseError(400, new Headers(), { error: { code: 'invalid_request', type: 'invalid_request_error', message: 'The request is invalid.', param: 'attachments', retryable: false } }, false);
@@ -328,17 +332,17 @@ export class SystemZeroStreamClient implements AsyncIterable<StreamEvent> {
       snapshot = copy(attachments);
     } catch (error) { return Promise.reject(error); }
     return this.#mutate(state => ({ ...state!, attachments: [...(state?.attachments ?? []), ...snapshot] }),
-      eventId => ({ type: 'append_attachments', event_id: eventId, attachments: snapshot }));
+      eventId => ({ type: 'append_attachments', event_id: eventId, attachments: snapshot }), options);
   }
 
-  replace(state: StructuredJson, attachments?: Attachment[]): Promise<StreamAck> {
+  replace(state: StructuredJson, attachments?: Attachment[], options: StreamMutationOptions = {}): Promise<StreamAck> {
     let snapshot: StructuredJson, media: Attachment[] | undefined;
     try {
       if (attachments !== undefined) validateStreamAttachments(attachments);
       snapshot = copy(state); media = attachments === undefined ? undefined : copy(attachments);
     } catch (error) { return Promise.reject(error); }
     return this.#mutate(current => ({ ...current, state: copy(snapshot), ...(media === undefined ? {} : { attachments: copy(media) }) }),
-      eventId => ({ type: 'replace', event_id: eventId, state: snapshot, ...(media === undefined ? {} : { attachments: media }) }));
+      eventId => ({ type: 'replace', event_id: eventId, state: snapshot, ...(media === undefined ? {} : { attachments: media }) }), options);
   }
 
   decide(): Promise<StreamScheduled> {
@@ -406,7 +410,14 @@ export class SystemZeroStreamClient implements AsyncIterable<StreamEvent> {
     this.#queues.clear(); this.#listeners.clear();
   }
 
-  #mutate(apply: Mutation['apply'], frame: Mutation['frame']): Promise<StreamAck> {
+  #keyOptions(options: StreamMutationOptions) {
+    const mode = idempotencyMode(options.idempotency === undefined ? this.options.idempotency : options.idempotency);
+    const supplied = options.idempotencyKey;
+    if (supplied !== undefined && (typeof supplied !== 'string' || !supplied.trim() || supplied.trim().length > 255 || /[^\x20-\x7e]/u.test(supplied))) throw new TypeError('idempotencyKey must contain 1 to 255 printable ASCII characters.');
+    return { mode, supplied };
+  }
+
+  #mutate(apply: Mutation['apply'], frame: Mutation['frame'], options: StreamMutationOptions): Promise<StreamAck> {
     if (this.#closed || this.#terminal) return Promise.reject(this.#terminal ?? new StreamDisconnectedError('Stream is closed.'));
     if (!this.#request) return Promise.reject(new Error('Call start before sending state mutations.'));
     let desired: StateSnapshot;
@@ -414,10 +425,15 @@ export class SystemZeroStreamClient implements AsyncIterable<StreamEvent> {
       desired = apply(this.#desired);
       if (desired.attachments !== undefined) validateStreamAttachments(desired.attachments);
     } catch (error) { return Promise.reject(error); }
-    const priorKey = this.#mutations.at(-1)?.key ?? this.#acceptedKey;
-    const key = priorKey !== undefined && JSON.stringify(desired) === JSON.stringify(this.#desired) ? priorKey : 'sz-stream-' + randomUUID();
+    let mode: Idempotency, supplied: string | undefined;
+    try { ({ mode, supplied } = this.#keyOptions(options)); }
+    catch (error) { return Promise.reject(error); }
+    const previous = this.#mutations.at(-1);
+    const priorKey = previous ? previous.key : this.#acceptedKey;
+    const idempotencyKey = supplied?.trim() ?? (mode === 'auto' ? 'sz-stream-' + randomUUID() : undefined);
+    const key = supplied === undefined && mode === 'auto' && priorKey !== undefined && JSON.stringify(desired) === JSON.stringify(this.#desired) ? priorKey : idempotencyKey;
     this.#desired = desired;
-    const mutation: Mutation = { revision: ++this.#revision, key, apply, frame, ack: deferred() };
+    const mutation: Mutation = { revision: ++this.#revision, key, ownKey: idempotencyKey, reuseKey: supplied === undefined && mode === 'auto', apply, frame, ack: deferred() };
     this.#mutations.push(mutation);
     this.#writes = this.#writes.then(async () => {
       for (;;) {
@@ -433,7 +449,7 @@ export class SystemZeroStreamClient implements AsyncIterable<StreamEvent> {
             continue;
           }
           const eventId = `evt_${this.#version + 1}`;
-          const frame = { ...mutation.frame(eventId), idempotency_key: mutation.key };
+          const frame = { ...mutation.frame(eventId), ...(mutation.key === undefined ? {} : { idempotency_key: mutation.key }) };
           const ack = await this.#sendMutation(frame, [mutation]);
           this.#accepted = mutation.apply(this.#accepted);
           this.#acceptedKey = mutation.key;
@@ -458,8 +474,8 @@ export class SystemZeroStreamClient implements AsyncIterable<StreamEvent> {
         const desired = mutation.apply(this.#desired);
         if (desired.attachments !== undefined) validateStreamAttachments(desired.attachments);
         // A refusal can make a queued replacement unchanged after rollback.
-        if (priorKey !== undefined && JSON.stringify(desired) === JSON.stringify(this.#desired)) mutation.key = priorKey;
-        else if (mutation.key === priorKey) mutation.key = 'sz-stream-' + randomUUID();
+        if (mutation.reuseKey && priorKey !== undefined && JSON.stringify(desired) === JSON.stringify(this.#desired)) mutation.key = priorKey;
+        else mutation.key = mutation.ownKey;
         this.#desired = desired;
         priorKey = mutation.key;
       }
@@ -492,13 +508,13 @@ export class SystemZeroStreamClient implements AsyncIterable<StreamEvent> {
       this.#hello = deferred();
       const headers: Record<string, string> = { Authorization: `Bearer ${this.#key}` };
       let socket: StreamWebSocket;
-      if (this.#webSocketConstructor) socket = new this.#webSocketConstructor(streamURL, [STREAM_PROTOCOL], { headers, perMessageDeflate: false, autoPong: false });
+      if (this.#webSocketConstructor) socket = new this.#webSocketConstructor(streamURL, [this.protocol], { headers, perMessageDeflate: false, autoPong: false });
       else {
         // Node 22 and 24 accept headers through the second-argument options object.
         // Reject runtimes whose native implementation lacks that overload.
         if (!globalThis.WebSocket?.toString().includes('WebSocketInit')) throw new StreamProtocolError('Inject a server-side WebSocket constructor such as ws; this platform has no verified Authorization-header support.');
         const Native = globalThis.WebSocket as unknown as new(url: string, options: { protocols: string[]; headers: Record<string, string> }) => StreamWebSocket;
-        socket = new Native(streamURL, { protocols: [STREAM_PROTOCOL], headers });
+        socket = new Native(streamURL, { protocols: [this.protocol], headers });
       }
       this.#socket = socket;
       const handlers = socketHandlers(socket);
@@ -576,7 +592,7 @@ export class SystemZeroStreamClient implements AsyncIterable<StreamEvent> {
       } else throw new StreamProtocolError('Injected WebSocket must expose on or addEventListener.');
       const hello = await this.#hello.promise;
       if (!current()) return;
-      if (socket.protocol !== STREAM_PROTOCOL) throw new StreamProtocolError('Server did not negotiate the stream v1 subprotocol.');
+      if (socket.protocol !== this.protocol) throw new StreamProtocolError('Server did not negotiate the stream v1 subprotocol.');
       this.#everConnected = true;
       this.#resetOpening(); this.#retryAttempt = 0;
       const receiptTimeout = hello.limits.receipt_timeout_ms;
@@ -603,7 +619,8 @@ export class SystemZeroStreamClient implements AsyncIterable<StreamEvent> {
       if (this.#everStarted && this.#request) {
         const pending = [...this.#mutations];
         const state = copy(this.#desired!);
-        const key = pending.at(-1)?.key ?? this.#acceptedKey;
+        const latest = pending.at(-1);
+        const key = latest ? latest.key : this.#acceptedKey;
         if (typeof key !== 'string' || !key.trim()) throw new StreamProtocolError('Cannot replay stream work without its original idempotency key.');
         if (resumed && pending.length === 0) this.#refusedKey = key;
         this.#replayOnRequest = key === this.#refusedKey && this.#startOptions.decisionMode === 'on_change' && this.options.reconnectPolicy !== 'never';
@@ -816,7 +833,7 @@ export class SystemZeroStreamClient implements AsyncIterable<StreamEvent> {
     this.#seq = raw.seq; this.#streamId = raw.stream_id;
     this.#requestSent = true;
     if (raw.type === 'hello') {
-      if (this.#seq !== 1 || raw.protocol !== STREAM_PROTOCOL || !object(raw.limits)) { this.#stop(new StreamProtocolError('Server hello is invalid.'), 1002); return; }
+      if (this.#seq !== 1 || raw.protocol !== this.protocol || !object(raw.limits)) { this.#stop(new StreamProtocolError('Server hello is invalid.'), 1002); return; }
       const hello = raw as unknown as StreamHello;
       // Validate before a coalesced ping can reach the writer with unset budgets.
       try { this.#configureLimits(hello); }
@@ -1136,3 +1153,6 @@ export class SystemZeroStreamClient implements AsyncIterable<StreamEvent> {
     if (reconnectAt !== undefined) this.#scheduleReconnect(reconnectAt);
   }
 }
+
+/** @deprecated Use RightNowStreamClient. */
+export { RightNowStreamClient as SystemZeroStreamClient };

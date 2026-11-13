@@ -4,10 +4,10 @@ import httpx
 import pytest
 from urllib.parse import urlsplit
 
-from system_zero import SystemZero
-from system_zero._retry import _recover_workflow, _retry_response
+from rightnow import RightNow
+from rightnow._retry import _recover_workflow, _retry_response
 
-from system_zero.tools import ToolHandler, handle_tool_call
+from rightnow.tools import ToolHandler, handle_tool_call
 
 
 TOOL_ARGS = {"state": {"json": '{"ready":true}'}, "questions": [
@@ -23,7 +23,7 @@ def test_malformed_key_is_refused_before_http_client_construction(character, mon
     key = "SYNTHETIC" + character + "VALUE"
     monkeypatch.setattr(httpx, "Client", lambda **_kwargs: calls.append(True))
     with pytest.raises(ValueError) as caught:
-        SystemZero(api_key=key)
+        RightNow(api_key=key)
     assert str(caught.value) == CONFIGURATION_ERROR
     assert caught.value.__cause__ is None
     assert key not in repr(caught.value)
@@ -33,7 +33,7 @@ def test_malformed_key_is_refused_before_http_client_construction(character, mon
 def test_environment_key_gets_the_same_fixed_refusal(monkeypatch):
     monkeypatch.setenv("SYSTEM_ZERO_API_KEY", "SYNTHETIC\nVALUE")
     with pytest.raises(ValueError, match="^api_key must contain only visible ASCII characters\\.$"):
-        SystemZero()
+        RightNow()
 
 
 @pytest.mark.parametrize("base_url", (
@@ -44,7 +44,7 @@ def test_environment_key_gets_the_same_fixed_refusal(monkeypatch):
 ))
 def test_invalid_url_is_refused_by_client_and_tool_factory(base_url):
     with pytest.raises(ValueError):
-        SystemZero(api_key="SYNTHETIC", base_url=base_url)
+        RightNow(api_key="SYNTHETIC", base_url=base_url)
     with pytest.raises((ValueError, TypeError)):
         ToolHandler(base_url=base_url)
 
@@ -54,7 +54,7 @@ def test_invalid_url_is_refused_by_client_and_tool_factory(base_url):
 ))
 def test_secure_or_loopback_base_is_accepted_without_dispatch(base_url):
     calls = []
-    with SystemZero(api_key="SYNTHETIC", base_url=base_url,
+    with RightNow(api_key="SYNTHETIC", base_url=base_url,
                     transport=httpx.MockTransport(lambda request: calls.append(request))) as client:
         assert client.base_url
     with ToolHandler(base_url=base_url):

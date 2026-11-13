@@ -1,14 +1,17 @@
+import type { Idempotency } from './retry.js';
+import type { Wire } from './wire.js';
 import type { Attachment, DecideReply, DecideRequest, ErrorEnvelope, JsonValue, StructuredJson } from './api-types.js';
 import type { PolicyReply, PolicyStreamRequest } from './policy.js';
 
 export type DecisionMode = 'on_change' | 'on_request';
 export type ReconnectPolicy = 'latest' | 'never';
 export type StreamRequest = PolicyStreamRequest;
-export interface StreamStartOptions { dangerZone?: import('./client.js').RequestOptions['dangerZone']; decisionMode?: DecisionMode; minIntervalMs?: number }
+export interface StreamMutationOptions { idempotency?: Idempotency; idempotencyKey?: string }
+export interface StreamStartOptions extends StreamMutationOptions { dangerZone?: import('./client.js').RequestOptions['dangerZone']; decisionMode?: DecisionMode; minIntervalMs?: number }
 export interface StreamRateLimit { limit: number; remaining: number; reset_epoch_seconds: number }
 export interface StreamBase { stream_id: string; seq: number }
 export interface StreamHello extends StreamBase {
-  type: 'hello'; protocol: 'system-zero.stream.v1'; request_id: string;
+  type: 'hello'; protocol: Wire['streamProtocol']; request_id: string;
   limits: Record<string, number>; rate_limit: StreamRateLimit | null;
 }
 export interface StreamAck extends StreamBase {
@@ -56,6 +59,8 @@ export interface StreamWebSocketConstructor {
   new(url: string, protocols: string[], options: { headers: Record<string, string>; perMessageDeflate: false; autoPong?: false }): StreamWebSocket;
 }
 export interface StreamClientOptions {
+  /** Generate replay keys only with auto; off by default. */
+  idempotency?: Idempotency;
   dangerZone?: import('./client.js').RequestOptions['dangerZone'];
   apiKey?: string; streamURL?: string; WebSocket?: StreamWebSocketConstructor;
   reconnectPolicy?: ReconnectPolicy;

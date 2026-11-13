@@ -5,7 +5,7 @@ import { runFlow } from '../src/flows.js';
 import { runBatch } from '../src/batch.js';
 
 const request = {
-  model: 'system-zero',
+  model: 'rightnow-decision',
   state: 'SYNTHETIC: The review is complete.',
   questions: { ready: { type: 'boolean' as const, instructions: 'Is the review complete?' } },
 };

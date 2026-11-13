@@ -5,7 +5,7 @@ from urllib.parse import urlsplit
 
 import pytest
 
-from system_zero import stream as stream_module
+from rightnow import stream as stream_module
 
 
 CONFIGURATION_ERROR = "api_key must contain only visible ASCII characters."

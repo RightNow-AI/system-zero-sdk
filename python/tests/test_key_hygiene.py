@@ -11,8 +11,8 @@ from collections.abc import Mapping
 
 import httpx
 import pytest
-from system_zero import SystemZero
-from system_zero import stream as stream_module
+from rightnow import SystemZero
+from rightnow import stream as stream_module
 
 LOOPBACK = '.'.join(map(str, (127, 0, 0, 1)))
 KEY = 'sk-sentinel-' + secrets.token_hex(16)
@@ -295,7 +295,7 @@ def test_connected_stream_error_frame(monkeypatch, caplog, capsys):
 
 
 def test_review_A01_request_boundary_echo():
-    from system_zero.errors import AuthenticationError
+    from rightnow.errors import AuthenticationError
     def handler(request):
         return httpx.Response(401, json={'error': {'type': 'authentication_error', 'code': 'auth_error', 'message': KEY}},
                               headers={'x-request-id': KEY, 'x-debug': KEY})
@@ -329,7 +329,7 @@ def _review_native(kind):
 @pytest.mark.parametrize('boundary', ['sync', 'async'])
 def test_review_A04_B04_native_slots_and_exception_graph(kind, boundary):
     from copy import copy, deepcopy
-    from system_zero._redaction import Secret, protected, protected_async
+    from rightnow._redaction import Secret, protected, protected_async
     failure = _review_native(kind)
     if hasattr(failure, 'add_note'):
         failure.add_note(KEY)
@@ -359,8 +359,8 @@ def test_review_A04_B04_native_slots_and_exception_graph(kind, boundary):
         assert KEY.encode() not in pickle.dumps(native)
 
 def test_review_A05_flow_error_trace_metadata():
-    from system_zero.flows import run_flow
-    flow = {'version': 1, 'request': {'model': 'system-zero', 'state': 'safe'},
+    from rightnow.flows import run_flow
+    flow = {'version': 1, 'request': {'model': 'rightnow-decision', 'state': 'safe'},
             'steps': [{'id': 'first', 'questions': {'ready': {'type': 'boolean', 'instructions': 'Ready?'}},
                        'next': {'rules': [], 'default': None}}]}
     with SystemZero(KEY, max_retries=0, timeout=1, transport=httpx.MockTransport(
@@ -440,7 +440,7 @@ def test_review_B02_retryable_close_preserves_eventual_receipt(code, operation):
 def test_review_round3_retained_stream_failure(path, fault, surface, monkeypatch):
     from key_hygiene_fixture import Socket, REQUEST
     from websockets.exceptions import ConnectionClosedError
-    from websockets.frames import Close, Frame, OP_PONG
+    from websockets.frames import Close, Frame, Opcode
     async def scenario():
         armed, faulted = asyncio.Event(), asyncio.Event()
         def failure():
@@ -498,7 +498,7 @@ def test_review_round3_retained_stream_failure(path, fault, surface, monkeypatch
             elif path == 'send':
                 pending = asyncio.create_task(client.append_text('safe'))
             elif path == 'native-pong':
-                socket_.protocol.send_frame(Frame(OP_PONG, b'safe'))
+                socket_.protocol.send_frame(Frame(Opcode.PONG, b'safe'))
                 retained_tasks = list(client._native_tasks)
             elif path == 'json-pong':
                 socket_.server('ping', nonce=1)
@@ -529,7 +529,7 @@ def test_review_round4_pending_native_waiter(path, fault, monkeypatch):
     from contextlib import asynccontextmanager
     from key_hygiene_fixture import Socket, REQUEST
     from websockets.exceptions import ConnectionClosedError
-    from websockets.frames import Close, Frame, OP_PONG
+    from websockets.frames import Close, Frame, Opcode
     async def scenario():
         loop = asyncio.get_running_loop()
         native_waiter = loop.create_future()
@@ -570,7 +570,7 @@ def test_review_round4_pending_native_waiter(path, fault, monkeypatch):
             elif path == 'close':
                 caller = asyncio.create_task(client.close())
             else:
-                socket_.protocol.send_frame(Frame(OP_PONG, b'safe'))
+                socket_.protocol.send_frame(Frame(Opcode.PONG, b'safe'))
             await asyncio.wait_for(entered.wait(), 2)
             owner = (client._drainer if path == 'send' else client._runner if path == 'close'
                      else next(iter(client._native_tasks)))
@@ -607,7 +607,7 @@ def test_review_round5_all_pending_tasks(path, fault, monkeypatch):
     from contextlib import asynccontextmanager
     from key_hygiene_fixture import Socket, REQUEST
     from websockets.exceptions import ConnectionClosedError
-    from websockets.frames import Close, Frame, OP_PONG
+    from websockets.frames import Close, Frame, Opcode
     async def scenario():
         loop = asyncio.get_running_loop()
         native_waiter = loop.create_future()
@@ -660,7 +660,7 @@ def test_review_round5_all_pending_tasks(path, fault, monkeypatch):
             opens.append(True)
             return socket_ if len(opens) == 1 else replacement
         monkeypatch.setattr(stream_module, 'connect', connect)
-        client = stream_module.SystemZeroStreamClient(KEY, max_reconnect_attempts=1, random=lambda: 0)
+        client = stream_module.SystemZeroStreamClient(KEY, idempotency="auto", max_reconnect_attempts=1, random=lambda: 0)
         caller = None
         observed = loop.create_future()
         snapshots, task_names = [], set()
@@ -679,7 +679,7 @@ def test_review_round5_all_pending_tasks(path, fault, monkeypatch):
             elif path == 'close': caller = asyncio.create_task(client.close())
             elif path in ('receive', 'json-pong'): socket_.server('ping', nonce=1)
             elif path in ('native-enter', 'native-exit'):
-                socket_.protocol.send_frame(Frame(OP_PONG, b'safe'))
+                socket_.protocol.send_frame(Frame(Opcode.PONG, b'safe'))
             await asyncio.wait_for(entered.wait(), 2)
             # A returned pong Future must have reached its await, not just ping().
             for _ in range(12): await asyncio.sleep(0)

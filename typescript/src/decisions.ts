@@ -4,7 +4,7 @@ import type { Answer, AuthoritativeAnswer, DecideReply, DecideRequest, DecisionA
 
 export type Alternative = DecisionAlternative;
 export type AnswerOrRefusal = Answer | AbstainedAnswer | QuestionRefusalData | { error: { code: string; retryable: false } };
-export type SystemZeroReply = Omit<DecideReply, 'answers'> & { answers: Record<string, AnswerOrRefusal> };
+export type RightNowReply = Omit<DecideReply, 'answers'> & { answers: Record<string, AnswerOrRefusal> };
 
 export interface DecisionSummary {
   kind: 'v1';
@@ -299,3 +299,6 @@ export function decisionsFor(reply: SystemZeroReply, request?: Pick<DecideReques
   });
   return Object.fromEntries(entries);
 }
+
+/** @deprecated Use RightNowReply. */
+export type SystemZeroReply = RightNowReply;

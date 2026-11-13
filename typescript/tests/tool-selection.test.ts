@@ -17,7 +17,7 @@ it.each(fixture.cases)('sz-tools-v1: $name', item => {
   }
 });
 const tools = [{ name: 'lookup' }, { name: 'refund' }];
-const request = { model: 'system-zero', state: 'The order is damaged.' };
+const request = { model: 'rightnow-decision', state: 'The order is damaged.' };
 function reply(winner: string) {
   const probabilities = Object.fromEntries(['lookup', 'refund', 'none'].map(name => [name, name === winner ? 0.8 : 0.1]));
   return { marker: 'untouched', answers: { sz_tool: {
@@ -73,7 +73,7 @@ it('passes the request, attachments and all options through existing decide', as
   expect(seen).toHaveLength(2);
   for (const item of seen) {
     expect(item.body).toEqual({ ...request, questions: toolQuestions(tools) });
-    expect(item.headers.get('sz-danger-zone')).toBe('long_context_1m');
+    expect(item.headers.get('rightnow-danger-zone')).toBe('long_context_1m');
     expect(item.headers.get('idempotency-key')).toBe('selection-key');
     expect(item.headers.get('x-example')).toBe('kept');
   }

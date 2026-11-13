@@ -7,8 +7,8 @@ import struct
 
 import pytest
 
-from system_zero import Decision, QuestionRefusal, decision_for
-from system_zero import decisions as helpers
+from rightnow import Decision, QuestionRefusal, decision_for
+from rightnow import decisions as helpers
 
 
 _FIXTURE_DIRECTORY = Path(__file__).resolve().parents[2] / "fixtures" / "decision-reader"

@@ -3,11 +3,11 @@ import json
 from websockets.exceptions import ConnectionClosedError, ConnectionClosedOK
 from websockets.frames import Close
 from websockets.protocol import State
-from system_zero import stream as stream_module
+from rightnow import stream as stream_module
 from stream_limit_fixture import TEST_STREAM_LIMITS
 
 REQUEST = {
-    "model": "system-zero", "state": "SYNTHETIC parity state",
+    "model": "rightnow-decision", "state": "SYNTHETIC parity state",
     "questions": {"ready": {"type": "boolean", "instructions": "Ready?"}},
 }
 

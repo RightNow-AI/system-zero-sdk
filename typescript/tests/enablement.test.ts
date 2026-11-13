@@ -11,7 +11,7 @@ import oneMillionCases from '../../fixtures/long-context/1m.json';
 import { SystemZeroStreamClient } from '../src/index.js';
 import type { EnabledDecideRequest, VideoRequest } from '../src/index.js';
 
-const request = { model: 'system-zero', state: 'sample', questions: { q: { type: 'boolean' as const, instructions: 'Is it set?' } } };
+const request = { model: 'rightnow-decision', state: 'sample', questions: { q: { type: 'boolean' as const, instructions: 'Is it set?' } } };
 const options = (value: unknown): RequestOptions => value as RequestOptions;
 it('sends the explicit option on every retry and replay', async () => {
   const seen: Headers[] = [];
@@ -21,7 +21,7 @@ it('sends the explicit option on every retry and replay', async () => {
   } });
   await client.decide(request, options({ dangerZone: 'accept', idempotencyKey: 'same' }));
   expect(seen).toHaveLength(2);
-  for (const headers of seen) { expect(headers.get('SZ-Danger-Zone')).toBe('accept'); expect(headers.get('idempotency-key')).toBe('same'); expect(headers.has('x-system-zero-long-context')).toBe(false); }
+  for (const headers of seen) { expect(headers.get('RightNow-Danger-Zone')).toBe('accept'); expect(headers.get('idempotency-key')).toBe('same'); expect(headers.has('x-system-zero-long-context')).toBe(false); }
 });
 it.each(['Accept', '', null, true, 1])('refuses an invalid option before transport: %s', async value => {
   let calls = 0;
@@ -29,7 +29,7 @@ it.each(['Accept', '', null, true, 1])('refuses an invalid option before transpo
   await expect(Promise.resolve().then(() => client.decide(request, options({ dangerZone: value })))).rejects.toBeInstanceOf(InvalidRequestError);
   expect(calls).toBe(0);
 });
-it.each(['SZ-Danger-Zone', 'sz-danger-zone', 'sZ-dAnGeR-zOnE'])('refuses caller header %s with and without the option', async name => {
+it.each(['RightNow-Danger-Zone', 'rightnow-danger-zone', 'sZ-dAnGeR-zOnE'])('refuses caller header %s with and without the option', async name => {
   let calls = 0;
   const client = new SystemZeroClient({ apiKey: 'synthetic', fetch: async () => { calls++; return Response.json({}); } });
   for (const extra of [{}, { dangerZone: 'accept' }]) await expect(Promise.resolve().then(() => client.decide(request, options({ ...extra, headers: { [name]: 'accept' } })))).rejects.toBeInstanceOf(InvalidRequestError);
@@ -41,7 +41,7 @@ it('ordinary helper requests and large states add no opt-in', async () => {
   const bytes = new Uint8Array(24); bytes.set([0, 0, 0, 24, 102, 116, 121, 112, 105, 115, 111, 109]);
   await client.decide({ ...request, attachments: [videoAttachment({ name: 'clip', data: bytes })] });
   await client.decide({ ...request, state: 'x'.repeat(140000) });
-  expect(seen.every(headers => !headers.has('SZ-Danger-Zone'))).toBe(true);
+  expect(seen.every(headers => !headers.has('RightNow-Danger-Zone'))).toBe(true);
 });
 it.each(['billing', 'class', 'deny_list', 'global_switch', 'account_deleted', 'future_rule'])('keeps typed eligibility %s and the refusal envelope', async eligibility => {
   let calls = 0;
@@ -69,7 +69,7 @@ it.each(['accept', 'long_context_64k', 'long_context_128k', 'long_context_1m'] a
     const common = { runId: 'enabled', resultsPath: join(folder, 'rows.jsonl'), deadlineMs: 10000, concurrency: 1 as const };
     const result = await runBatch(client, items, { ...common, dangerZone: selected });
     expect(result.records[0]?.outcome).toBe('held');
-    expect(seen[0]?.get('SZ-Danger-Zone')).toBe(selected);
+    expect(seen[0]?.get('RightNow-Danger-Zone')).toBe(selected);
     await expect(runBatch(client, items, { ...common, dangerZone: 'wrong' as 'accept' })).rejects.toBeInstanceOf(InvalidRequestError);
     expect(seen).toHaveLength(1);
     if (selected === 'long_context_1m') {
@@ -77,7 +77,7 @@ it.each(['accept', 'long_context_64k', 'long_context_128k', 'long_context_1m'] a
       writeFileSync(common.resultsPath, '');
       await runBatch(client, items, { ...common, dangerZone: selected });
       expect(seen).toHaveLength(2);
-      expect(seen[1]?.get('sz-danger-zone')).toBe(selected);
+      expect(seen[1]?.get('rightnow-danger-zone')).toBe(selected);
       expect(seen[1]?.get('idempotency-key')).toBe(seen[0]?.get('idempotency-key'));
       await expect(runBatch(client, items, { ...common, dangerZone: 'long_context_64k' })).rejects.toBeInstanceOf(InvalidRequestError);
       expect(seen).toHaveLength(2);
@@ -92,16 +92,16 @@ it.each(['accept', 'long_context_64k', 'long_context_128k', 'long_context_1m'] a
   } });
   const flow = { version: 1, request: { model: request.model, state: request.state }, steps: [{ id: 'one', questions: request.questions, next: { rules: [], default: null } }] };
   await expect(runFlow(client, flow, { run_id: 'enabled', deadline_ms: 10000, dangerZone: selected })).rejects.toBeInstanceOf(LongContextNotAvailableError);
-  expect(seen[0]?.get('SZ-Danger-Zone')).toBe(selected);
+  expect(seen[0]?.get('RightNow-Danger-Zone')).toBe(selected);
 });
 
 it('types the required request fields, state-only long classes and bounded score levels', () => {
   const filename = fileURLToPath(new URL('enabled-typecheck.ts', import.meta.url)).replaceAll('\\', '/');
   const source = `import type { LongContextRequest, EnabledDecideRequest, VideoRequest, Model } from '../src/index.js';
 import { videoAttachment } from '../src/index.js';
-const request: LongContextRequest = { model: 'system-zero', state: 'sample', questions: { q: { type: 'score', instructions: 'Rate it.', criteria: ['low', 'high'] } } };
+const request: LongContextRequest = { model: 'rightnow-decision', state: 'sample', questions: { q: { type: 'score', instructions: 'Rate it.', criteria: ['low', 'high'] } } };
 const enabled: EnabledDecideRequest = request;
-const pdf: EnabledDecideRequest = { model: 'system-zero', state: 'Read the PDF.', questions: { q: { type: 'boolean', instructions: 'Ready?' } }, attachments: [{ name: 'document', type: 'document', data: 'data:application/pdf;base64,JVBERi0xLjcK' }] };
+const pdf: EnabledDecideRequest = { model: 'rightnow-decision', state: 'Read the PDF.', questions: { q: { type: 'boolean', instructions: 'Ready?' } }, attachments: [{ name: 'document', type: 'document', data: 'data:application/pdf;base64,JVBERi0xLjcK' }] };
 declare const client: import('../src/index.js').SystemZeroClient;
 client.decide(pdf);
 // @ts-expect-error model, state and questions are required
@@ -110,7 +110,7 @@ const missing: LongContextRequest = {};
 request.attachments = [{ name: 'paper', type: 'document', data: 'data:application/pdf;base64,JVBERi0=' }];
 // @ts-expect-error long context scores have at most four levels
 request.questions.q = { type: 'score', instructions: 'Rate it.', criteria: ['a','b','c','d','e'] };
-const video: VideoRequest = { model: 'system-zero', state: 'sample', questions: { q: { type: 'boolean', instructions: 'Ready?' } }, attachments: [videoAttachment({ name: 'clip', data: new Uint8Array() })] };
+const video: VideoRequest = { model: 'rightnow-decision', state: 'sample', questions: { q: { type: 'boolean', instructions: 'Ready?' } }, attachments: [videoAttachment({ name: 'clip', data: new Uint8Array() })] };
 // @ts-expect-error the video request requires model, state and questions
 const incomplete: VideoRequest = { attachments: [] };
 declare const model: Model;
@@ -156,7 +156,7 @@ it('sends ordinary inline PDF and video through exported request types without o
   const video: VideoRequest = { ...request, attachments: [videoAttachment({ name: 'clip', data: bytes })] };
   await client.decide(pdf); await client.decide(video);
   expect(seen.map(entry => entry.body)).toEqual([pdf, video]);
-  expect(seen.every(entry => !entry.headers.has('SZ-Danger-Zone'))).toBe(true);
+  expect(seen.every(entry => !entry.headers.has('RightNow-Danger-Zone'))).toBe(true);
 });
 
 for (const selected of ['long_context_64k', 'long_context_128k'] as const) {
@@ -165,11 +165,11 @@ for (const selected of ['long_context_64k', 'long_context_128k'] as const) {
     const client = new SystemZeroClient({ apiKey: 'SYNTHETIC', random: () => 0, sleep: async () => {},
       fetch: async (_url, init) => {
         seen.push(new Headers(init?.headers));
-        return seen.length === 1 ? Response.json({ error: { code: 'system_zero_unavailable', retryable: true } }, { status: 503, headers: { 'Retry-After-Ms': '1' } })
-          : Response.json({ answers: {}, usage: { long_input_tokens: 48000 } }, { headers: { 'sz-danger-zone': selected } });
+        return seen.length === 1 ? Response.json({ error: { code: 'model_unavailable', retryable: true } }, { status: 503, headers: { 'Retry-After-Ms': '1' } })
+          : Response.json({ answers: {}, usage: { long_input_tokens: 48000 } }, { headers: { 'rightnow-danger-zone': selected } });
       } });
     const result = await client.decide(request, { dangerZone: selected }).withResponse();
-    expect(seen.map(headers => headers.get('sz-danger-zone'))).toEqual([selected, selected]);
+    expect(seen.map(headers => headers.get('rightnow-danger-zone'))).toEqual([selected, selected]);
     expect(seen[0]?.get('idempotency-key')).toBe(seen[1]?.get('idempotency-key'));
     expect(result.data.usage.long_input_tokens).toBe(48000);
     expect(result.metadata.dangerZone).toEqual([selected]);
@@ -185,11 +185,11 @@ for (const selected of ['long_context_64k', 'long_context_128k'] as const) {
 
 it('preserves direct model limits and optional long class bands through discovery', async () => {
   const band = { header_value: 'long_context_64k', min_state_tokens: 38001, state_tokens: 65536, rendered_tokens: 69632, attachments: 0 };
-  const direct = { id: 'system-zero', limits: { state_tokens: 38000, rendered_tokens: 40960 } };
+  const direct = { id: 'rightnow-decision', limits: { state_tokens: 38000, rendered_tokens: 40960 } };
   const payload = { object: 'list', data: [direct, { ...direct, limits: { ...direct.limits, long_context: [band] } }] };
   const client = new SystemZeroClient({ apiKey: 'SYNTHETIC', maxRetries: 0, fetch: async (url, init) => {
-    expect(new URL(String(url)).pathname).toBe('/v1/models');
-    expect(new Headers(init?.headers).has('sz-danger-zone')).toBe(false);
+    expect(new URL(String(url)).pathname).toBe('/v1/decision-model/models');
+    expect(new Headers(init?.headers).has('rightnow-danger-zone')).toBe(false);
     return Response.json(payload);
   } });
   const result = await client.models.list();
@@ -231,9 +231,9 @@ it.each(['', ' ', '\t'])('1M refuses an explicit blank key %j from options or he
 it.each([undefined, null, []])('1M accepts absent, null and empty attachments: %j', async attachments => {
   const client = new SystemZeroClient({ apiKey: 'SYNTHETIC', maxRetries: 0, fetch: async (_url, init) => {
     const headers = new Headers(init?.headers);
-    expect(headers.get('sz-danger-zone')).toBe('long_context_1m');
+    expect(headers.get('rightnow-danger-zone')).toBe('long_context_1m');
     expect(headers.get('idempotency-key')).toBe('caller-key');
-    return Response.json({ answers: {} }, { headers: { 'sz-danger-zone': 'long_context_1m' } });
+    return Response.json({ answers: {} }, { headers: { 'rightnow-danger-zone': 'long_context_1m' } });
   } });
   const result = await client.decide({ ...request, attachments }, { dangerZone: 'long_context_1m', idempotencyKey: 'caller-key' }).withResponse();
   expect(result.metadata.dangerZone).toEqual(['long_context_1m']);
@@ -271,7 +271,7 @@ it.each([false, true])('1M retries cold admission with the same class and key (w
   expect(seen).toHaveLength(2);
   expect(seen[0]?.get('idempotency-key')).toBeTruthy();
   expect(seen[1]?.get('idempotency-key')).toBe(seen[0]?.get('idempotency-key'));
-  expect(seen.map(headers => headers.get('sz-danger-zone'))).toEqual(['long_context_1m', 'long_context_1m']);
+  expect(seen.map(headers => headers.get('rightnow-danger-zone'))).toEqual(['long_context_1m', 'long_context_1m']);
 });
 it.each([[402, 'insufficient_credits'], [429, 'long_context_daily_budget_exhausted']] as const)('1M never retries %s %s', async (status, code) => {
   let calls = 0;

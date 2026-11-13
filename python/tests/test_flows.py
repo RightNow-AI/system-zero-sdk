@@ -5,21 +5,21 @@ import json
 from pathlib import Path
 import httpx
 import pytest
-from system_zero import SystemZero
-from system_zero.errors import APIConnectionError, APIError, APITimeoutError, InvalidRequestError, PermissionError, SystemZeroError, VideoNotAvailableError
-from system_zero.flows import flow_idempotency_key, flow_request_hash, run_flow, validate_flow
+from rightnow import SystemZero
+from rightnow.errors import APIConnectionError, APIError, APITimeoutError, InvalidRequestError, PermissionError, SystemZeroError, VideoNotAvailableError
+from rightnow.flows import flow_idempotency_key, flow_request_hash, run_flow, validate_flow
 FIXTURES = json.loads((Path(__file__).resolve().parents[2] / 'fixtures' / 'flows' / 'conformance.json').read_text(encoding='utf-8'))['cases']
 BOUNDARIES = json.loads((Path(__file__).resolve().parents[2] / 'fixtures' / 'flows' / 'boundaries.json').read_text(encoding='utf-8'))
 QUESTION = {'ok': {'type': 'boolean', 'instructions': 'SYNTHETIC question'}}
 
 def definition(count=1):
-    return {'version': 1, 'request': {'model': 'system-zero', 'state': {'note': 'SYNTHETIC input'}}, 'steps': [{'id': 'step' + str(index), 'questions': deepcopy(QUESTION), 'next': {'rules': [], 'default': 'step' + str(index + 1) if index + 1 < count else None}} for index in range(count)]}
+    return {'version': 1, 'request': {'model': 'rightnow-decision', 'state': {'note': 'SYNTHETIC input'}}, 'steps': [{'id': 'step' + str(index), 'questions': deepcopy(QUESTION), 'next': {'rules': [], 'default': 'step' + str(index + 1) if index + 1 < count else None}} for index in range(count)]}
 
 def answer(value=True, confidence=0.8):
     return {'type': 'boolean', 'probability': confidence if value else 1 - confidence, 'decision': value, 'confidence': confidence, 'alternatives': [{'decision': not value, 'confidence': round(1 - confidence, 6)}], 'calibrated': False, 'calibration_version': 'synthetic-v1'}
 
 def reply(value=True, confidence=0.8):
-    return {'id': 'szd_synthetic', 'model': 'system-zero', 'served_by': 'synthetic', 'created': 1, 'context': {'route': 'direct', 'tokens': 1}, 'answers': {'ok': answer(value, confidence)}, 'usage': {'input_tokens': 1, 'cached_input_tokens': 0, 'media_tokens': 0, 'long_input_tokens': 0, 'media_items': 0, 'thought_tokens': 1}}
+    return {'id': 'szd_synthetic', 'model': 'rightnow-decision', 'served_by': 'synthetic', 'created': 1, 'context': {'route': 'direct', 'tokens': 1}, 'answers': {'ok': answer(value, confidence)}, 'usage': {'input_tokens': 1, 'cached_input_tokens': 0, 'media_tokens': 0, 'long_input_tokens': 0, 'media_items': 0, 'thought_tokens': 1}}
 
 def options(**overrides):
     return {'run_id': 'synthetic-run', 'deadline_ms': 10000, 'include_content': True, 'now': lambda: 0, **overrides}
@@ -196,7 +196,7 @@ def test_deadline_includes_sdk_retry_and_wait_bound_before_any_dispatch():
     with SystemZero(api_key='rnsk_synthetic', timeout=0.001, max_retries=2, max_retry_wait=0.005, transport=httpx.MockTransport(lambda request: (calls.append(request), httpx.Response(200, json=reply()))[1])) as client:
         with pytest.raises(APITimeoutError) as caught:
             run_flow(client, definition(), **options(deadline_ms=12))
-    assert caught.value.code == 'system_zero_timeout'
+    assert caught.value.code == 'model_timeout'
     assert calls == []
 
 def test_deadline_rechecked_after_call_without_mutating_client_configuration():
@@ -212,7 +212,7 @@ def test_deadline_rechecked_after_call_without_mutating_client_configuration():
         with pytest.raises(APITimeoutError) as caught:
             run_flow(client, definition(2), **options(deadline_ms=50, now=lambda: clock[0]))
         assert (client.timeout, client.max_retries, client.max_retry_wait) == original
-    assert caught.value.code == 'system_zero_timeout'
+    assert caught.value.code == 'model_timeout'
     assert len(calls) == 1
     assert caught.value.trace['decide_calls'] == 1
 
@@ -307,7 +307,7 @@ def test_transport_timeout_has_known_code_and_partial_trace():
         with pytest.raises(APIConnectionError) as caught:
             run_flow(client, definition(), **options())
     assert type(caught.value) is APIConnectionError
-    assert caught.value.code == 'system_zero_timeout'
+    assert caught.value.code == 'model_timeout'
     assert caught.value.trace['status'] == 'failed'
 
 def test_body_timeout_retains_known_request_id():
@@ -364,7 +364,7 @@ def test_c_rebase_flow_trace_preserves_cumulative_public_codes_without_private_c
     assert 'SYNTHETIC sensitive' not in json.dumps(error.trace)
     assert len(calls) == 1
 
-@pytest.mark.parametrize('case_name,count_cap,expected_count,error_code', [('sequential', 32, 2, None), ('dependency_false_skips', 32, 2, None), ('call_cap_before_second_call', 1, 1, 'call_limit_reached'), ('deadline_before_first_call', 32, 0, 'system_zero_timeout'), ('request_refusal_mid_run', 32, 2, 'input_quarantined')])
+@pytest.mark.parametrize('case_name,count_cap,expected_count,error_code', [('sequential', 32, 2, None), ('dependency_false_skips', 32, 2, None), ('call_cap_before_second_call', 1, 1, 'call_limit_reached'), ('deadline_before_first_call', 32, 0, 'model_timeout'), ('request_refusal_mid_run', 32, 2, 'input_quarantined')])
 def test_shared_flow_conformance_with_explicit_count_cap(case_name, count_cap, expected_count, error_code):
     case = next((case for case in FIXTURES if case['name'] == case_name))
     seen = []
@@ -458,7 +458,7 @@ def test_explicit_count_cap_retains_one_decision_when_deadline_elapses_after_rep
         with pytest.raises(APITimeoutError) as caught:
             run_flow(client, definition(2), **options(max_decide_calls=2, deadline_ms=50, now=lambda: clock[0]))
         assert (client.timeout, client.max_retries, client.max_retry_wait) == original
-    assert caught.value.code == 'system_zero_timeout'
+    assert caught.value.code == 'model_timeout'
     assert len(calls) == 1
     assert caught.value.trace['decide_calls'] == 1
     assert sum((step['decide_calls'] for step in caught.value.trace['steps'])) == 1
@@ -474,7 +474,7 @@ def test_explicit_count_cap_retains_admissions_when_mutated_timeout_blocks_next_
     with client_for(send) as client:
         with pytest.raises(APITimeoutError) as caught:
             run_flow(client, definition(2), **options(max_decide_calls=2, deadline_ms=100))
-    assert caught.value.code == 'system_zero_timeout'
+    assert caught.value.code == 'model_timeout'
     assert len(calls) == 1
     assert caught.value.trace['decide_calls'] == 1
     assert sum((step['decide_calls'] for step in caught.value.trace['steps'])) == 1

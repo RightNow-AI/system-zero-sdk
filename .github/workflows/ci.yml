@@ -81,7 +81,7 @@ jobs:
           python -I -B -X utf8 -m pip install --disable-pip-version-check --no-cache-dir --require-hashes --only-binary :all: -r tools/sdk/runtime-requirements.txt -r tools/sdk/build-requirements.txt -r tools/sdk/test-requirements.txt
           python -I -B -X utf8 -m pip install --disable-pip-version-check --no-cache-dir --no-deps --no-build-isolation ./python
       - name: Test the Python SDK and function tools
-        run: python -I -B -X utf8 -m pytest python/tests integrations/function-tools -c python/pyproject.toml -q -p no:cacheprovider
+        run: python -I -B -X utf8 -m pytest python/tests shims/python/tests integrations/function-tools -c python/pyproject.toml -q -p no:cacheprovider
       - name: Smoke the public entrypoints offline
         run: python -I -B -X utf8 tools/sdk/smoke.py
 

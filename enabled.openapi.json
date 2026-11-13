@@ -1,8 +1,8 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "System Zero enabled request contract",
-    "version": "0.4.7"
+    "title": "RightNow decision model enabled request contract",
+    "version": "0.5.0"
   },
   "paths": {
     "/system-zero/decide": {

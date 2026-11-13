@@ -6,17 +6,17 @@ import tempfile
 import httpx
 import pytest
 
-from system_zero import (
+from rightnow import (
     InvalidRequestError,  SystemZero, SystemZeroError,
     run_batch, run_flow,
 )
 
 
-REQUEST = {"model": "system-zero", "state": "SYNTHETIC state",
+REQUEST = {"model": "rightnow-decision", "state": "SYNTHETIC state",
            "questions": {"ready": {"type": "boolean", "instructions": "Ready?"}}}
 ANSWER = {"type": "boolean", "probability": 0.8, "decision": True, "confidence": 0.8, "calibrated": False,
           "alternatives": [{"decision": False, "confidence": 0.2}], "calibration_version": "synthetic"}
-REPLY = {"id": "szd_synthetic", "model": "system-zero", "served_by": "synthetic", "created": 1,
+REPLY = {"id": "szd_synthetic", "model": "rightnow-decision", "served_by": "synthetic", "created": 1,
          "context": {"route": "direct", "tokens": 1}, "answers": {"ready": ANSWER},
          "usage": {"input_tokens": 1, "cached_input_tokens": 0, "media_tokens": 0,
                    "long_input_tokens": 0, "media_items": 0, "thought_tokens": 0}}

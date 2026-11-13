@@ -6,10 +6,10 @@ from pathlib import Path
 import httpx
 import pytest
 
-from system_zero import SystemZero, SystemZeroError
-from system_zero.webhook_errors import WEBHOOK_ERROR_CODES, WebhookInvalidError
-from system_zero.webhooks import Webhooks, verify_webhook_signature
-from system_zero import types, webhooks
+from rightnow import SystemZero, SystemZeroError
+from rightnow.webhook_errors import WEBHOOK_ERROR_CODES, WebhookInvalidError
+from rightnow.webhooks import Webhooks, verify_webhook_signature
+from rightnow import types, webhooks
 
 
 def test_openapi_component_names_share_canonical_webhook_types():
@@ -70,7 +70,7 @@ def test_invalid_clock(now):
 
 
 def test_default_clock(monkeypatch):
-    monkeypatch.setattr("system_zero.webhooks.time.time", lambda: FIXTURES["timestamp"])
+    monkeypatch.setattr("rightnow.webhooks.time.time", lambda: FIXTURES["timestamp"])
     assert verify_webhook_signature(FIXTURES["body"], FIXTURES["signature"], FIXTURES["secret"])
 
 
@@ -100,10 +100,10 @@ def test_management_reuses_authenticated_transport_and_metadata():
         assert all(set(entry) == {"event_id", "type", "attempt", "status_code", "latency_ms", "outcome", "created"}
                    for entry in deliveries["data"])
     assert [(call.method, call.url.path) for call in seen] == [
-        ("POST", "/v1/system-zero/webhooks"), ("GET", "/v1/system-zero/webhooks"),
-        ("DELETE", "/v1/system-zero/webhooks/" + ENDPOINT_ID),
-        ("POST", "/v1/system-zero/webhooks/" + ENDPOINT_ID + "/rotate-secret"),
-        ("GET", "/v1/system-zero/webhooks/" + ENDPOINT_ID + "/deliveries"),
+        ("POST", "/v1/decision-model/webhooks"), ("GET", "/v1/decision-model/webhooks"),
+        ("DELETE", "/v1/decision-model/webhooks/" + ENDPOINT_ID),
+        ("POST", "/v1/decision-model/webhooks/" + ENDPOINT_ID + "/rotate-secret"),
+        ("GET", "/v1/decision-model/webhooks/" + ENDPOINT_ID + "/deliveries"),
     ]
     assert all(call.headers["authorization"] == "Bearer test-key" for call in seen)
     assert all("idempotency-key" not in call.headers for call in seen)

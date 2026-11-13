@@ -1,23 +1,22 @@
-# RightNow System Zero Python SDK
+# RightNow decision model Python SDK
 
-RightNow is the model name; System Zero is its category. The full name is RightNow System Zero.
 
 The API has no tool calling: its request schema is strict and rejects tool-calling fields. The SDK provides "RightNow as a tool" for other models through the function-tool helpers and the MCP server adapter (the server ships in the TypeScript package).
 
-Synchronous server-side Python client for the RightNow System Zero API.
+Synchronous server-side Python client for the RightNow decision model API.
 
 Requires Python 3.10 or later.
 
-Install with `pip install rightnow-system-zero`; import it as `system_zero`.
+Install with `pip install rightnow-sdk`; import it as `rightnow`.
 
-Set `SYSTEM_ZERO_API_KEY` in the server environment, then call the API:
+Set `RIGHTNOW_API_KEY` in the server environment, then call the API:
 
 ```python
-from system_zero import SystemZero
+from rightnow import RightNow
 
-client = SystemZero()  # Reuse for the process lifetime; close at shutdown.
+client = RightNow()  # Reuse for the process lifetime; close at shutdown.
 reply = client.decide({
-    "model": "system-zero",
+    "model": "rightnow-decision",
     "state": {"order_total": 42},
     "questions": {
         "eligible": {
@@ -30,7 +29,7 @@ print(reply["answers"])
 print(client.models.list()["data"])
 ```
 
-The client calls `POST /system-zero/decide` and authenticated `GET /models`.
+The client calls `POST /decision-model/decide` and authenticated `GET /decision-model/models`.
 Boolean, choice and score questions use the same request. `decision_for` and
 `decisions_for` read typed answers and per-question refusals. Responses preserve
 the service's wire fields.
@@ -49,8 +48,9 @@ Request bodies of 32 KB or more are sent gzip-compressed when that makes them at
 
 Check `models.list()` or the documented models endpoint for current input
 availability and limits before sending an attachment. SDK types and encoders do
-not enable a held API class. Use the public `system-zero` model ID; an unavailable
-explicit model ID returns `model_not_found`.
+not enable a held API class. Use the public `rightnow-decision` model ID. A model id of a retired version is
+answered by the current version; `served_by` names the version that answered
+(`model` in compatible formats). An id that was never served returns `model_not_found`.
 
 Audio is served like every other attachment kind. For any kind, a 503 with
 `Retry-After` is retried after that delay with the same `Idempotency-Key`;
@@ -106,20 +106,20 @@ Use `videoAttachment({ name: 'clip', data: bytes })` in TypeScript or `video_att
 ```python
 from pathlib import Path
 from base64 import b64encode
-from system_zero import SystemZero, inline_attachment, validate_attachments
+from rightnow import RightNow, inline_attachment, validate_attachments
 
 attachments = validate_attachments([
     inline_attachment(name="picture", type="image", mime="image/png", data=Path("picture.png").read_bytes()),
 ])
-client = SystemZero()  # Create once; reuse across calls and close at process shutdown.
+client = RightNow()  # Create once; reuse across calls and close at process shutdown.
 reply = client.decide({
-    "model": "system-zero", "state": "Use the picture.", "attachments": attachments,
+    "model": "rightnow-decision", "state": "Use the picture.", "attachments": attachments,
     "questions": {"ready": {"type": "boolean", "instructions": "Is the item ready?"}},
 })
 print(reply["answers"])
 # PDF uses the ordinary inline request form.
 client.decide({
-    "model": "system-zero", "state": "Read the PDF.",
+    "model": "rightnow-decision", "state": "Read the PDF.",
     "questions": {"ready": {"type": "boolean", "instructions": "Is the item ready?"}},
     "attachments": [{"name": "document", "type": "document",
         "data": "data:application/pdf;base64," + b64encode(Path("document.pdf").read_bytes()).decode("ascii")}],
@@ -134,6 +134,8 @@ limits and signature screen. `inline_attachment` encodes one input;
 
 ## Ordinary HTTP retries
 
+`idempotency="auto"` generates keys for safe automatic retries and keeps the answer for 24 hours for replay and `GET /v1/decision-model/decisions/{id}`. The default `idempotency="off"` stores nothing unless you supply a key; a 1M request always sends a key.
+
 The defaults are five retries, 150 seconds per attempt, a 60-second total retry
 budget and a 60-second maximum wait. The retry count is capped at five, so one
 call makes at most six attempts. The recovery budget starts at the first failure and
@@ -142,26 +144,26 @@ attempts are limited by the remaining budget. A wait above the maximum wait, or
 one that exhausts the remaining budget, raises the last error without waiting.
 A retry needs at least one millisecond remaining.
 
-Only GET requests or requests carrying a non-empty idempotency key can retry.
-With retries enabled, decide POSTs receive a generated key when none is supplied.
-Outside the 1M class, an explicit blank key omits the header and disables decision retries.
+GETs and keyed POSTs retain their existing retry policy.
+Unkeyed decisions retry only a proven before-send failure, HTTP 429, or HTTP 503 with `error.retryable: true`.
+Outside the 1M class, an explicit blank key omits the header.
 The 1M class rejects blank keys and generates an omitted key even with retries disabled. Each retry
 retains the same key and serialized body. Setting the retry count or budget to
 zero disables retries.
 
-Ordinary HTTP calls retry these marked responses:
+GETs and keyed HTTP calls retry these marked responses:
 
 - HTTP 429: `capacity_exhausted`, `rate_limit_exceeded`,
   `concurrency_limit_exceeded` or `workspace_limit_exceeded`.
-- HTTP 5xx except 504 and `maintenance`, including `service_unavailable` and `system_zero_unavailable`.
+- HTTP 5xx except 504 and `maintenance`, including `service_unavailable` and `model_unavailable`.
 - HTTP 409: `idempotency_conflict`.
 
 Marked means `error.retryable` is `true` or the `x-should-retry` header is `true`.
 An explicit `false` in either marker vetoes retry. A cold pool answers marked
-503 `system_zero_unavailable` with its wait in `Retry-After`.
+503 `model_unavailable` with its wait in `Retry-After`.
 
-A qualifying connection failure or timeout before any response byte can also
-retry, even if the request was sent. Failures after a response byte never retry.
+A keyed POST or GET can also retry a qualifying connection failure or timeout
+before any response byte, even if the request was sent. Failures after a response byte never retry.
 Errors of authentication and permission types never retry. Python also refuses retry for
 codes containing `spend`, `budget`, `auth` or `api_key`.
 
@@ -173,7 +175,7 @@ fall back to the seconds header.
 
 ## Workflow recovery and call limits
 
-`run_batch` and `run_flow` use ordinary `POST /system-zero/decide` calls with a stricter
+`run_batch` and `run_flow` use ordinary `POST /decision-model/decide` calls with a stricter
 recovery policy. Function tools use that policy for decide and model
 listing. Only a marked HTTP 429 refusal with one of these code/`details.cause`
 pairs proves that no work ran and permits recovery:
@@ -206,7 +208,7 @@ Model listing does not consume a decide count. The module-level tool helper has
 a zero decide-call limit. A depleted tool limit returns local `call_limit_reached`
 without dispatch; this is separate from API errors.
 
-`system_zero.tools` supplies function tool definitions and the
+`rightnow.tools` supplies function tool definitions and the
 `ToolHandler`, `create_tool_handler` and `handle_tool_call` helpers.
 They share the API request
 validation and error vocabulary. Tool catalog messages are SDK summaries;
@@ -223,7 +225,7 @@ Every HTTP attempt sends `X-SDK-Retry-Count`, starting at `0`, and a
 A blank or whitespace-only `client_request_id` omits the
 `X-Client-Request-Id` header.
 
-Keep API keys on trusted servers. Don't enable DEBUG logging for the HTTP or WebSocket libraries in production; it can record request headers, including your API key. See [the security policy](https://github.com/RightNow-AI/system-zero-sdk/blob/main/SECURITY.md)
+Keep API keys on trusted servers. Don't enable DEBUG logging for the HTTP or WebSocket libraries in production; it can record request headers, including your API key. See [the security policy](https://github.com/RightNow-AI/rightnow-sdk/blob/main/SECURITY.md)
 for private vulnerability reporting.
 
 ## Latency
@@ -250,24 +252,24 @@ Each list owns its schema objects. Pass the function name and its JSON arguments
 
 ## Streaming decisions
 
-Supply `SYSTEM_ZERO_API_KEY` in the server environment before running this example.
+Supply `RIGHTNOW_API_KEY` in the server environment before running this example.
 
-The package root and `system_zero.stream` export `SystemZeroStreamClient`;
-`system_zero.stream_interfaces` supplies its frame types. The installed runtime
-dependency is `websockets>=15.0.1,<16`. Compression, automatic proxy selection,
+The package root and `rightnow.stream` export `RightNowStreamClient`;
+`rightnow.stream_interfaces` supplies its frame types. The installed runtime
+dependency is `websockets>=15.0.1,<18`. Compression, automatic proxy selection,
 and automatic transport pings are disabled; the client manages the gateway's
 heartbeat and reconnect contract explicitly.
 
 ```python
 import asyncio
-from system_zero import SystemZeroStreamClient
+from rightnow import RightNowStreamClient
 
 async def main():
-    async with SystemZeroStreamClient() as stream:
+    async with RightNowStreamClient() as stream:
         events = stream.events()
         await stream.connect()
         await stream.start({
-            "model": "system-zero", "state": "Order received.",
+            "model": "rightnow-decision", "state": "Order received.",
             "questions": {"ready": {"type": "boolean", "instructions": "Is the order ready?"}},
         }, decision_mode="on_request", min_interval_ms=100)
         await stream.append_text(" Payment received.")
@@ -283,8 +285,8 @@ asyncio.run(main())
 ```
 
 The client sends `Authorization: Bearer <key>` during the RFC 6455 version 13
-handshake and selects only `system-zero.stream.v1`. Keep the key on a trusted
-server. The connection uses `wss://api.rightnowai.co/v1/system-zero/stream`.
+handshake and selects only `rightnow-decision.stream.v1`. Keep the key on a trusted
+server. The connection uses `wss://api.rightnowai.co/v1/decision-model/stream`.
 
 Start with state and questions, then append text, append JSON items, append
 attachments, or replace the state. A mutation resolves when its acknowledgement
@@ -292,11 +294,11 @@ arrives. In `on_change` mode, accepted mutations schedule decisions; in
 `on_request` mode, call `decide` to schedule one explicitly and read its decision
 event. One decision can cover several accepted mutations.
 
-Reconnect restores the latest accepted state using stable idempotency keys;
+With auto idempotency enabled or a caller-supplied state key, reconnect restores the latest accepted state using stable idempotency keys;
 it never resends old wire frames. The default `latest` policy resumes the selected
 decision mode. The `never` policy restores state in `on_request` mode, leaving
 the next decision to the caller. Neither policy retries authentication or protocol
-failures. Idle closure reopens lazily when new work arrives. Listen for
+failures; an unkeyed stream refuses replay after a lost connection. Idle closure reopens lazily when new work arrives. Listen for
 `possibly_decided`: a lost connection can leave accepted work whose outcome is
 unknown, and reopening does not prove that it was uncounted. Opening attempts
 are bounded by the retry count and elapsed-time options.
@@ -318,7 +320,7 @@ usage and request identifier when reconciling completed work.
 
 ## Tool selection
 
-Tool selection: RightNow System Zero picks which of your tools to call next, or none, with a probability for each. It does not write arguments or messages, and it does not run tools.
+Tool selection: RightNow decision model picks which of your tools to call next, or none, with a probability for each. It does not write arguments or messages, and it does not run tools.
 
 Use `toolQuestions` / `tool_questions` and `selectTool` / `select_tool`. See [Tool selection](../TOOL-SELECTION.md) for examples and results.
 
@@ -329,6 +331,10 @@ Each selection sent is an ordinary answered question on the current prices.
 Tool selection has not been measured. The caller runs the selected tool and
 sends its result back in the next request.
 
+## Naming compatibility
+
+Import `RightNow`, `RightNowStreamClient` and `RightNowError` from `rightnow`. Their `SystemZero*` spellings remain identical aliases. An explicit `api_key` wins over `RIGHTNOW_API_KEY`, which wins over the `SYSTEM_ZERO_API_KEY` fallback. The stream client is asynchronous; there is no separate asynchronous HTTP client.
+
 ## LongContextRequest opt-in
 
 Select the class for the state size explicitly. In TypeScript:
@@ -336,7 +342,6 @@ Select the class for the state size explicitly. In TypeScript:
 ```ts
 await client.decide(request, { dangerZone: 'long_context_64k' });
 await client.decide(request, { dangerZone: 'long_context_128k' });
-await client.decide(request, { dangerZone: 'long_context_1m' });
 ```
 
 In Python:
@@ -344,57 +349,24 @@ In Python:
 ```python
 client.decide(request, danger_zone="long_context_64k")
 client.decide(request, danger_zone="long_context_128k")
-client.decide(request, danger_zone="long_context_1m")
 ```
 
 `long_context_64k` covers 38,001 to 65,536 state tokens;
 `long_context_128k` covers 65,537 to 131,072. The option sends
-`SZ-Danger-Zone` with that exact value. State size never selects a class by itself.
+`RightNow-Danger-Zone` with that exact value. State size never selects a class by itself.
 Send the text in `state` with no attachments. A nonempty attachment list with
 either class is refused locally as HTTP 404 `long_context_not_available`.
 `LongContextRequest` excludes attachments. For the 64k and 128k classes, at most 32 questions are allowed,
 with 2 to 25 choice options or 2 to 4 score levels. The API checks token bounds.
 
 Use the exact class values above. With `accept`, text answers HTTP 400
-`invalid_request`, param `SZ-Danger-Zone`, when more than one native class is served.
+`invalid_request`, param `RightNow-Danger-Zone`, when more than one native class is served.
 
 With `accept`, PDF answers HTTP 404 `long_context_not_available`; image, audio or
 video drops the long grants and runs as an ordinary request.
 
-1M needs nothing switched on. It is experimental, not stable.
-1M is not guaranteed to be available for every request.
-
-Select `long_context_1m` explicitly with `dangerZone` / `danger_zone` for a
-state above 131,072 through 1,048,576 tokens. `accept` and body size never select
-it. Use one string state and exactly one question, with 2 to 25 choice options
-or 2 to 4 score levels. Send no attachments, `policy`, `mode`, `route`,
-`session_id` or `prompt_cache_key`. Empty or null attachments are allowed.
-The rendered request is at most 1,048,575 tokens and the body at most 8,388,608
-bytes. Use ordinary API-key HTTP calls; this class has no stream or sessions.
-Every request carries its full context. Stored answers replay for 24 hours.
-
-The SDK sends your `Idempotency-Key` or generates one even when retries are
-disabled; a blank key is refused locally as HTTP 400 `invalid_request`, param
-`Idempotency-Key`. Invalid shapes are refused locally as HTTP 404
-`long_context_not_available`; a question count other than one uses
-`questions_too_large`. Nothing needs to be switched on in the Console. A
-workspace that has made one completed payment can use the 1M class; the request
-option `dangerZone` / `danger_zone` (`SZ-Danger-Zone: long_context_1m`) is still
-required. An ineligible workspace gets HTTP 404 `long_context_not_available`
-without a charge; `details.eligibility` names the first unmet step and may
-contain new strings. A state too short for this class is refused with HTTP 404
-`long_context_not_available`, param `state`, without a charge.
-
-The maximum charge is held before work and settled to exact usage. Insufficient
-credit returns HTTP 402 `insufficient_credits` before work and is not retried
-automatically. A workspace that reaches its daily bound for this class gets
-HTTP 429 `long_context_daily_budget_exhausted` with `details.scope` equal to
-`"workspace"` or `"workspace_attempts"`. The day-wide limit returns the same code
-without `details.scope`. None of these daily refusals is retried automatically;
-all clear at the next UTC day. A cold pool returns HTTP 503
-`service_unavailable` before any hold or charge; the SDK retries within its
-normal budget using the same key. The first call after an idle period can take several minutes to become available: the answer names the wait in `Retry-After`; send the same request again with the same Idempotency-Key until it answers. One reply runs at a time per pool; a concurrent
-second call returns HTTP 429 `capacity_exhausted` with `Retry-After`.
+1M is not available. Requests selecting `long_context_1m` receive HTTP 404
+`long_context_not_available` without a charge.
 
 No selector is sent by default. Do not supply the header
 through custom SDK headers. Retries, batch, flow and their resume paths retain
@@ -414,7 +386,8 @@ A held or ineligible class can return HTTP 404
 when supplied, including future rule strings. Held routes are never retried.
 
 Replies type `usage.long_input_tokens`. Response metadata exposes the server's
-`sz-danger-zone` values as `dangerZone` in TypeScript and `danger_zone` in Python.
+`rightnow-danger-zone` values as `dangerZone` in TypeScript and `danger_zone` in Python.
+When only `sz-danger-zone` is present, including on 1M answers, the SDK reads that header.
 `LongContextLimits` describes discovery limits; `openapi.json` describes the
 served contract and `enabled.openapi.json` contains the additional request shapes.
 
@@ -438,11 +411,11 @@ refused with HTTP 400 `invalid_request` and their respective
 The 1M class does not accept policy.
 
 ```python
-from system_zero import SystemZero, decisions_for
+from rightnow import RightNow, decisions_for
 
-client = SystemZero()  # Reuse this client; close it at shutdown.
+client = RightNow()  # Reuse this client; close it at shutdown.
 reply = client.decide({
-    "model": "system-zero", "state": "The shipment arrived.",
+    "model": "rightnow-decision", "state": "The shipment arrived.",
     "questions": {"arrived": {"type": "boolean", "instructions": "Has it arrived?"}},
     "policy": {"min_confidence": 0.8},
 })
@@ -464,11 +437,11 @@ returns HTTP 404 `decision_not_found`. Reads use the key's request limit, create
 no usage and are not charged.
 
 ```python
-from system_zero import SystemZero
+from rightnow import RightNow
 
-client = SystemZero()  # Reuse this client; close it at shutdown.
+client = RightNow()  # Reuse this client; close it at shutdown.
 reply = client.decide({
-    "model": "system-zero", "state": "The shipment arrived.",
+    "model": "rightnow-decision", "state": "The shipment arrived.",
     "questions": {"arrived": {"type": "boolean", "instructions": "Has it arrived?"}},
 }, idempotency_key="shipment-check")
 stored = client.get_decision(reply["id"])
@@ -505,7 +478,8 @@ if reply.get("provenance"):
 ## Webhooks
 
 Create an endpoint for `decision.completed`, `decision.refused` or `stream.closed`.
-`decision.completed` events are sent when the decision's usage is recorded, usually within about five minutes of the answer, and can include decisions answered a few minutes before the endpoint was created.
+`decision.completed` events are sent when the decision's usage is recorded, usually within about a minute of the answer, and can include decisions answered a few minutes before the endpoint was created.
+A `decision.completed` event can take up to about six minutes when its usage record is written late.
 `decision.refused` and `stream.closed` events are sent within about a minute; a new endpoint starts receiving them within 30 seconds.
 A decision of the largest context class produces no event in this release. A keyed replay produces no event.
 
@@ -522,9 +496,10 @@ Stream-close data contains the stream id, close code and reason.
 ```python
 import json
 import os
-from system_zero import SystemZero, verify_webhook_signature
+from rightnow import RightNow, verify_webhook_signature
 
-with SystemZero(api_key=os.environ["SYSTEM_ZERO_API_KEY"]) as client:
+with RightNow(api_key=os.environ["RIGHTNOW_API_KEY"]) as client:
+    # POST /v1/decision-model/webhooks
     endpoint = client.webhooks.create({
         "url": "https://example.com/events", "events": ["decision.completed"],
     })

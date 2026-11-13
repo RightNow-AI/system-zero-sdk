@@ -3,10 +3,10 @@ import asyncio
 import json
 import httpx
 import pytest
-from system_zero import SystemZero, stream_client, decisions_for, InvalidRequestError, PolicyMaxCostExceededError
-from system_zero import stream as stream_module
+from rightnow import SystemZero, stream_client, decisions_for, InvalidRequestError, PolicyMaxCostExceededError
+from rightnow import stream as stream_module
 
-REQUEST = {"model": "system-zero", "state": "SYNTHETIC shipment.",
+REQUEST = {"model": "rightnow-decision", "state": "SYNTHETIC shipment.",
            "questions": {"ready": {"type": "boolean", "instructions": "Has it arrived?"}}}
 POLICY = {"min_confidence": 0.8, "max_cost_usd": 0.01}
 

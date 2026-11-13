@@ -84,7 +84,7 @@
     },
     {
       "value": {
-        "model": "system-zero",
+        "model": "rightnow-decision",
         "state": {
           "balance": 1.0,
           "message": "\u00e9"
@@ -96,8 +96,8 @@
           }
         }
       },
-      "sha256": "6a72e14a37df0e71a82b46c8939c4bc3408937168feb460d23718ee13189f5e0",
-      "idempotency_key": "sz-flow-v1-acefb8c067de599ec1e42071ad0a7e650ebed1e076d2a1cb9b6d853fefc9882a"
+      "sha256": "0e76994947351eef8494e9cbc22b11c252c229dbaefbdf6d2489f091c9f65b0a",
+      "idempotency_key": "sz-flow-v1-a682e24948768b90dc65c26b534509dc439aa9368c0f270e9275d0f0d053b800"
     }
   ]
 }

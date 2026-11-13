@@ -1,3 +1,4 @@
+import { WIRES, type Wire } from './wire.js';
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { APIPromise, type RequestOptions } from './client.js';
 import { mapWebhookError, WEBHOOK_ERROR_CODES, WebhookInvalidError } from './webhook-errors.js';
@@ -117,38 +118,38 @@ function invalid(message: string, param: string): WebhookInvalidError {
   return new WebhookInvalidError(message, { ...WEBHOOK_ERROR_CODES.webhook_invalid, code: 'webhook_invalid', param });
 }
 
-function endpointPath(id: string): string {
+function endpointPath(id: string, wire: Wire): string {
   if (typeof id !== 'string' || id.length !== 35 || !/^wh_[a-f0-9]{32}$/u.test(id)) {
     throw invalid('The webhook endpoint ID is invalid.', 'id');
   }
-  return `/system-zero/webhooks/${id}`;
+  return `${wire.webhooksPath}/${id}`;
 }
 
 /** Authenticated endpoint management; DNS admission remains the gateway's job. */
 export class Webhooks {
   readonly #request: WebhookRequest;
-  constructor(request: WebhookRequest) { this.#request = request; }
+  constructor(request: WebhookRequest, private readonly wire: Wire = WIRES['rightnow-decision']) { this.#request = request; }
 
   /** A lost response may contain the only copy of the returned signing secret. */
   create(request: WebhookCreateRequest, options: WebhookRequestOptions = {}): APIPromise<WebhookEndpointWithSecret> {
-    return this.#send('POST', '/system-zero/webhooks', JSON.stringify(request), options, { idempotency: false, maxRetries: 0 });
+    return this.#send('POST', this.wire.webhooksPath, JSON.stringify(request), options, { idempotency: false, maxRetries: 0 });
   }
 
   list(options: WebhookRequestOptions = {}): APIPromise<WebhookList<WebhookEndpoint>> {
-    return this.#send('GET', '/system-zero/webhooks', undefined, options);
+    return this.#send('GET', this.wire.webhooksPath, undefined, options);
   }
 
   delete(id: string, options: WebhookRequestOptions = {}): APIPromise<WebhookDeleted> {
-    return this.#send('DELETE', endpointPath(id), undefined, options);
+    return this.#send('DELETE', endpointPath(id, this.wire), undefined, options);
   }
 
   /** A deliberate retry creates another secret; automatic retries are disabled. */
   rotateSecret(id: string, options: WebhookRequestOptions = {}): APIPromise<WebhookEndpointWithSecret> {
-    return this.#send('POST', `${endpointPath(id)}/rotate-secret`, '{}', options, { idempotency: false, maxRetries: 0 });
+    return this.#send('POST', `${endpointPath(id, this.wire)}/rotate-secret`, '{}', options, { idempotency: false, maxRetries: 0 });
   }
 
   deliveries(id: string, options: WebhookDeliveryRequestOptions = {}): APIPromise<WebhookList<WebhookDelivery>> {
-    const path = `${endpointPath(id)}/deliveries`;
+    const path = `${endpointPath(id, this.wire)}/deliveries`;
     const { limit } = options;
     if (limit !== undefined && (!Number.isInteger(limit) || limit < 1 || limit > 100)) {
       throw invalid('Delivery log limit must be an integer from 1 through 100.', 'limit');

@@ -3,11 +3,11 @@
 import importlib
 import json
 
-import system_zero as sdk
+import rightnow as sdk
 
 
 REQUEST = {
-    "model": "system-zero",
+    "model": "rightnow-decision",
     "state": "SYNTHETIC: The review is complete.",
     "questions": {"ready": {"type": "boolean", "instructions": "Is the review complete?"}},
 }
@@ -20,7 +20,7 @@ def test_public_flow_entrypoints():
         "steps": [{"id": "review", "questions": REQUEST["questions"],
                    "next": {"rules": [], "default": None}}],
     }
-    assert sdk.run_flow is importlib.import_module("system_zero.flows").run_flow
+    assert sdk.run_flow is importlib.import_module("rightnow.flows").run_flow
     assert sdk.validate_flow(definition) == definition
     assert sdk.flow_idempotency_key("public-flow", "review", REQUEST) == sdk.flow_idempotency_key(
         "public-flow", "review", json.loads(json.dumps(REQUEST)),
@@ -30,7 +30,7 @@ def test_public_flow_entrypoints():
 
 
 def test_public_batch_entrypoints():
-    assert sdk.run_batch is importlib.import_module("system_zero.batch").run_batch
+    assert sdk.run_batch is importlib.import_module("rightnow.batch").run_batch
     assert not hasattr(sdk, "parse_budget")
     digest = sdk.request_fingerprint(REQUEST)
     assert sdk.idempotency_key("public-batch", "review", digest) == sdk.idempotency_key(

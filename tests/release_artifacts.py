@@ -31,34 +31,34 @@ def checker():
 
 def fixture_entries(check):
     repository = check.load_release_policy().public_repository().removesuffix(".git")
-    metadata = ("Metadata-Version: 2.4\nName: rightnow-system-zero\nVersion: 0.1.0\n"
+    metadata = ("Metadata-Version: 2.4\nName: rightnow-sdk\nVersion: 0.1.0\n"
                 "License-Expression: Apache-2.0\nLicense-File: LICENSE\nLicense-File: NOTICE\n"
                 "Requires-Python: >=3.10\nRequires-Dist: httpx<0.29,>=0.28.1\n"
-                "Requires-Dist: httpcore<2,>=1.0.9\nRequires-Dist: websockets<16,>=15.0.1\n"
+                "Requires-Dist: httpcore<2,>=1.0.9\nRequires-Dist: websockets<18,>=15.0.1\n"
                 f"Project-URL: Changelog, {repository}/blob/main/CHANGELOG.md\nProject-URL: Source, {repository}\n"
                 f"Project-URL: Issues, {repository}/issues\nProject-URL: Homepage, {repository}\n"
                 f"Project-URL: Documentation, {repository}\n").encode("ascii")
     license_body = b"Apache License\nVersion 2.0, January 2004\n"
-    notice = b"System Zero SDKs\nSynthetic package notice.\n"
+    notice = b"RightNow decision model SDKs\nSynthetic package notice.\n"
     package = json.dumps({
-        "name": "@rightnowai/system-zero", "version": VERSION,
+        "name": "@rightnowai/rightnow", "version": VERSION,
         "repository": {"type": "git", "url": check.load_release_policy().public_repository()},
     }).encode("utf-8")
-    prefix = "rightnow_system_zero-0.1.0/"
+    prefix = "rightnow_sdk-0.1.0/"
     return {
         "npm": {
             "package/package.json": package, "package/dist/index.js": b"export {};\n",
             "package/LICENSE": license_body, "package/NOTICE": notice, "package/docs/": b"",
         },
         "wheel": {
-            "rightnow_system_zero-0.1.0.dist-info/METADATA": metadata,
-            "system_zero/__init__.py": b"", "system_zero/py.typed": b"",
-            "rightnow_system_zero-0.1.0.dist-info/licenses/LICENSE": license_body,
-            "rightnow_system_zero-0.1.0.dist-info/licenses/NOTICE": notice,
-            "system_zero/docs/": b"",
+            "rightnow_sdk-0.1.0.dist-info/METADATA": metadata,
+            "rightnow/__init__.py": b"", "rightnow/py.typed": b"",
+            "rightnow_sdk-0.1.0.dist-info/licenses/LICENSE": license_body,
+            "rightnow_sdk-0.1.0.dist-info/licenses/NOTICE": notice,
+            "rightnow/docs/": b"",
         },
         "sdist": {
-            prefix + "PKG-INFO": metadata, prefix + "src/system_zero/__init__.py": b"",
+            prefix + "PKG-INFO": metadata, prefix + "src/rightnow/__init__.py": b"",
             prefix + "LICENSE": license_body, prefix + "NOTICE": notice, prefix + "docs/": b"",
         },
     }
@@ -138,9 +138,9 @@ def run_controls():
         controls = (("Authorization: " + "Bearer " + token, "credential-header"),
                     ("Authorization: " + "Basic " + token, "credential-header"),
                     ("password" + chr(61) + chr(34) + token + chr(34), "generic-secret-assignment"))
-        final_names = "@rightnowai/system-zero rightnow-system-zero system_zero"
+        final_names = "@rightnowai/rightnow rightnow-sdk rightnow"
         for kind, values in entries.items():
-            prefix = {"npm": "package/", "wheel": "system_zero/", "sdist": "rightnow_system_zero-0.1.0/"}[kind]
+            prefix = {"npm": "package/", "wheel": "rightnow/", "sdist": "rightnow_sdk-0.1.0/"}[kind]
             for encoding in ("utf-8", "utf-16", "utf-16-be"):
                 def encoded(text):
                     raw = text.encode(encoding)
@@ -168,9 +168,9 @@ def run_controls():
         counts["manifestCases"] = manifest_controls(Path(directory))
         draft_import = "_".join(("system", "zero", "draft"))
         drafts = (draft_import, draft_import.replace("_", "-"), "@rightnow/" + draft_import.replace("_", "-"))
-        final_names = "@rightnowai/system-zero rightnow-system-zero system_zero"
+        final_names = "@rightnowai/rightnow rightnow-sdk rightnow"
         for kind, values in entries.items():
-            prefix = {"npm": "package/", "wheel": "system_zero/", "sdist": "rightnow_system_zero-0.1.0/"}[kind]
+            prefix = {"npm": "package/", "wheel": "rightnow/", "sdist": "rightnow_sdk-0.1.0/"}[kind]
             for encoding in ("utf-8", "utf-16", "utf-16-be"):
                 def encoded(value):
                     raw = value.encode(encoding)
@@ -231,7 +231,7 @@ def content_controls(check, entries, path):
         ("signing" + "-key-value" + chr(61) + chr(34) + generated + chr(34), "generic-secret-assignment"),
     )
     for kind, values in entries.items():
-        prefix = {"npm": "package/", "wheel": "system_zero/", "sdist": "rightnow_system_zero-0.1.0/"}[kind]
+        prefix = {"npm": "package/", "wheel": "rightnow/", "sdist": "rightnow_sdk-0.1.0/"}[kind]
         for value, rule in controls:
             changed = {**values, prefix + "README.md": value.encode("ascii")}
             path.write_bytes(packed(kind, changed))
@@ -250,14 +250,14 @@ def content_controls(check, entries, path):
 def repository_controls(check, entries):
     repository = check.load_release_policy().public_repository().removesuffix(".git")
     count = 0
-    for path in ("README.md", "system_zero/module.py", "metadata.txt"):
+    for path in ("README.md", "rightnow/module.py", "metadata.txt"):
         check.scan_text(repository, path)
         for prefix in (repository, repository + ".git"):
             for whitespace in (" ", "\t", "\n", "\r\n"):
                 refuses(lambda: check.scan_text(prefix + whitespace + "-other", path), check.ReleaseError)
                 count += 1
-    original = entries["wheel"]["rightnow_system_zero-0.1.0.dist-info/METADATA"].decode("ascii")
-    for path in ("rightnow_system_zero-0.1.0.dist-info/METADATA", "rightnow_system_zero-0.1.0/PKG-INFO"):
+    original = entries["wheel"]["rightnow_sdk-0.1.0.dist-info/METADATA"].decode("ascii")
+    for path in ("rightnow_sdk-0.1.0.dist-info/METADATA", "rightnow_sdk-0.1.0/PKG-INFO"):
         check.scan_text(original, path)
         for suffix in (" -other", ".git -other", "\n -other", "\n\t-other", "\n-other"):
             changed = original.replace("Project-URL: Source, " + repository + "\n",
@@ -274,24 +274,24 @@ def repository_controls(check, entries):
 def metadata_controls(check, entries):
     count = 0
     repository = check.load_release_policy().public_repository().removesuffix(".git")
-    check.scan_text(entries["wheel"]["rightnow_system_zero-0.1.0.dist-info/METADATA"].decode("ascii"),
-                    "rightnow_system_zero-0.1.0.dist-info/METADATA")
+    check.scan_text(entries["wheel"]["rightnow_sdk-0.1.0.dist-info/METADATA"].decode("ascii"),
+                    "rightnow_sdk-0.1.0.dist-info/METADATA")
     count += 1
     for suffix in ("-other", ".git-other"):
         refuses(lambda: check.scan_text("Project-URL: Source, " + repository + suffix + "\n", "METADATA"),
                 check.ReleaseError)
         count += 1
-    metadata = entries["wheel"]["rightnow_system_zero-0.1.0.dist-info/METADATA"]
+    metadata = entries["wheel"]["rightnow_sdk-0.1.0.dist-info/METADATA"]
     changed = metadata.replace(b"Project-URL: Homepage, " + repository.encode("ascii") + b"\n",
                                b"Project-URL: Homepage, https://example.com/other\n")
     assert changed != metadata
     refuses(lambda: check.python_identity(changed, VERSION), check.ReleaseError)
     count += 1
-    record_name = "rightnow_system_zero-0.1.0.dist-info/RECORD"
+    record_name = "rightnow_sdk-0.1.0.dist-info/RECORD"
     digest = base64.urlsafe_b64encode(hashlib.sha256(b"example").digest()).rstrip(b"=").decode("ascii")
-    check.check_member_content(record_name, f"system_zero/__init__.py,sha256={digest},7\n{record_name},,\n".encode("ascii"))
+    check.check_member_content(record_name, f"rightnow/__init__.py,sha256={digest},7\n{record_name},,\n".encode("ascii"))
     count += 1
-    for row in (f"system_zero/__init__.py,sha256={digest[:20]},7\n", f"system_zero/{digest}.py,sha256={digest},7\n"):
+    for row in (f"rightnow/__init__.py,sha256={digest[:20]},7\n", f"rightnow/__init__.py,sha512={digest},7\n"):
         refuses(lambda: check.check_member_content(record_name, row.encode("ascii")), check.ReleaseError)
         count += 1
     for label in ("Homepage", "Documentation"):
@@ -300,7 +300,7 @@ def metadata_controls(check, entries):
                 check.ReleaseError)
         count += 1
     for url in (repository + "-other", repository + ".git-other", "https://example.com/repository"):
-        raw = json.dumps({"name": "@rightnowai/system-zero",
+        raw = json.dumps({"name": "@rightnowai/rightnow",
                           "repository": {"type": "git", "url": url}}).encode("ascii")
         refuses(lambda: check.check_npm_metadata(raw), check.ReleaseError)
         count += 1
@@ -314,7 +314,7 @@ def metadata_controls(check, entries):
     ):
         refuses(lambda: check.check_npm_metadata(json.dumps({**package, field: value}).encode("ascii")), check.ReleaseError)
         count += 1
-    metadata = entries["wheel"]["rightnow_system_zero-0.1.0.dist-info/METADATA"]
+    metadata = entries["wheel"]["rightnow_sdk-0.1.0.dist-info/METADATA"]
     for label in (b"License-Expression", b"License-File: NOTICE", b"Project-URL: Source", b"Project-URL: Issues"):
         changed = b"\n".join(line for line in metadata.split(b"\n") if not line.startswith(label))
         refuses(lambda: check.python_identity(changed, VERSION), check.ReleaseError)
@@ -333,8 +333,8 @@ def inventory_controls(check, entries):
         if kind == "npm":
             expected = dict(actual)
         elif kind == "wheel":
-            expected = {name: raw for name, raw in actual.items() if name.startswith("system_zero/")}
-            root = "rightnow_system_zero-0.1.0.dist-info/"
+            expected = {name: raw for name, raw in actual.items() if name.startswith("rightnow/")}
+            root = "rightnow_sdk-0.1.0.dist-info/"
             actual.update({root + "WHEEL": b"Wheel-Version: 1.0\n", root + "RECORD": b""})
         else:
             expected = {name: raw for name, raw in actual.items() if not name.endswith("/PKG-INFO")}

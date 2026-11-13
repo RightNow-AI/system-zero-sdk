@@ -6,7 +6,7 @@ import { AuthenticationError, InvalidRequestError, NotFoundError, PermissionErro
   evaluate, runBatch, runFlow, type DecideRequest, type FlowError } from '../src/index.js';
 
 const request: DecideRequest = {
-  model: 'system-zero', state: 'synthetic',
+  model: 'rightnow-decision', state: 'synthetic',
   questions: { q: { type: 'boolean', instructions: 'Is it set?' } },
 };
 

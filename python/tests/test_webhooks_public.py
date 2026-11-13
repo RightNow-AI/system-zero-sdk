@@ -1,15 +1,17 @@
 """Public package/client webhook wiring uses the unchanged authenticated transport."""
 
 import json
+import hashlib
+import hmac
 from pathlib import Path
 
 import httpx
 import pytest
 
-import system_zero as sdk
-from system_zero.webhooks import Webhooks, verify_webhook_signature
-from system_zero.webhook_errors import WEBHOOK_ERROR_CODES
-from system_zero._retry import _retry_context
+import rightnow as sdk
+from rightnow.webhooks import Webhooks, verify_webhook_signature
+from rightnow.webhook_errors import WEBHOOK_ERROR_CODES
+from rightnow._retry import _retry_context
 
 
 FIXTURES = Path(__file__).parents[2] / "fixtures" / "webhooks"
@@ -64,10 +66,10 @@ def test_public_client_all_operations_authentication_and_metadata():
         assert client.webhooks.rotate_secret(ENDPOINT["id"]) == {**ENDPOINT, "secret": SIGNATURES["secret"]}
         assert client.webhooks.deliveries(ENDPOINT["id"], limit=1) == MANAGEMENT["deliveries"]
     assert [(call.method, call.url.path) for call in calls] == [
-        ("POST", "/v1/system-zero/webhooks"), ("GET", "/v1/system-zero/webhooks"),
-        ("DELETE", "/v1/system-zero/webhooks/" + ENDPOINT["id"]),
-        ("POST", "/v1/system-zero/webhooks/" + ENDPOINT["id"] + "/rotate-secret"),
-        ("GET", "/v1/system-zero/webhooks/" + ENDPOINT["id"] + "/deliveries"),
+        ("POST", "/v1/decision-model/webhooks"), ("GET", "/v1/decision-model/webhooks"),
+        ("DELETE", "/v1/decision-model/webhooks/" + ENDPOINT["id"]),
+        ("POST", "/v1/decision-model/webhooks/" + ENDPOINT["id"] + "/rotate-secret"),
+        ("GET", "/v1/decision-model/webhooks/" + ENDPOINT["id"] + "/deliveries"),
     ]
     assert all(call.headers["authorization"] == "Bearer test-key" for call in calls)
     assert all("idempotency-key" not in call.headers for call in calls)
@@ -76,6 +78,25 @@ def test_public_client_all_operations_authentication_and_metadata():
     assert json.loads(calls[0].content) == CREATE
     assert calls[3].content == b"{}"
     assert calls[4].url.params["limit"] == "1"
+
+
+@pytest.mark.parametrize("model,code", [("rightnow-decision-3.0.0", "model_unavailable"),
+                                       ("system-zero-3.0.0", "system_zero_unavailable")])
+def test_signed_refusal_name_families(model, code):
+    event: sdk.WebhookDecisionEvent = {
+        "id": "evt_names", "object": "webhook_event", "type": "decision.refused", "created": SIGNATURES["timestamp"],
+        "data": {"decision_id": "szd_synthetic", "request_id": "req_synthetic", "created": SIGNATURES["timestamp"],
+                 "model": model, "refusal_code": code, "route": None, "classes": [], "status": 503,
+                 "usage_units": {"input_tokens": 0, "cached_input_tokens": 0, "media_tokens": 0,
+                                 "cached_media_tokens": 0, "long_input_tokens": 0, "media_items": 0, "thought_tokens": 0}},
+    }
+    body = json.dumps(event).encode()
+    digest = hmac.new(bytes.fromhex(SIGNATURES["secret"][6:]),
+                      str(SIGNATURES["timestamp"]).encode() + b"." + body, hashlib.sha256).hexdigest()
+    assert sdk.verify_webhook_signature(body, f't={SIGNATURES["timestamp"]},v1={digest}',
+                                        SIGNATURES["secret"], now=SIGNATURES["timestamp"])
+    parsed: sdk.WebhookEvent = json.loads(body)
+    assert parsed == event
 
 
 @pytest.mark.parametrize("method", ["create", "rotate_secret"])
@@ -162,10 +183,10 @@ def test_ordinary_decide_retry_bytes_and_generated_idempotency_are_unchanged():
         return httpx.Response(200, json={"object": "synthetic_decision"})
 
     with sdk.SystemZero(api_key="test-key", base_url="https://gateway.example/v1", transport=httpx.MockTransport(send),
-                        max_retries=2, sleep=lambda _: None, random=lambda: 0) as client:
+                        idempotency="auto", max_retries=2, sleep=lambda _: None, random=lambda: 0) as client:
         client.decide({"state": "SYNTHETIC state", "questions": []})
     assert len(calls) == 2
-    assert calls[0].url.path == "/v1/system-zero/decide"
+    assert calls[0].url.path == "/v1/decision-model/decide"
     assert calls[0].content == calls[1].content
     assert calls[0].headers["idempotency-key"].startswith("sz-sdk-")
     assert calls[1].headers["idempotency-key"] == calls[0].headers["idempotency-key"]

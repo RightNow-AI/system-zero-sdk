@@ -5,7 +5,7 @@
       "definition": {
         "version": 1,
         "request": {
-          "model": "system-zero",
+          "model": "rightnow-decision",
           "state": {
             "case": "synthetic"
           }
@@ -47,7 +47,7 @@
           },
           "body": {
             "id": "szd_00000000000000000000000000000000",
-            "model": "system-zero",
+            "model": "rightnow-decision",
             "served_by": "test",
             "created": 0,
             "context": {
@@ -87,7 +87,7 @@
           },
           "body": {
             "id": "szd_00000000000000000000000000000000",
-            "model": "system-zero",
+            "model": "rightnow-decision",
             "served_by": "test",
             "created": 0,
             "context": {
@@ -135,7 +135,7 @@
       "definition": {
         "version": 1,
         "request": {
-          "model": "system-zero",
+          "model": "rightnow-decision",
           "state": {
             "case": "synthetic"
           }
@@ -212,7 +212,7 @@
           },
           "body": {
             "id": "szd_00000000000000000000000000000000",
-            "model": "system-zero",
+            "model": "rightnow-decision",
             "served_by": "test",
             "created": 0,
             "context": {
@@ -252,7 +252,7 @@
           },
           "body": {
             "id": "szd_00000000000000000000000000000000",
-            "model": "system-zero",
+            "model": "rightnow-decision",
             "served_by": "test",
             "created": 0,
             "context": {
@@ -303,7 +303,7 @@
       "definition": {
         "version": 1,
         "request": {
-          "model": "system-zero",
+          "model": "rightnow-decision",
           "state": {
             "case": "synthetic"
           }
@@ -380,7 +380,7 @@
           },
           "body": {
             "id": "szd_00000000000000000000000000000000",
-            "model": "system-zero",
+            "model": "rightnow-decision",
             "served_by": "test",
             "created": 0,
             "context": {
@@ -420,7 +420,7 @@
           },
           "body": {
             "id": "szd_00000000000000000000000000000000",
-            "model": "system-zero",
+            "model": "rightnow-decision",
             "served_by": "test",
             "created": 0,
             "context": {
@@ -471,7 +471,7 @@
       "definition": {
         "version": 1,
         "request": {
-          "model": "system-zero",
+          "model": "rightnow-decision",
           "state": {
             "case": "synthetic"
           }
@@ -536,7 +536,7 @@
           },
           "body": {
             "id": "szd_00000000000000000000000000000000",
-            "model": "system-zero",
+            "model": "rightnow-decision",
             "served_by": "test",
             "created": 0,
             "context": {
@@ -576,7 +576,7 @@
           },
           "body": {
             "id": "szd_00000000000000000000000000000000",
-            "model": "system-zero",
+            "model": "rightnow-decision",
             "served_by": "test",
             "created": 0,
             "context": {
@@ -627,7 +627,7 @@
       "definition": {
         "version": 1,
         "request": {
-          "model": "system-zero",
+          "model": "rightnow-decision",
           "state": {
             "case": "synthetic"
           }
@@ -685,7 +685,7 @@
           },
           "body": {
             "id": "szd_00000000000000000000000000000000",
-            "model": "system-zero",
+            "model": "rightnow-decision",
             "served_by": "test",
             "created": 0,
             "context": {
@@ -725,7 +725,7 @@
           },
           "body": {
             "id": "szd_00000000000000000000000000000000",
-            "model": "system-zero",
+            "model": "rightnow-decision",
             "served_by": "test",
             "created": 0,
             "context": {
@@ -772,7 +772,7 @@
       "definition": {
         "version": 1,
         "request": {
-          "model": "system-zero",
+          "model": "rightnow-decision",
           "state": {
             "case": "synthetic"
           }
@@ -835,7 +835,7 @@
           },
           "body": {
             "id": "szd_00000000000000000000000000000000",
-            "model": "system-zero",
+            "model": "rightnow-decision",
             "served_by": "test",
             "created": 0,
             "context": {
@@ -875,7 +875,7 @@
           },
           "body": {
             "id": "szd_00000000000000000000000000000000",
-            "model": "system-zero",
+            "model": "rightnow-decision",
             "served_by": "test",
             "created": 0,
             "context": {
@@ -929,7 +929,7 @@
       "definition": {
         "version": 1,
         "request": {
-          "model": "system-zero",
+          "model": "rightnow-decision",
           "state": {
             "case": "synthetic"
           }
@@ -1005,7 +1005,7 @@
           },
           "body": {
             "id": "szd_00000000000000000000000000000000",
-            "model": "system-zero",
+            "model": "rightnow-decision",
             "served_by": "test",
             "created": 0,
             "context": {
@@ -1045,7 +1045,7 @@
           },
           "body": {
             "id": "szd_00000000000000000000000000000000",
-            "model": "system-zero",
+            "model": "rightnow-decision",
             "served_by": "test",
             "created": 0,
             "context": {
@@ -1098,7 +1098,7 @@
       "definition": {
         "version": 1,
         "request": {
-          "model": "system-zero",
+          "model": "rightnow-decision",
           "state": {
             "case": "synthetic"
           }
@@ -1148,7 +1148,7 @@
           },
           "body": {
             "id": "szd_00000000000000000000000000000000",
-            "model": "system-zero",
+            "model": "rightnow-decision",
             "served_by": "test",
             "created": 0,
             "context": {
@@ -1188,7 +1188,7 @@
           },
           "body": {
             "id": "szd_00000000000000000000000000000000",
-            "model": "system-zero",
+            "model": "rightnow-decision",
             "served_by": "test",
             "created": 0,
             "context": {
@@ -1235,7 +1235,7 @@
       "definition": {
         "version": 1,
         "request": {
-          "model": "system-zero",
+          "model": "rightnow-decision",
           "state": {
             "case": "synthetic"
           }
@@ -1318,7 +1318,7 @@
           },
           "body": {
             "id": "szd_00000000000000000000000000000000",
-            "model": "system-zero",
+            "model": "rightnow-decision",
             "served_by": "test",
             "created": 0,
             "context": {
@@ -1358,7 +1358,7 @@
           },
           "body": {
             "id": "szd_00000000000000000000000000000000",
-            "model": "system-zero",
+            "model": "rightnow-decision",
             "served_by": "test",
             "created": 0,
             "context": {
@@ -1400,7 +1400,7 @@
         "status": "completed",
         "requests": [
           {
-            "model": "system-zero",
+            "model": "rightnow-decision",
             "state": {
               "case": "synthetic"
             },
@@ -1412,7 +1412,7 @@
             }
           },
           {
-            "model": "system-zero",
+            "model": "rightnow-decision",
             "state": {
               "previous": {
                 "case": "synthetic"
@@ -1446,7 +1446,7 @@
       "definition": {
         "version": 1,
         "request": {
-          "model": "system-zero",
+          "model": "rightnow-decision",
           "state": {
             "case": "synthetic"
           }
@@ -1508,7 +1508,7 @@
           },
           "body": {
             "id": "szd_00000000000000000000000000000000",
-            "model": "system-zero",
+            "model": "rightnow-decision",
             "served_by": "test",
             "created": 0,
             "context": {
@@ -1556,7 +1556,7 @@
       "definition": {
         "version": 1,
         "request": {
-          "model": "system-zero",
+          "model": "rightnow-decision",
           "state": {
             "case": "synthetic"
           }
@@ -1598,7 +1598,7 @@
           },
           "body": {
             "id": "szd_00000000000000000000000000000000",
-            "model": "system-zero",
+            "model": "rightnow-decision",
             "served_by": "test",
             "created": 0,
             "context": {
@@ -1650,7 +1650,7 @@
       "definition": {
         "version": 1,
         "request": {
-          "model": "system-zero",
+          "model": "rightnow-decision",
           "state": {
             "case": "synthetic"
           }
@@ -1677,7 +1677,7 @@
           0
         ],
         "status": "failed",
-        "error_code": "system_zero_timeout",
+        "error_code": "model_timeout",
         "decide_calls": 0
       },
       "options": {
@@ -1690,7 +1690,7 @@
       "definition": {
         "version": 1,
         "request": {
-          "model": "system-zero",
+          "model": "rightnow-decision",
           "state": {
             "case": "synthetic"
           }
@@ -1745,7 +1745,7 @@
           },
           "body": {
             "id": "szd_00000000000000000000000000000000",
-            "model": "system-zero",
+            "model": "rightnow-decision",
             "served_by": "test",
             "created": 0,
             "context": {
@@ -1810,7 +1810,7 @@
       "definition": {
         "version": 1,
         "request": {
-          "model": "system-zero",
+          "model": "rightnow-decision",
           "state": {
             "case": "synthetic"
           }
@@ -1865,7 +1865,7 @@
           },
           "body": {
             "id": "szd_00000000000000000000000000000000",
-            "model": "system-zero",
+            "model": "rightnow-decision",
             "served_by": "test",
             "created": 0,
             "context": {
@@ -1905,7 +1905,7 @@
           },
           "body": {
             "id": "szd_00000000000000000000000000000000",
-            "model": "system-zero",
+            "model": "rightnow-decision",
             "served_by": "test",
             "created": 0,
             "context": {
@@ -1945,7 +1945,7 @@
       "definition": {
         "version": 1,
         "request": {
-          "model": "system-zero",
+          "model": "rightnow-decision",
           "state": {
             "case": "synthetic"
           }
@@ -1995,7 +1995,7 @@
           },
           "body": {
             "id": "szd_00000000000000000000000000000000",
-            "model": "system-zero",
+            "model": "rightnow-decision",
             "served_by": "test",
             "created": 0,
             "context": {
@@ -2038,7 +2038,7 @@
       "definition": {
         "version": 1,
         "request": {
-          "model": "system-zero",
+          "model": "rightnow-decision",
           "state": {
             "case": "synthetic"
           }
@@ -2083,7 +2083,7 @@
       "definition": {
         "version": 1,
         "request": {
-          "model": "system-zero",
+          "model": "rightnow-decision",
           "state": {
             "case": "synthetic"
           }
@@ -2115,7 +2115,7 @@
       "definition": {
         "version": 1,
         "request": {
-          "model": "system-zero",
+          "model": "rightnow-decision",
           "state": {
             "case": "synthetic"
           }
@@ -2155,7 +2155,7 @@
       "definition": {
         "version": 1,
         "request": {
-          "model": "system-zero",
+          "model": "rightnow-decision",
           "state": {
             "case": "synthetic"
           }
@@ -2208,7 +2208,7 @@
       "definition": {
         "version": 1,
         "request": {
-          "model": "system-zero",
+          "model": "rightnow-decision",
           "state": {
             "case": "synthetic"
           }
@@ -2656,7 +2656,7 @@
       "definition": {
         "version": 1,
         "request": {
-          "model": "system-zero",
+          "model": "rightnow-decision",
           "state": {
             "case": "synthetic"
           }
@@ -2683,7 +2683,7 @@
       "definition": {
         "version": 1,
         "request": {
-          "model": "system-zero",
+          "model": "rightnow-decision",
           "state": {
             "case": "synthetic"
           }
@@ -2735,7 +2735,7 @@
       "definition": {
         "version": 1,
         "request": {
-          "model": "system-zero",
+          "model": "rightnow-decision",
           "state": {
             "case": "synthetic"
           }
@@ -2766,7 +2766,7 @@
       "definition": {
         "version": 1,
         "request": {
-          "model": "system-zero",
+          "model": "rightnow-decision",
           "state": {
             "case": "synthetic"
           }
@@ -2807,7 +2807,7 @@
           },
           "body": {
             "id": "szd_00000000000000000000000000000000",
-            "model": "system-zero",
+            "model": "rightnow-decision",
             "served_by": "test",
             "created": 0,
             "context": {
@@ -2895,7 +2895,7 @@
       "definition": {
         "version": 1,
         "request": {
-          "model": "system-zero",
+          "model": "rightnow-decision",
           "state": {
             "case": "synthetic"
           }
@@ -2936,7 +2936,7 @@
           },
           "body": {
             "id": "szd_00000000000000000000000000000000",
-            "model": "system-zero",
+            "model": "rightnow-decision",
             "served_by": "test",
             "created": 0,
             "context": {
@@ -3009,7 +3009,7 @@
       "definition": {
         "version": 1,
         "request": {
-          "model": "system-zero",
+          "model": "rightnow-decision",
           "state": {
             "case": "synthetic"
           }
@@ -3067,7 +3067,7 @@
           },
           "body": {
             "id": "szd_00000000000000000000000000000000",
-            "model": "system-zero",
+            "model": "rightnow-decision",
             "served_by": "test",
             "created": 0,
             "context": {
@@ -3111,7 +3111,7 @@
           },
           "body": {
             "id": "szd_00000000000000000000000000000000",
-            "model": "system-zero",
+            "model": "rightnow-decision",
             "served_by": "test",
             "created": 0,
             "context": {
@@ -3162,7 +3162,7 @@
       "definition": {
         "version": 1,
         "request": {
-          "model": "system-zero",
+          "model": "rightnow-decision",
           "state": {
             "case": "synthetic"
           }
@@ -3220,7 +3220,7 @@
           },
           "body": {
             "id": "szd_00000000000000000000000000000000",
-            "model": "system-zero",
+            "model": "rightnow-decision",
             "served_by": "test",
             "created": 0,
             "context": {
@@ -3268,7 +3268,7 @@
           },
           "body": {
             "id": "szd_00000000000000000000000000000000",
-            "model": "system-zero",
+            "model": "rightnow-decision",
             "served_by": "test",
             "created": 0,
             "context": {
@@ -3319,7 +3319,7 @@
       "definition": {
         "version": 1,
         "request": {
-          "model": "system-zero",
+          "model": "rightnow-decision",
           "state": {
             "case": "synthetic"
           }

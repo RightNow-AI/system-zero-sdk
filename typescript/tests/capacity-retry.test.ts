@@ -13,12 +13,12 @@ interface WaitFixture {
 }
 const policies: PolicyFixture[] = JSON.parse(readFileSync(new URL('../../fixtures/retry/policy.json', import.meta.url), 'utf8'));
 const waits: WaitFixture[] = JSON.parse(readFileSync(new URL('../../fixtures/retry/waits.json', import.meta.url), 'utf8'));
-const request = { model: 'system-zero', state: 'SYNTHETIC', questions: { ready: { type: 'boolean' as const, instructions: 'Ready?' } } };
+const request = { model: 'rightnow-decision', state: 'SYNTHETIC', questions: { ready: { type: 'boolean' as const, instructions: 'Ready?' } } };
 const reply = { id: 'szd_synthetic', answers: {} };
 const ok = () => Response.json(reply);
 const capacity = (headers: HeadersInit = {}) => Response.json({ error: { code: 'capacity_exhausted', retryable: true } }, { status: 429, headers });
 const makeClient = (fetch: typeof globalThis.fetch, options: Partial<ClientOptions> = {}) => new SystemZeroClient({
-  apiKey: 'SYNTHETIC', fetch, random: () => 0.5, sleep: async () => {}, ...options,
+  apiKey: 'SYNTHETIC', idempotency: 'auto', fetch, random: () => 0.5, sleep: async () => {}, ...options,
 });
 
 afterEach(() => { vi.clearAllTimers(); vi.useRealTimers(); });
@@ -69,10 +69,11 @@ describe('HTTP capacity attempt and key bounds', () => {
     expect(new Set(bodies)).toEqual(new Set([JSON.stringify(request)]));
   });
 
-  it.each(['', '   '])('does not retry a decision with an empty caller key %j', async idempotencyKey => {
+  it.each(['', '   '])('retries a before-work refusal with an empty caller key %j', async idempotencyKey => {
     const fetch = vi.fn(async () => capacity());
     await expect(makeClient(fetch).decide(request, { idempotencyKey })).rejects.toMatchObject({ code: 'capacity_exhausted' });
-    expect(fetch).toHaveBeenCalledOnce();
+    expect(fetch).toHaveBeenCalledTimes(6);
+    expect(new Headers(fetch.mock.calls[0]![1]?.headers).has('idempotency-key')).toBe(false);
   });
 
   it('retains a caller-supplied header key across capacity retries', async () => {

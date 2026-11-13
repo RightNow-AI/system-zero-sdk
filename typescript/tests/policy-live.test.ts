@@ -2,7 +2,7 @@ import { afterEach, expect, it, vi } from 'vitest';
 import { SystemZeroClient, SystemZeroStreamClient, decisionsFor, InvalidRequestError, PolicyMaxCostExceededError } from '../src/index.js';
 import { validatePolicy } from '../src/policy.js';
 
-const request = { model: 'system-zero', state: 'SYNTHETIC shipment.',
+const request = { model: 'rightnow-decision', state: 'SYNTHETIC shipment.',
   questions: { ready: { type: 'boolean' as const, instructions: 'Has it arrived?' } } };
 const policy = { min_confidence: 0.8, max_cost_usd: 0.01 };
 afterEach(() => vi.restoreAllMocks());

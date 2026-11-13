@@ -211,6 +211,18 @@ export const SYSTEM_ZERO_ERRORS = {
     404,
     "The requested model is not available."
   ],
+  "model_serving_unattested": [
+    503,
+    "The service is temporarily unavailable."
+  ],
+  "model_timeout": [
+    504,
+    "The RightNow decision model exceeded the response deadline."
+  ],
+  "model_unavailable": [
+    503,
+    "The RightNow decision model is temporarily unavailable."
+  ],
   "monthly_cap_reached": [
     429,
     "This workspace reached its monthly decision cap."
@@ -254,6 +266,10 @@ export const SYSTEM_ZERO_ERRORS = {
   "service_unavailable": [
     503,
     "RightNow cannot serve this request right now. Retry after the Retry-After delay."
+  ],
+  "spend_limit_reached": [
+    402,
+    "This API key has reached its monthly spending limit. A workspace owner or admin can raise or remove it under Settings, API keys, or wait until {reset_at}. This request was not charged."
   ],
   "staging_attempt_ceiling": [
     429,
@@ -348,4 +364,6 @@ export const SYSTEM_ZERO_ERRORS = {
     "This account's requests are paused for up to an hour after repeated serving failures. Contact support."
   ]
 } as const;
-export type SystemZeroErrorCode = keyof typeof SYSTEM_ZERO_ERRORS;
+export type RightNowErrorCode = keyof typeof SYSTEM_ZERO_ERRORS;
+/** @deprecated Use RightNowErrorCode. */
+export type SystemZeroErrorCode = RightNowErrorCode;

@@ -4,8 +4,8 @@ from pathlib import Path
 
 import pytest
 
-from system_zero.errors import SystemZeroError
-from system_zero.evaluate import (
+from rightnow.errors import SystemZeroError
+from rightnow.evaluate import (
     evaluate, report_json, report_markdown, score_refusal, score_reply, validate_expected,
 )
 

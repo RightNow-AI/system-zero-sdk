@@ -1,7 +1,7 @@
 {
   "id": "szd_00000000000000000000000000000001",
-  "decision_path": "/system-zero/decisions/szd_00000000000000000000000000000001",
-  "trace_path": "/system-zero/decisions/szd_00000000000000000000000000000001/trace",
+  "decision_path": "/decision-model/decisions/szd_00000000000000000000000000000001",
+  "trace_path": "/decision-model/decisions/szd_00000000000000000000000000000001/trace",
   "decision_fixtures": [
     "decide-v1-boolean.json",
     "decide-v1-choice.json",
@@ -19,12 +19,12 @@
     "szd_00000000000000000000000000000001\n"
   ],
   "trace": {
-    "object": "system_zero.decision_trace",
+    "object": "decision_model.decision_trace",
     "id": "szd_00000000000000000000000000000001",
     "request_id": null,
     "created": 1792144800,
-    "model": "system-zero-2.0.0",
-    "model_version": "system-zero-2.0.0",
+    "model": "rightnow-decision-3.0.0",
+    "model_version": "rightnow-decision-3.0.0",
     "render_id": null,
     "route": "direct",
     "attachments": null,

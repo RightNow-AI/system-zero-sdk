@@ -1,3 +1,4 @@
+import { wireFor } from './wire.js';
 import { createHash, type Hash } from 'node:crypto';
 import type { Attachment, DecideRequest, JsonValue, Question } from './api-types.js';
 import { withRetryContext, redactClientDiagnostics } from './client.js';
@@ -113,9 +114,9 @@ function unavailable(requestId: string | null = null): APIError {
   return new APIError('RightNow cannot serve this request right now. Retry after the Retry-After delay.',
     { status: 503, type: 'api_error', code: 'service_unavailable', retryable: true, request_id: requestId });
 }
-function timeout(requestId: string | null = null): APITimeoutError {
+function timeout(requestId: string | null = null, client?: object): APITimeoutError {
   return new APITimeoutError('RightNow exceeded the response deadline.',
-    { status: 504, type: 'api_error', code: 'system_zero_timeout', retryable: false, request_id: requestId });
+    { status: 504, type: 'api_error', code: wireFor(client).codes.timeout, retryable: false, request_id: requestId });
 }
 function record(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -316,10 +317,10 @@ function refusal(code: string, requestId: string | null): SystemZeroError {
     error: { code, message, type: held ? 'not_found_error' : 'invalid_request_error', retryable: false }, request_id: requestId,
   }, false);
 }
-function normalizeError(error: unknown, requestId: string | null): SystemZeroError {
+function normalizeError(error: unknown, requestId: string | null, client: object): SystemZeroError {
   if (error instanceof APIConnectionError && !(error instanceof APITimeoutError)) return error;
   if (error instanceof SystemZeroError && error.code !== null) return error;
-  if (error instanceof APITimeoutError) return timeout(error.request_id ?? requestId);
+  if (error instanceof APITimeoutError) return timeout(error.request_id ?? requestId, client);
   return unavailable(error instanceof SystemZeroError ? error.request_id ?? requestId : requestId);
 }
 function errorTrace(error: SystemZeroError): FlowErrorTrace {
@@ -335,7 +336,7 @@ function errorTrace(error: SystemZeroError): FlowErrorTrace {
 /** Execute ordinary counted decide calls. All returned diagnostics omit content by default. */
 export async function runFlow(client: Pick<SystemZeroClient, 'decide' | 'options'>, input: unknown, options: FlowOptions): Promise<FlowTrace> {
   if (!record(options)) throw invalid();
-  if (options.dangerZone !== undefined && !['accept', 'long_context_64k', 'long_context_128k', 'long_context_1m'].includes(options.dangerZone)) throw new InvalidRequestError('The request option must be accept, long_context_64k, long_context_128k or long_context_1m.', { status: 400, type: 'invalid_request_error', code: 'invalid_request', param: 'SZ-Danger-Zone' });
+  if (options.dangerZone !== undefined && !['accept', 'long_context_64k', 'long_context_128k', 'long_context_1m'].includes(options.dangerZone)) throw new InvalidRequestError('The request option must be accept, long_context_64k, long_context_128k or long_context_1m.', { status: 400, type: 'invalid_request_error', code: 'invalid_request', param: wireFor(client).dangerZoneHeader });
   let settings: FlowOptions;
   try { settings = { ...options }; } catch { throw invalid(); }
   if (settings.now !== undefined && typeof settings.now !== 'function') throw invalid();
@@ -383,13 +384,13 @@ export async function runFlow(client: Pick<SystemZeroClient, 'decide' | 'options
       };
       if (includeContent) { current.step_id = step.id; current.questions = step.questions; }
       trace.steps.push(current);
-      if (remaining() <= 0) throw timeout();
+      if (remaining() <= 0) throw timeout(null, client);
       if (!(step.depends_on ?? []).every(condition => matches(condition, answers))) {
         index = step.next.default === null ? null : indices.get(step.next.default)!;
         current.status = 'skipped';
         current.branch = { rule_index: null, next_step_index: index, reason: 'dependency_unmet' };
         current.elapsed_ms = time() - current.started_ms;
-        if (remaining() <= 0) throw timeout();
+        if (remaining() <= 0) throw timeout(null, client);
         continue;
       }
       if (step.state_template !== undefined) state = render(step.state_template, state, answers);
@@ -399,7 +400,7 @@ export async function runFlow(client: Pick<SystemZeroClient, 'decide' | 'options
       const idempotencyKey = `sz-flow-v1-${digest([settings.run_id, step.id, requestHash])}`;
       current.request_hash = requestHash; current.idempotency_key = idempotencyKey;
       if (includeContent) current.request = request;
-      if (remaining() < callBound) throw timeout();
+      if (remaining() < callBound) throw timeout(null, client);
       if (trace.decide_calls >= maxDecideCalls) {
         throw new SystemZeroError('The local call limit has been reached.', { code: 'call_limit_reached', retryable: false });
       }
@@ -444,14 +445,14 @@ export async function runFlow(client: Pick<SystemZeroClient, 'decide' | 'options
       index = next === null ? null : indices.get(next)!;
       current.branch = { rule_index: ruleIndex, next_step_index: index, reason: ruleIndex === null ? 'default' : 'rule_matched' };
       current.elapsed_ms = time() - current.started_ms;
-      if (remaining() <= 0) throw timeout(current.request_id);
+      if (remaining() <= 0) throw timeout(current.request_id, client);
       current.status = 'completed';
     }
     trace.elapsed_ms = time() - started;
-    if (trace.elapsed_ms >= settings.deadline_ms) throw timeout(current?.request_id ?? null);
+    if (trace.elapsed_ms >= settings.deadline_ms) throw timeout(current?.request_id ?? null, client);
     return trace;
   } catch (cause) {
-    const error = normalizeError(cause, current?.request_id ?? null);
+    const error = normalizeError(cause, current?.request_id ?? null, client);
     const status = heldCodes.has(error.code ?? '') ? 'held'
       : (phase === 'transport' || phase === 'refusal') && error.status !== null && error.status >= 400 && error.status < 500 ? 'refused' : 'failed';
     trace.status = status;

@@ -1,0 +1,366 @@
+{
+  "account_suspended": {
+    "status": 403,
+    "message": "This account does not currently have API access."
+  },
+  "attachment_too_large": {
+    "status": 413,
+    "message": "This input exceeds the supported limits."
+  },
+  "audio_not_available": {
+    "status": 404,
+    "message": "Audio is unavailable. Send the request without the audio attachment."
+  },
+  "auth_error": {
+    "status": 403,
+    "message": "API key is revoked"
+  },
+  "capacity_exhausted": {
+    "status": 429,
+    "message": "RightNow is at capacity. Retry after the Retry-After delay."
+  },
+  "committee_not_available": {
+    "status": 404,
+    "message": "This route is not available."
+  },
+  "concurrency_limit_exceeded": {
+    "status": 429,
+    "message": "This account has reached its concurrent call limit. Retry after the Retry-After delay."
+  },
+  "daily_dispatch_limit": {
+    "status": 429,
+    "message": "This account reached today's request limit. It resets at 00:00 UTC."
+  },
+  "decision_not_found": {
+    "status": 404,
+    "message": "The requested decision is not available."
+  },
+  "deliberate_not_available": {
+    "status": 404,
+    "message": "This mode is not available."
+  },
+  "document_controls_not_available": {
+    "status": 404,
+    "message": "Documents with control characters are unavailable. Remove the control characters and send it again."
+  },
+  "document_decode_failed": {
+    "status": 422,
+    "message": "The document could not be decoded."
+  },
+  "document_not_available": {
+    "status": 404,
+    "message": "Documents are unavailable. Send the request without the document attachment."
+  },
+  "document_pictures_not_available": {
+    "status": 404,
+    "message": "Pictures inside documents are unavailable. Send the document without pictures, or as text."
+  },
+  "document_too_large": {
+    "status": 413,
+    "message": "The document exceeds the decoded byte limit."
+  },
+  "document_unsupported": {
+    "status": 415,
+    "message": "The document format is not supported."
+  },
+  "https_required": {
+    "status": 403,
+    "message": "This API answers only over HTTPS. Send the request to the https address."
+  },
+  "idempotency_conflict": {
+    "status": 409,
+    "message": "A request with this Idempotency-Key is still running. Retry with the same key shortly."
+  },
+  "idempotency_key_reuse": {
+    "status": 400,
+    "message": "This idempotency key already settled another request."
+  },
+  "idempotency_replay_unavailable": {
+    "status": 409,
+    "message": "The answer to this request is no longer stored. Send it again with a new Idempotency-Key."
+  },
+  "idempotency_replayed_error": {
+    "status": 500,
+    "message": "The original request failed. Its stored error response is replayed."
+  },
+  "idempotency_unavailable": {
+    "status": 503,
+    "message": "Replay protection is temporarily unavailable. Retry this request with the same Idempotency-Key."
+  },
+  "image_not_available": {
+    "status": 404,
+    "message": "Images are unavailable. Send the request without the image attachment."
+  },
+  "injection_suspected": {
+    "status": 422,
+    "message": "The request was refused because its content reads as instructions to the model. Remove the embedded instructions and send it again."
+  },
+  "input_quarantined": {
+    "status": 422,
+    "message": "This exact input caused repeated serving failures, so it is refused for up to 24 hours. Change the input or contact support."
+  },
+  "insufficient_credits": {
+    "status": 402,
+    "message": "The workspace's balance does not cover this call."
+  },
+  "internal_error": {
+    "status": 500,
+    "message": "The request failed unexpectedly. Retry the request. Keep the request id if the failure persists."
+  },
+  "invalid_api_key": {
+    "status": 401,
+    "message": "Invalid API key."
+  },
+  "invalid_criteria": {
+    "status": 422,
+    "message": "The question criteria are invalid."
+  },
+  "invalid_idempotency_key": {
+    "status": 400,
+    "message": "Idempotency-Key must be nonblank ASCII and 255 characters or less."
+  },
+  "invalid_request": {
+    "status": 400,
+    "message": "The request is invalid."
+  },
+  "invalid_trace_header": {
+    "status": 400,
+    "message": "X-Client-Request-Id must be nonblank ASCII and 512 characters or less."
+  },
+  "limiter_unavailable": {
+    "status": 503,
+    "message": "API rate limiting is temporarily unavailable. Please retry shortly."
+  },
+  "long_context_daily_budget_exhausted": {
+    "status": 429,
+    "message": "The daily cap for this decision class is reached. New work of this class resumes on the next UTC day."
+  },
+  "long_context_not_available": {
+    "status": 404,
+    "message": "This route is not available."
+  },
+  "long_duration_unsupported": {
+    "status": 413,
+    "message": "This input exceeds the supported limits."
+  },
+  "long_evidence_incomplete": {
+    "status": 422,
+    "message": "This input could not be read completely."
+  },
+  "long_media_guard_refused": {
+    "status": 422,
+    "message": "This input was refused."
+  },
+  "long_no_readable_window": {
+    "status": 422,
+    "message": "This input could not be read."
+  },
+  "long_options_unsupported": {
+    "status": 422,
+    "message": "These options cannot be evaluated for this input."
+  },
+  "long_phrase_invalid": {
+    "status": 422,
+    "message": "This phrase cannot be evaluated for this input."
+  },
+  "long_question_type_unsupported": {
+    "status": 422,
+    "message": "This question type cannot be answered for this input."
+  },
+  "long_question_unsupported": {
+    "status": 422,
+    "message": "This question cannot be answered for this input."
+  },
+  "long_recording_not_available": {
+    "status": 404,
+    "message": "This input type is not supported."
+  },
+  "long_state_unsupported": {
+    "status": 400,
+    "message": "This input combination is not supported."
+  },
+  "long_too_many_phrases": {
+    "status": 413,
+    "message": "This request exceeds the supported limits."
+  },
+  "maintenance": {
+    "status": 503,
+    "message": "The API is down for maintenance. Retry after the Retry-After delay."
+  },
+  "media_decode_failed": {
+    "status": 422,
+    "message": "The media bytes do not match the declared format."
+  },
+  "media_too_large": {
+    "status": 413,
+    "message": "The media exceeds the decoded byte limit."
+  },
+  "media_unpriced": {
+    "status": 403,
+    "message": "This input type is not supported."
+  },
+  "media_unsupported": {
+    "status": 400,
+    "message": "This input kind or count is not supported."
+  },
+  "method_not_allowed": {
+    "status": 405,
+    "message": "The HTTP method is not supported by this endpoint."
+  },
+  "model_not_found": {
+    "status": 404,
+    "message": "The requested model is not available."
+  },
+  "model_serving_unattested": {
+    "status": 503,
+    "message": "The service is temporarily unavailable."
+  },
+  "model_timeout": {
+    "status": 504,
+    "message": "The RightNow decision model exceeded the response deadline."
+  },
+  "model_unavailable": {
+    "status": 503,
+    "message": "The RightNow decision model is temporarily unavailable."
+  },
+  "monthly_cap_reached": {
+    "status": 429,
+    "message": "This workspace reached its monthly decision cap."
+  },
+  "output_limit_exceeded": {
+    "status": 422,
+    "message": "The decision exceeded its output token limit."
+  },
+  "payload_too_large": {
+    "status": 413,
+    "message": "The request exceeds the body limit. Send fewer or smaller attachments."
+  },
+  "policy_confidence_failed": {
+    "status": 422,
+    "message": "The reply failed the confidence policy. The completed decision is counted toward the monthly cap and is not charged."
+  },
+  "policy_max_cost_exceeded": {
+    "status": 400,
+    "message": "The request's maximum possible cost exceeds max_cost_usd. The request was not dispatched, counted toward monthly usage or charged."
+  },
+  "question_not_grounded": {
+    "status": 422,
+    "message": "The question cannot be answered from this state."
+  },
+  "question_too_large": {
+    "status": 422,
+    "message": "The question exceeds the size limit."
+  },
+  "questions_too_large": {
+    "status": 413,
+    "message": "The questions exceed the reply or token limit. Send fewer or shorter questions."
+  },
+  "rate_limit_exceeded": {
+    "status": 429,
+    "message": "Too many requests from this key or address. Retry after the Retry-After delay."
+  },
+  "request_refused": {
+    "status": 422,
+    "message": "RightNow refused this request. Change it before sending it again."
+  },
+  "service_unavailable": {
+    "status": 503,
+    "message": "RightNow cannot serve this request right now. Retry after the Retry-After delay."
+  },
+  "spend_limit_reached": {
+    "status": 402,
+    "message": "This API key has reached its monthly spending limit. A workspace owner or admin can raise or remove it under Settings, API keys, or wait until {reset_at}. This request was not charged."
+  },
+  "staging_attempt_ceiling": {
+    "status": 429,
+    "message": "The request ceiling is reached. Retry after the Retry-After delay."
+  },
+  "starter_attempt_limit": {
+    "status": 429,
+    "message": "Starting credit processing reached its temporary allowance. Retry after the Retry-After delay."
+  },
+  "starter_concurrency_limit": {
+    "status": 429,
+    "message": "Two starting credit requests are already in progress. Retry after the Retry-After delay."
+  },
+  "starter_credit_held": {
+    "status": 403,
+    "message": "Your starting credit is under review. Contact us to request a review."
+  },
+  "starter_rate_limit": {
+    "status": 429,
+    "message": "Starting credit requests reached their rate allowance. Retry after the Retry-After delay."
+  },
+  "starter_spend_limit": {
+    "status": 429,
+    "message": "This request exceeds the starting credit spend allowance. Retry after the Retry-After delay or request a review."
+  },
+  "starter_unavailable": {
+    "status": 503,
+    "message": "Starting credit enforcement is temporarily unavailable. Retry after the Retry-After delay."
+  },
+  "state_too_large": {
+    "status": 413,
+    "message": "The state exceeds the size or nesting limit."
+  },
+  "state_too_large_unguarded": {
+    "status": 413,
+    "message": "This release does not answer states of this length. Shorten or split the state."
+  },
+  "stream_limit_exceeded": {
+    "status": 429,
+    "message": "This account has reached its stream limit. Retry after the Retry-After delay."
+  },
+  "system_zero_timeout": {
+    "status": 504,
+    "message": "RightNow exceeded the response deadline."
+  },
+  "system_zero_unavailable": {
+    "status": 503,
+    "message": "RightNow is temporarily unavailable."
+  },
+  "unknown_endpoint": {
+    "status": 404,
+    "message": "The requested API endpoint was not found."
+  },
+  "upload_in_use": {
+    "status": 409,
+    "message": "The requested item is in use by another request."
+  },
+  "upload_not_found": {
+    "status": 404,
+    "message": "The requested item is not available to this account."
+  },
+  "upload_not_ready": {
+    "status": 409,
+    "message": "The requested item is not ready."
+  },
+  "video_not_available": {
+    "status": 404,
+    "message": "This input type is not supported."
+  },
+  "webhook_invalid": {
+    "status": 400,
+    "message": "The webhook request is invalid."
+  },
+  "webhook_limit_exceeded": {
+    "status": 429,
+    "message": "This workspace has reached its webhook endpoint limit."
+  },
+  "webhook_not_found": {
+    "status": 404,
+    "message": "The requested webhook is not available to this workspace."
+  },
+  "webhook_unavailable": {
+    "status": 503,
+    "message": "Webhook management is temporarily unavailable."
+  },
+  "workspace_limit_exceeded": {
+    "status": 429,
+    "message": "This workspace is over one of its own allowances, such as calls in flight or bytes being read. Retry after the Retry-After delay."
+  },
+  "workspace_quarantined": {
+    "status": 422,
+    "message": "This account's requests are paused for up to an hour after repeated serving failures. Contact support."
+  }
+}

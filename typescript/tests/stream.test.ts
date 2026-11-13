@@ -5,8 +5,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { SystemZeroStreamClient } from '../src/stream.js';
 import { RateLimitError, responseError } from '../src/errors.js';
 
-const request = { model: 'system-zero', state: 'SYNTHETIC', questions: { ready: { type: 'boolean' as const, instructions: 'Ready?' } } };
-const protocol = 'system-zero.stream.v1';
+const request = { model: 'rightnow-decision', state: 'SYNTHETIC', questions: { ready: { type: 'boolean' as const, instructions: 'Ready?' } } };
+const protocol = 'rightnow-decision.stream.v1';
 const reply = { id: 'szd_synthetic', answers: {} };
 const closeFixtures: { code: number; reconnect: string; goodbye: { reason: string | null; resume: { retry_after_ms: number }; [key: string]: unknown } }[] = JSON.parse(readFileSync(new URL('../../fixtures/stream/close-codes.json', import.meta.url), 'utf8'));
 
@@ -54,7 +54,7 @@ class Socket extends EventEmitter {
 
 const clients: SystemZeroStreamClient[] = [];
 const make = (options = {}) => {
-  const client = new SystemZeroStreamClient({ apiKey: 'rnsk_synthetic', streamURL: 'wss://sdk.example.com/v1/system-zero/stream', WebSocket: Socket, random: () => 0, ...options });
+  const client = new SystemZeroStreamClient({ idempotency: 'auto', apiKey: 'rnsk_synthetic', streamURL: 'wss://sdk.example.com/v1/system-zero/stream', WebSocket: Socket, random: () => 0, ...options });
   clients.push(client);
   return client;
 };

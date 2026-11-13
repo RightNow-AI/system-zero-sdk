@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 from types import SimpleNamespace
 
-import system_zero.tools as tools
+import rightnow.tools as tools
 
 
 def configured():
@@ -28,7 +28,7 @@ def test_provider_schema_normalization_and_invalid_argument_refusal():
     }
     assert handler("system_zero_decide", arguments)["status"] == "ok"
     assert calls == [{
-        "model": "system-zero", "state": {"status": "ready"},
+        "model": "rightnow-decision", "state": {"status": "ready"},
         "questions": {"ready": {"type": "boolean", "instructions": "Is the status ready?"}},
     }]
     assert handler("system_zero_list_models", {"extra": True})["error"]["code"] == "invalid_request"

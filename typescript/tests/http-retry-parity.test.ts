@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { APIConnectionError, APITimeoutError, ServiceUnavailableError, SystemZeroClient,
   markResponseStarted, type Fetch } from '../src/index.js';
 
-const request = { model: 'system-zero', state: 'SYNTHETIC HTTP retry parity',
+const request = { model: 'rightnow-decision', state: 'SYNTHETIC HTTP retry parity',
   questions: { ready: { type: 'boolean' as const, instructions: 'Ready?' } } };
 const key = 'SYNTHETIC';
 const refusal = { request_id: 'req_http_parity', error: {
@@ -119,7 +119,7 @@ for (const status of [429, 503]) {
       const client = new SystemZeroClient({ apiKey: 'SYNTHETIC', random: () => 0,
         sleep: async ms => { sleeps.push(ms); }, fetch: async () => {
           attempts++;
-          return Response.json({ error: { code: status === 429 ? 'rate_limit_exceeded' : 'system_zero_unavailable', retryable: true } }, { status, headers });
+          return Response.json({ error: { code: status === 429 ? 'rate_limit_exceeded' : 'model_unavailable', retryable: true } }, { status, headers });
         } });
       const error = await client.decide(request).catch(error => error);
       expect(error).toMatchObject({ status, retryAfterMs: milliseconds ? 240000 : 180000 });
@@ -133,7 +133,7 @@ for (const status of [429, 503]) {
     const client = new SystemZeroClient({ apiKey: 'SYNTHETIC', retryBudget: 2000, monotonic: () => clock, random: () => 0,
       sleep: async ms => { sleeps.push(ms); clock += ms; }, fetch: async () => {
         attempts++;
-        return attempts === 1 ? Response.json({ error: { code: status === 429 ? 'rate_limit_exceeded' : 'system_zero_unavailable', retryable: true } }, { status, headers: { 'Retry-After-Ms': '500', 'Retry-After': '180' } }) : Response.json({ answers: {} });
+        return attempts === 1 ? Response.json({ error: { code: status === 429 ? 'rate_limit_exceeded' : 'model_unavailable', retryable: true } }, { status, headers: { 'Retry-After-Ms': '500', 'Retry-After': '180' } }) : Response.json({ answers: {} });
       } });
     await client.decide(request);
     expect(sleeps).toEqual([500]);

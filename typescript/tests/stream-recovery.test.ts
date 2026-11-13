@@ -4,8 +4,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { SystemZeroClient } from '../src/client.js';
 import { SystemZeroStreamClient } from '../src/stream.js';
 
-const request = { model: 'system-zero', state: 'SYNTHETIC', questions: { q: { type: 'boolean' as const, instructions: 'Ready?' } } };
-const protocol = 'system-zero.stream.v1';
+const request = { model: 'rightnow-decision', state: 'SYNTHETIC', questions: { q: { type: 'boolean' as const, instructions: 'Ready?' } } };
+const protocol = 'rightnow-decision.stream.v1';
 const clients: SystemZeroStreamClient[] = [];
 const turns = async () => { for (let count = 0; count < 30; count++) await Promise.resolve(); };
 type Refusal = { status: number; code: string; retry: boolean; wait?: number };
@@ -71,7 +71,7 @@ function fixture(steps: Opening[] = ['hello'], options: Record<string, unknown> 
     close(code = 1000) { if (this.readyState === 3) return; this.readyState = 3; this.emit('close', code); }
     terminate() { this.close(1006); }
   }
-  const client = new SystemZeroStreamClient({ apiKey: 'rnsk_synthetic', streamURL: 'wss://sdk.example.com/v1/system-zero/stream',
+  const client = new SystemZeroStreamClient({ idempotency: 'auto', apiKey: 'rnsk_synthetic', streamURL: 'wss://sdk.example.com/v1/system-zero/stream',
     WebSocket: Socket, now: () => Date.now(), random: () => 1, ...options });
   clients.push(client);
   return { client, sockets };

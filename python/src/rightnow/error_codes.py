@@ -1,0 +1,194 @@
+"""API error codes returned by RightNow."""
+from enum import Enum
+
+class ErrorCode(str, Enum):
+    ACCOUNT_SUSPENDED = 'account_suspended'
+    ATTACHMENT_TOO_LARGE = 'attachment_too_large'
+    AUDIO_NOT_AVAILABLE = 'audio_not_available'
+    AUTH_ERROR = 'auth_error'
+    CAPACITY_EXHAUSTED = 'capacity_exhausted'
+    COMMITTEE_NOT_AVAILABLE = 'committee_not_available'
+    CONCURRENCY_LIMIT_EXCEEDED = 'concurrency_limit_exceeded'
+    DAILY_DISPATCH_LIMIT = 'daily_dispatch_limit'
+    DECISION_NOT_FOUND = 'decision_not_found'
+    DELIBERATE_NOT_AVAILABLE = 'deliberate_not_available'
+    DOCUMENT_CONTROLS_NOT_AVAILABLE = 'document_controls_not_available'
+    DOCUMENT_DECODE_FAILED = 'document_decode_failed'
+    DOCUMENT_NOT_AVAILABLE = 'document_not_available'
+    DOCUMENT_PICTURES_NOT_AVAILABLE = 'document_pictures_not_available'
+    DOCUMENT_TOO_LARGE = 'document_too_large'
+    DOCUMENT_UNSUPPORTED = 'document_unsupported'
+    HTTPS_REQUIRED = 'https_required'
+    IDEMPOTENCY_CONFLICT = 'idempotency_conflict'
+    IDEMPOTENCY_KEY_REUSE = 'idempotency_key_reuse'
+    IDEMPOTENCY_REPLAY_UNAVAILABLE = 'idempotency_replay_unavailable'
+    IDEMPOTENCY_REPLAYED_ERROR = 'idempotency_replayed_error'
+    IDEMPOTENCY_UNAVAILABLE = 'idempotency_unavailable'
+    IMAGE_NOT_AVAILABLE = 'image_not_available'
+    INJECTION_SUSPECTED = 'injection_suspected'
+    INPUT_QUARANTINED = 'input_quarantined'
+    INSUFFICIENT_CREDITS = 'insufficient_credits'
+    INTERNAL_ERROR = 'internal_error'
+    INVALID_API_KEY = 'invalid_api_key'
+    INVALID_CRITERIA = 'invalid_criteria'
+    INVALID_IDEMPOTENCY_KEY = 'invalid_idempotency_key'
+    INVALID_REQUEST = 'invalid_request'
+    INVALID_TRACE_HEADER = 'invalid_trace_header'
+    LIMITER_UNAVAILABLE = 'limiter_unavailable'
+    LONG_CONTEXT_DAILY_BUDGET_EXHAUSTED = 'long_context_daily_budget_exhausted'
+    LONG_CONTEXT_NOT_AVAILABLE = 'long_context_not_available'
+    LONG_DURATION_UNSUPPORTED = 'long_duration_unsupported'
+    LONG_EVIDENCE_INCOMPLETE = 'long_evidence_incomplete'
+    LONG_MEDIA_GUARD_REFUSED = 'long_media_guard_refused'
+    LONG_NO_READABLE_WINDOW = 'long_no_readable_window'
+    LONG_OPTIONS_UNSUPPORTED = 'long_options_unsupported'
+    LONG_PHRASE_INVALID = 'long_phrase_invalid'
+    LONG_QUESTION_TYPE_UNSUPPORTED = 'long_question_type_unsupported'
+    LONG_QUESTION_UNSUPPORTED = 'long_question_unsupported'
+    LONG_RECORDING_NOT_AVAILABLE = 'long_recording_not_available'
+    LONG_STATE_UNSUPPORTED = 'long_state_unsupported'
+    LONG_TOO_MANY_PHRASES = 'long_too_many_phrases'
+    MAINTENANCE = 'maintenance'
+    MEDIA_DECODE_FAILED = 'media_decode_failed'
+    MEDIA_TOO_LARGE = 'media_too_large'
+    MEDIA_UNPRICED = 'media_unpriced'
+    MEDIA_UNSUPPORTED = 'media_unsupported'
+    METHOD_NOT_ALLOWED = 'method_not_allowed'
+    MODEL_NOT_FOUND = 'model_not_found'
+    MODEL_SERVING_UNATTESTED = 'model_serving_unattested'
+    MODEL_TIMEOUT = 'model_timeout'
+    MODEL_UNAVAILABLE = 'model_unavailable'
+    MONTHLY_CAP_REACHED = 'monthly_cap_reached'
+    OUTPUT_LIMIT_EXCEEDED = 'output_limit_exceeded'
+    PAYLOAD_TOO_LARGE = 'payload_too_large'
+    POLICY_CONFIDENCE_FAILED = 'policy_confidence_failed'
+    POLICY_MAX_COST_EXCEEDED = 'policy_max_cost_exceeded'
+    QUESTION_NOT_GROUNDED = 'question_not_grounded'
+    QUESTION_TOO_LARGE = 'question_too_large'
+    QUESTIONS_TOO_LARGE = 'questions_too_large'
+    RATE_LIMIT_EXCEEDED = 'rate_limit_exceeded'
+    REQUEST_REFUSED = 'request_refused'
+    SERVICE_UNAVAILABLE = 'service_unavailable'
+    SPEND_LIMIT_REACHED = 'spend_limit_reached'
+    STAGING_ATTEMPT_CEILING = 'staging_attempt_ceiling'
+    STARTER_ATTEMPT_LIMIT = 'starter_attempt_limit'
+    STARTER_CONCURRENCY_LIMIT = 'starter_concurrency_limit'
+    STARTER_CREDIT_HELD = 'starter_credit_held'
+    STARTER_RATE_LIMIT = 'starter_rate_limit'
+    STARTER_SPEND_LIMIT = 'starter_spend_limit'
+    STARTER_UNAVAILABLE = 'starter_unavailable'
+    STATE_TOO_LARGE = 'state_too_large'
+    STATE_TOO_LARGE_UNGUARDED = 'state_too_large_unguarded'
+    STREAM_LIMIT_EXCEEDED = 'stream_limit_exceeded'
+    SYSTEM_ZERO_TIMEOUT = 'system_zero_timeout'
+    SYSTEM_ZERO_UNAVAILABLE = 'system_zero_unavailable'
+    UNKNOWN_ENDPOINT = 'unknown_endpoint'
+    UPLOAD_IN_USE = 'upload_in_use'
+    UPLOAD_NOT_FOUND = 'upload_not_found'
+    UPLOAD_NOT_READY = 'upload_not_ready'
+    VIDEO_NOT_AVAILABLE = 'video_not_available'
+    WEBHOOK_INVALID = 'webhook_invalid'
+    WEBHOOK_LIMIT_EXCEEDED = 'webhook_limit_exceeded'
+    WEBHOOK_NOT_FOUND = 'webhook_not_found'
+    WEBHOOK_UNAVAILABLE = 'webhook_unavailable'
+    WORKSPACE_LIMIT_EXCEEDED = 'workspace_limit_exceeded'
+    WORKSPACE_QUARANTINED = 'workspace_quarantined'
+
+SYSTEM_ZERO_ERROR_CODES = (
+    'attachment_too_large',
+    'audio_not_available',
+    'capacity_exhausted',
+    'committee_not_available',
+    'concurrency_limit_exceeded',
+    'daily_dispatch_limit',
+    'decision_not_found',
+    'deliberate_not_available',
+    'document_controls_not_available',
+    'document_decode_failed',
+    'document_not_available',
+    'document_pictures_not_available',
+    'document_too_large',
+    'document_unsupported',
+    'https_required',
+    'idempotency_key_reuse',
+    'image_not_available',
+    'injection_suspected',
+    'input_quarantined',
+    'insufficient_credits',
+    'invalid_criteria',
+    'invalid_request',
+    'long_context_daily_budget_exhausted',
+    'long_context_not_available',
+    'long_duration_unsupported',
+    'long_evidence_incomplete',
+    'long_media_guard_refused',
+    'long_no_readable_window',
+    'long_options_unsupported',
+    'long_phrase_invalid',
+    'long_question_type_unsupported',
+    'long_question_unsupported',
+    'long_recording_not_available',
+    'long_state_unsupported',
+    'long_too_many_phrases',
+    'media_decode_failed',
+    'media_too_large',
+    'media_unpriced',
+    'media_unsupported',
+    'output_limit_exceeded',
+    'payload_too_large',
+    'policy_confidence_failed',
+    'policy_max_cost_exceeded',
+    'question_not_grounded',
+    'question_too_large',
+    'questions_too_large',
+    'rate_limit_exceeded',
+    'request_refused',
+    'service_unavailable',
+    'spend_limit_reached',
+    'staging_attempt_ceiling',
+    'starter_attempt_limit',
+    'starter_concurrency_limit',
+    'starter_credit_held',
+    'starter_rate_limit',
+    'starter_spend_limit',
+    'starter_unavailable',
+    'state_too_large',
+    'state_too_large_unguarded',
+    'stream_limit_exceeded',
+    'system_zero_timeout',
+    'system_zero_unavailable',
+    'upload_in_use',
+    'upload_not_found',
+    'upload_not_ready',
+    'video_not_available',
+    'webhook_invalid',
+    'webhook_limit_exceeded',
+    'webhook_not_found',
+    'webhook_unavailable',
+    'workspace_limit_exceeded',
+    'workspace_quarantined',
+)
+
+GATEWAY_ERROR_CODES = (
+    'account_suspended',
+    'auth_error',
+    'idempotency_conflict',
+    'idempotency_replay_unavailable',
+    'idempotency_replayed_error',
+    'idempotency_unavailable',
+    'internal_error',
+    'invalid_api_key',
+    'invalid_idempotency_key',
+    'invalid_trace_header',
+    'limiter_unavailable',
+    'maintenance',
+    'method_not_allowed',
+    'model_not_found',
+    'model_serving_unattested',
+    'model_timeout',
+    'model_unavailable',
+    'monthly_cap_reached',
+    'unknown_endpoint',
+)
+
+KNOWN_ERROR_CODES = frozenset(SYSTEM_ZERO_ERROR_CODES + GATEWAY_ERROR_CODES)

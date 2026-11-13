@@ -49,6 +49,7 @@ export const SYSTEM_ZERO_ERROR_CODES = [
   "rate_limit_exceeded",
   "request_refused",
   "service_unavailable",
+  "spend_limit_reached",
   "staging_attempt_ceiling",
   "starter_attempt_limit",
   "starter_concurrency_limit",
@@ -88,6 +89,9 @@ export const GATEWAY_ERROR_CODES = [
   "maintenance",
   "method_not_allowed",
   "model_not_found",
+  "model_serving_unattested",
+  "model_timeout",
+  "model_unavailable",
   "monthly_cap_reached",
   "unknown_endpoint"
 ] as const;

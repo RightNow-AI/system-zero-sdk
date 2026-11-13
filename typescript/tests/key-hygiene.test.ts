@@ -104,7 +104,7 @@ it('DOM timeout causes remain printable without their credential', async () => {
 });
 it('stream opening disconnect strips native causes and request headers', async () => {
   class Socket extends EventEmitter {
-    readyState = 0; protocol = 'system-zero.stream.v1';
+    readyState = 0; protocol = 'rightnow-decision.stream.v1';
     constructor(_url: string, _protocol: string, options: { headers: Record<string, string> }) {
       super(); expect(options.headers.Authorization).toBe(`Bearer ${key}`);
       queueMicrotask(() => this.emit('error', Object.assign(new Error(key), { code: 'ECONNRESET', request: { headers: options.headers } })));
@@ -117,7 +117,7 @@ it('stream opening disconnect strips native causes and request headers', async (
 
 it.each(statuses)('stream upgrade %i redacts diagnostics', async status => {
   class Socket extends EventEmitter {
-    readyState = 0; protocol = 'system-zero.stream.v1';
+    readyState = 0; protocol = 'rightnow-decision.stream.v1';
     constructor() {
       super();
       queueMicrotask(() => {
@@ -135,7 +135,7 @@ it.each(statuses)('stream upgrade %i redacts diagnostics', async status => {
 it.each(['disconnect', 'error-frame'])('connected stream %s redacts errors and events', async kind => {
   let socket: Socket;
   class Socket extends EventEmitter {
-    readyState = 1; protocol = 'system-zero.stream.v1'; seq = 0;
+    readyState = 1; protocol = 'rightnow-decision.stream.v1'; seq = 0;
     constructor() {
       super(); socket = this;
       queueMicrotask(() => this.server({ type: 'hello', protocol: this.protocol, limits: { ...TEST_STREAM_LIMITS, heartbeat_interval_ms: 1000 } }));
@@ -152,7 +152,7 @@ it.each(['disconnect', 'error-frame'])('connected stream %s redacts errors and e
   client.on('error', event => { events.push(event); });
   try {
     await client.connect();
-    const ack = await client.start({ model: 'system-zero', state: 'synthetic', questions: { ok: { type: 'boolean', instructions: 'Ready?' } } });
+    const ack = await client.start({ model: 'rightnow-decision', state: 'synthetic', questions: { ok: { type: 'boolean', instructions: 'Ready?' } } });
     const pending = client.waitForDecision(ack).catch(e => e);
     if (kind === 'disconnect') socket!.emit('error', Object.assign(new Error(key), { code: 'ECONNRESET', request: { headers: headers() } }));
     else socket!.server({ type: 'error', phase: 'decide', state_version: 1, event_id: null, fatal: true, http_status: 503,
@@ -209,7 +209,7 @@ it('review A-03 B-05 stream inherited conversion and display hooks are safe', as
   class Reflected extends Error { [Symbol.toPrimitive]() { return key; } }
   Object.defineProperty(Reflected.prototype, 'name', { get() { return key; } });
   class Socket extends EventEmitter {
-    readyState = 0; protocol = 'system-zero.stream.v1';
+    readyState = 0; protocol = 'rightnow-decision.stream.v1';
     constructor() { super(); queueMicrotask(() => this.emit('error', new Reflected('safe'))); }
     close() {} terminate() {} send() {}
   }
@@ -236,7 +236,7 @@ it('review A-05 malformed flow replies cannot persist echoed diagnostic metadata
   const { runFlow } = await import('../src/flows.js');
   const client = new SystemZeroClient({ apiKey: key, maxRetries: 0, timeout: 1000,
     fetch: async () => Response.json({}, { headers: { 'x-request-id': key, 'x-client-request-id': key } }) });
-  const flow = { version: 1 as const, request: { model: 'system-zero', state: 'safe' },
+  const flow = { version: 1 as const, request: { model: 'rightnow-decision', state: 'safe' },
     steps: [{ id: 'first', questions: { ready: { type: 'boolean' as const, instructions: 'Ready?' } }, next: { rules: [], default: null } }] };
   const error = await runFlow(client, flow, { run_id: 'review-flow', deadline_ms: 10_000, now: () => 0 }).catch(e => e);
   expect(error.code).toBe('service_unavailable');

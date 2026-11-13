@@ -15,25 +15,25 @@ if root is not None:
     sys.path.insert(0, str(root.resolve() / "src"))
 
 import httpx  # noqa: E402
-import system_zero  # noqa: E402
-import system_zero.tools  # noqa: E402
-from system_zero.stream import SystemZeroStreamClient  # noqa: E402
+import rightnow  # noqa: E402
+import rightnow.tools  # noqa: E402
+from rightnow.stream import RightNowStreamClient  # noqa: E402
 
 
 expected_python = os.environ.get("SDK_EXPECTED_PYTHON")
 if expected_python:
     assert tuple(map(int, expected_python.split("."))) == sys.version_info[:2]
 if installed:
-    assert system_zero.__version__ == installed_version("rightnow-system-zero")
-    assert Path(system_zero.__file__).resolve().is_relative_to(Path(sys.prefix).resolve())
+    assert rightnow.__version__ == installed_version("rightnow-sdk")
+    assert Path(rightnow.__file__).resolve().is_relative_to(Path(sys.prefix).resolve())
 else:
     metadata = (root / "pyproject.toml").read_text(encoding="utf-8")
     version = re.search(r'^version\s*=\s*"([^"\n]+)"', metadata, re.MULTILINE)
-    assert version is not None and system_zero.__version__ == version[1]
+    assert version is not None and rightnow.__version__ == version[1]
 
 
 request_body = {
-    "model": "system-zero", "state": "SYNTHETIC package smoke.",
+    "model": "rightnow-decision", "state": "SYNTHETIC package smoke.",
     "questions": {"ready": {"type": "boolean", "instructions": "Is this a package smoke?"}},
 }
 reply_body = {"id": "szd_" + "a" * 32, "answers": {}}
@@ -48,10 +48,10 @@ def send(request):
     return httpx.Response(200, json=reply_body)
 
 
-with system_zero.SystemZero(api_key="public-smoke", max_retries=0, transport=httpx.MockTransport(send)) as client:
+with rightnow.RightNow(api_key="public-smoke", max_retries=0, transport=httpx.MockTransport(send)) as client:
     assert client.decide(request_body, idempotency_key="smoke-request") == reply_body
 assert len(calls) == 1
-assert callable(SystemZeroStreamClient)
-assert callable(system_zero.tools.create_tool_handler)
-assert system_zero.evaluate([])["items"]["total"] == 0
+assert callable(RightNowStreamClient)
+assert callable(rightnow.tools.create_tool_handler)
+assert rightnow.evaluate([])["items"]["total"] == 0
 print("Python SDK public entrypoints and injected transport passed.")

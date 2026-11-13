@@ -1,14 +1,14 @@
-"""RightNow System Zero SDK helper."""
+"""RightNow decision model SDK helper."""
 
 import json
 
 import httpx
 import pytest
 
-from system_zero import APIConnectionError, APITimeoutError, ServiceUnavailableError, SystemZero, SystemZeroError
+from rightnow import APIConnectionError, APITimeoutError, ServiceUnavailableError, SystemZero, SystemZeroError
 
 
-REQUEST = {"model": "system-zero", "state": "SYNTHETIC HTTP retry parity",
+REQUEST = {"model": "rightnow-decision", "state": "SYNTHETIC HTTP retry parity",
            "questions": {"ready": {"type": "boolean", "instructions": "Ready?"}}}
 KEY = "SYNTHETIC"
 REFUSAL = {"request_id": "req_http_parity", "error": {
@@ -158,7 +158,7 @@ def test_server_wait_beyond_default_budget_raises_without_sleep(status, headers,
     attempts, sleeps = [], []
     def send(request):
         attempts.append(request)
-        return httpx.Response(status, json={"error": {"code": "rate_limit_exceeded" if status == 429 else "system_zero_unavailable", "retryable": True}}, headers=headers)
+        return httpx.Response(status, json={"error": {"code": "rate_limit_exceeded" if status == 429 else "model_unavailable", "retryable": True}}, headers=headers)
     with SystemZero(api_key="SYNTHETIC", transport=httpx.MockTransport(send), random=lambda: 0, sleep=sleeps.append) as client:
         with pytest.raises(SystemZeroError) as caught:
             client.decide(REQUEST)
@@ -173,7 +173,7 @@ def test_server_wait_within_budget_is_honored(status):
         clock[0] += seconds
     def send(request):
         attempts.append(request)
-        return httpx.Response(status, json={"error": {"code": "rate_limit_exceeded" if status == 429 else "system_zero_unavailable", "retryable": True}}, headers={"Retry-After-Ms": "500", "Retry-After": "180"}) if len(attempts) == 1 else httpx.Response(200, json={"answers": {}})
+        return httpx.Response(status, json={"error": {"code": "rate_limit_exceeded" if status == 429 else "model_unavailable", "retryable": True}}, headers={"Retry-After-Ms": "500", "Retry-After": "180"}) if len(attempts) == 1 else httpx.Response(200, json={"answers": {}})
     with SystemZero(api_key="SYNTHETIC", transport=httpx.MockTransport(send), retry_budget=2, monotonic=lambda: clock[0], random=lambda: 0, sleep=sleep) as client:
         client.decide(REQUEST)
     assert sleeps == [0.5] and len(attempts) == 2

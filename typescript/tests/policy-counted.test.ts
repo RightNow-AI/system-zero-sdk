@@ -3,7 +3,7 @@ import { describe, expect, expectTypeOf, it } from 'vitest';
 import * as sdk from '../src/index.js';
 
 const request = {
-  model: 'system-zero', state: 'SYNTHETIC policy count.',
+  model: 'rightnow-decision', state: 'SYNTHETIC policy count.',
   questions: { ready: { type: 'boolean' as const, instructions: 'Is it ready?' } },
 };
 const cases = [

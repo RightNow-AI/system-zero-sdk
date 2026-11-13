@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.0
+
+Decision calls and stream states default to no generated replay key; opt into auto idempotency for safe automatic retries and 24-hour answer retention; 1M always sends a key, and compatibility packages retain auto mode.
+
+Renamed `@rightnowai/system-zero` to `@rightnowai/rightnow` and `rightnow-system-zero` to `rightnow-sdk` (import `rightnow`). TypeScript keeps `SystemZeroClient` → `RightNowClient`, `SystemZeroStreamClient` → `RightNowStreamClient`, `SystemZeroError` → `RightNowError`, `SystemZeroReply` → `RightNowReply` and `SystemZeroErrorCode` → `RightNowErrorCode` as deprecated aliases. Python keeps `SystemZero` → `RightNow`, `SystemZeroStreamClient` → `RightNowStreamClient` and `SystemZeroError` → `RightNowError` as identical aliases. The old packages are exact-version forwarding shims. `RIGHTNOW_API_KEY` takes precedence over `SYSTEM_ZERO_API_KEY`; explicit keys take precedence over both.
+
 ## 0.4.7
 
 Decision provenance: the decide reply's optional `provenance` member is typed. Check for it before reading it.
@@ -16,23 +22,19 @@ Request policy supports min_confidence with abstained answers and max_cost_usd.
 
 Decision records let you read a decision and its content-free trace by id.
 
-The 1M class needs nothing switched on in the Console; the request option is still required.
-
-The first call after an idle period can take several minutes to become available: the answer names the wait in `Retry-After`; send the same request again with the same Idempotency-Key until it answers.
+1M is not available.
 
 ## 0.4.5
 
 Audio is served like every other attachment kind; the on-demand note is removed.
 
-To access the largest context class, make one completed payment, then open Settings, Workspace, Context access.
-
-The first 1M call after an idle period can take several minutes to become available: the answer names the wait in `Retry-After`; keep retrying for up to ten minutes.
+1M is not available.
 
 ## 0.4.4
 
 Select which tool to call next with toolQuestions / tool_questions and selectTool / select_tool. The helpers return the choice and probabilities through ordinary decide; the caller runs the tool. Tool selection has not been measured.
 
-Select the 1M class explicitly with long_context_1m. Both SDKs keep its idempotency key across retries, generate a key even without retries, and check its request shape before sending. Workspace access is enabled in the Console.
+1M is not available. Both SDKs retain their long_context_1m request handling.
 
 Legacy answers whose probabilities sum exactly at the tolerance edge are now read the same way by both SDKs and by every supported Python version.
 
@@ -40,7 +42,7 @@ Reported and fixed by an outside contributor in pull request 5 of the SDK reposi
 
 ## 0.4.3
 
-Model listing now types optional `limits.long_context` entries with `header_value`, `min_state_tokens`, `state_tokens`, `rendered_tokens` and `attachments`; ordinary token limits describe the direct window. A cold audio pool can return HTTP 503 `system_zero_unavailable` with `Retry-After` up to 240 seconds. The SDK preserves the delay and idempotency key; a wait beyond the retry budget raises immediately. Wait for that delay and retry the same request and key, or explicitly raise both the retry budget and maximum wait to allow automatic recovery.
+Model listing now types optional `limits.long_context` entries with `header_value`, `min_state_tokens`, `state_tokens`, `rendered_tokens` and `attachments`; ordinary token limits describe the direct window. A cold audio pool can return HTTP 503 `model_unavailable` with `Retry-After` up to 240 seconds. The SDK preserves the delay and idempotency key; a wait beyond the retry budget raises immediately. Wait for that delay and retry the same request and key, or explicitly raise both the retry budget and maximum wait to allow automatic recovery.
 
 Explicit class selection uses dangerZone / danger_zone with long_context_64k or long_context_128k. Audio is one WAV at 16,000 Hz, alone, at most 60 seconds. Every HTTP error exposes retryAfterMs / retry_after_ms; over-budget waits raise immediately. Retained stream tokens are redeemed before state restoration.
 

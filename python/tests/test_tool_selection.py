@@ -4,12 +4,12 @@ from unittest.mock import patch
 
 import httpx
 import pytest
-from system_zero import APIError, InvalidRequestError, SystemZero, select_tool, tool_questions
+from rightnow import APIError, InvalidRequestError, SystemZero, select_tool, tool_questions
 
 
 FIXTURE = json.loads((Path(__file__).parents[2] / "fixtures/tool-selection/sz-tools-v1.json").read_text(encoding="utf-8"))
 TOOLS = [dict(name="lookup"), dict(name="refund")]
-REQUEST = dict(model="system-zero", state="The order is damaged.")
+REQUEST = dict(model="rightnow-decision", state="The order is damaged.")
 
 
 @pytest.mark.parametrize("case", FIXTURE["cases"], ids=lambda case: case["name"])
@@ -93,7 +93,7 @@ def test_options_attachments_and_retries_pass_through():
     assert len(seen) == 3
     for request in seen[:2]:
         assert json.loads(request.content) == {**REQUEST, "questions": tool_questions(TOOLS)}
-        assert request.headers["sz-danger-zone"] == "long_context_1m"
+        assert request.headers["rightnow-danger-zone"] == "long_context_1m"
         assert request.headers["idempotency-key"] == "selection-key"
         assert request.headers["x-example"] == "kept"
     assert json.loads(seen[2].content)["attachments"] == attachments

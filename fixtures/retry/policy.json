@@ -248,7 +248,7 @@
   {
     "name": "status 504 cannot force retry",
     "status": 504,
-    "code": "system_zero_timeout",
+    "code": "model_timeout",
     "retryable": true,
     "headers": {
       "x-should-retry": "true"
@@ -358,17 +358,17 @@
     "retryable": null
   },
   {
-    "name": "system_zero_unavailable body",
+    "name": "model_unavailable body",
     "status": 503,
-    "code": "system_zero_unavailable",
+    "code": "model_unavailable",
     "headers": {},
     "retryable": true,
     "retry": true
   },
   {
-    "name": "system_zero_unavailable header",
+    "name": "model_unavailable header",
     "status": 503,
-    "code": "system_zero_unavailable",
+    "code": "model_unavailable",
     "headers": {
       "x-should-retry": "true"
     },
@@ -376,9 +376,9 @@
     "retryable": null
   },
   {
-    "name": "system_zero_unavailable false-header",
+    "name": "model_unavailable false-header",
     "status": 503,
-    "code": "system_zero_unavailable",
+    "code": "model_unavailable",
     "headers": {
       "x-should-retry": "false"
     },
@@ -386,9 +386,9 @@
     "retry": false
   },
   {
-    "name": "system_zero_unavailable unmarked",
+    "name": "model_unavailable unmarked",
     "status": 503,
-    "code": "system_zero_unavailable",
+    "code": "model_unavailable",
     "headers": {},
     "retry": false,
     "retryable": null

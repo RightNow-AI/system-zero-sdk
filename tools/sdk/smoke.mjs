@@ -15,12 +15,12 @@ assert.equal(core.VERSION, pkg.version);
 assert.equal(stream.STREAM_PROTOCOL, 'system-zero.stream.v1');
 assert.deepEqual(tools.validateToolArguments('system_zero_list_models', {}), {});
 const request = {
-  model: 'system-zero', state: 'SYNTHETIC package smoke.',
+  model: 'rightnow-decision', state: 'SYNTHETIC package smoke.',
   questions: { ready: { type: 'boolean', instructions: 'Is this a package smoke?' } },
 };
 const reply = { id: 'szd_' + 'a'.repeat(32), answers: {} };
 let calls = 0;
-const client = new core.SystemZeroClient({
+const client = new core.RightNowClient({
   apiKey: 'public-smoke', maxRetries: 0,
   fetch: async (_url, init) => {
     calls += 1;

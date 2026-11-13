@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import { createHmac } from 'node:crypto';
 import { describe, expect, it, vi } from 'vitest';
 import * as sdk from '../src/index.js';
 import { Webhooks, verifyWebhookSignature } from '../src/webhooks.js';
@@ -57,15 +58,15 @@ describe('public webhook SDK surface through the existing HTTP transport', () =>
     await expect(client.webhooks.rotateSecret(endpoint.id)).resolves.toEqual(payloads[3]);
     await expect(client.webhooks.deliveries(endpoint.id, { limit: 1 })).resolves.toEqual(payloads[4]);
     expect(sent.map(({ url, init }) => [init.method, url])).toEqual([
-      ['POST', 'https://gateway.example/v1/system-zero/webhooks'], ['GET', 'https://gateway.example/v1/system-zero/webhooks'],
-      ['DELETE', `https://gateway.example/v1/system-zero/webhooks/${endpoint.id}`],
-      ['POST', `https://gateway.example/v1/system-zero/webhooks/${endpoint.id}/rotate-secret`],
-      ['GET', `https://gateway.example/v1/system-zero/webhooks/${endpoint.id}/deliveries?limit=1`],
+      ['POST', 'https://gateway.example/v1/decision-model/webhooks'], ['GET', 'https://gateway.example/v1/decision-model/webhooks'],
+      ['DELETE', `https://gateway.example/v1/decision-model/webhooks/${endpoint.id}`],
+      ['POST', `https://gateway.example/v1/decision-model/webhooks/${endpoint.id}/rotate-secret`],
+      ['GET', `https://gateway.example/v1/decision-model/webhooks/${endpoint.id}/deliveries?limit=1`],
     ]);
     for (const { init } of sent) {
       const headers = new Headers(init.headers);
       expect(headers.get('authorization')).toBe('Bearer rnsk_synthetic');
-      expect(headers.get('user-agent')).toBe(`system-zero-typescript/${sdk.VERSION} node/${process.versions.node}`);
+      expect(headers.get('user-agent')).toBe(`rightnow-typescript/${sdk.VERSION} node/${process.versions.node}`);
       expect(headers.has('idempotency-key')).toBe(false);
       expect(init.redirect).toBe('error');
     }
@@ -73,6 +74,26 @@ describe('public webhook SDK surface through the existing HTTP transport', () =>
     expect(new Headers(sent[0].init.headers).get('x-client-request-id')).toBe('client_webhook');
     expect(sent[0].init.body).toBe(JSON.stringify(createRequest()));
     expect(sent[3].init.body).toBe('{}');
+  });
+
+  it.each([
+    ['rightnow-decision-3.0.0', 'model_unavailable'],
+    ['system-zero-3.0.0', 'system_zero_unavailable'],
+  ])('verifies and parses a signed refusal with %s names', (model, refusal_code) => {
+    const event: sdk.WebhookEvent = {
+      id: 'evt_names', object: 'webhook_event', type: 'decision.refused', created: signatures.timestamp,
+      data: { decision_id: 'szd_synthetic', request_id: 'req_synthetic', created: signatures.timestamp,
+        model, refusal_code, route: null, classes: [], status: 503,
+        usage_units: { input_tokens: 0, cached_input_tokens: 0, media_tokens: 0, cached_media_tokens: 0,
+          long_input_tokens: 0, media_items: 0, thought_tokens: 0 } },
+    };
+    const body = JSON.stringify(event);
+    const digest = createHmac('sha256', Buffer.from(signatures.secret.slice(6), 'hex'))
+      .update(`${signatures.timestamp}.${body}`).digest('hex');
+    expect(sdk.verifyWebhookSignature(body, `t=${signatures.timestamp},v1=${digest}`, signatures.secret,
+      { now: signatures.timestamp })).toBe(true);
+    const parsed: sdk.WebhookEvent = JSON.parse(body);
+    expect(parsed).toEqual(event);
   });
 
   it.each(['create', 'rotateSecret'] as const)('never retries public %s after a retryable HTTP error or connection failure', async method => {
@@ -90,7 +111,7 @@ describe('public webhook SDK surface through the existing HTTP transport', () =>
   it('retains bounded retries for ordinary webhook reads', async () => {
     const sleep = vi.fn(async () => {});
     const fetch = vi.fn().mockResolvedValueOnce(capacityUnavailable()).mockResolvedValueOnce(response({ object: 'list', data: [endpoint] }));
-    const client = new sdk.SystemZeroClient({ apiKey: 'rnsk_synthetic', baseURL: 'https://gateway.example/v1', maxRetries: 2, fetch, sleep, random: () => 0 });
+    const client = new sdk.SystemZeroClient({ apiKey: 'rnsk_synthetic', baseURL: 'https://gateway.example/v1', idempotency: 'auto', maxRetries: 2, fetch, sleep, random: () => 0 });
     await expect(client.webhooks.list()).resolves.toEqual({ object: 'list', data: [endpoint] });
     expect(fetch).toHaveBeenCalledTimes(2);
     expect(sleep).toHaveBeenCalledTimes(1);
@@ -121,7 +142,7 @@ describe('public webhook SDK surface through the existing HTTP transport', () =>
 
   it('preserves ordinary decide retry bytes and its generated idempotency key', async () => {
     const fetch = vi.fn().mockResolvedValueOnce(capacityUnavailable()).mockResolvedValueOnce(response({ object: 'synthetic_decision' }));
-    const client = new sdk.SystemZeroClient({ apiKey: 'rnsk_synthetic', baseURL: 'https://gateway.example/v1', maxRetries: 2,
+    const client = new sdk.SystemZeroClient({ apiKey: 'rnsk_synthetic', baseURL: 'https://gateway.example/v1', idempotency: 'auto', maxRetries: 2,
       fetch, sleep: async () => {}, random: () => 0 });
     const body = { state: 'SYNTHETIC state', questions: [] } as unknown as sdk.DecideRequest;
     await client.decide(body);
@@ -133,7 +154,7 @@ describe('public webhook SDK surface through the existing HTTP transport', () =>
     const key = new Headers(first.headers).get('idempotency-key');
     expect(key).toMatch(/^sz-sdk-/);
     expect(new Headers(second.headers).get('idempotency-key')).toBe(key);
-    expect(fetch.mock.calls[0][0]).toBe('https://gateway.example/v1/system-zero/decide');
+    expect(fetch.mock.calls[0][0]).toBe('https://gateway.example/v1/decision-model/decide');
   });
 });
 

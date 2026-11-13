@@ -7,10 +7,10 @@ from typing import Literal, get_type_hints
 import httpx
 import pytest
 
-import system_zero as sdk
-from system_zero import types
-from system_zero.decision_records import DecisionId, DecisionTrace
-from system_zero.error_codes import (
+import rightnow as sdk
+from rightnow import types
+from rightnow.decision_records import DecisionId, DecisionTrace
+from rightnow.error_codes import (
     GATEWAY_ERROR_CODES as PINNED_GATEWAY_CODES,
     SYSTEM_ZERO_ERROR_CODES as PINNED_SYSTEM_CODES,
 )

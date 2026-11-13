@@ -6,12 +6,12 @@ import unittest
 from pathlib import Path
 
 import httpx
-import system_zero as sdk
-import system_zero.tools as tools
+import rightnow as sdk
+import rightnow.tools as tools
 
 
 REQUEST = {
-    "model": "system-zero", "state": "SYNTHETIC state",
+    "model": "rightnow-decision", "state": "SYNTHETIC state",
     "questions": {
         "zebra": {"type": "boolean", "instructions": "Is this synthetic?"},
         "first": {"type": "boolean", "instructions": "Is this a test?"},
@@ -40,14 +40,14 @@ class LiveBehaviorTests(unittest.TestCase):
                 "X-Latency-Ms": "12.5", "X-RightNow-Idempotent-Replay": "true",
             })
 
-        with sdk.SystemZero(api_key="SYNTHETIC", transport=httpx.MockTransport(send), max_retries=0) as client:
+        with sdk.RightNow(api_key="SYNTHETIC", transport=httpx.MockTransport(send), max_retries=0) as client:
             result = client.decide_with_response(
                 REQUEST, idempotency_key="stable-synthetic-key", client_request_id="client-synthetic",
                 headers={"x-synthetic": "preserved"},
             )
         self.assertEqual(len(seen), 1)
         request = seen[0]
-        self.assertEqual((request.method, request.url.path), ("POST", "/v1/system-zero/decide"))
+        self.assertEqual((request.method, request.url.path), ("POST", "/v1/decision-model/decide"))
         self.assertEqual(json.loads(request.content), REQUEST)
         self.assertEqual(list(json.loads(request.content)["questions"]), ["zebra", "first"])
         self.assertEqual(request.headers["authorization"], "Bearer SYNTHETIC")
@@ -66,7 +66,7 @@ class LiveBehaviorTests(unittest.TestCase):
         scratch_root = Path(__file__).resolve().parents[2] / "tmp"
         scratch_root.mkdir(exist_ok=True)
         with tempfile.TemporaryDirectory(prefix="live-batch-", dir=scratch_root) as directory:
-            with sdk.SystemZero(api_key="SYNTHETIC", max_retries=0, transport=httpx.MockTransport(
+            with sdk.RightNow(api_key="SYNTHETIC", max_retries=0, transport=httpx.MockTransport(
                     lambda _request: self.fail("unexpected transport"))) as client:
                 result = sdk.run_batch(client, [{"id": "one", "request": REQUEST,
                                                "expected": {"zebra": True, "first": True}}],
@@ -76,10 +76,10 @@ class LiveBehaviorTests(unittest.TestCase):
 
     def test_local_call_admission_refuses_before_transport(self):
         catalog = json.loads(Path(tools.__file__).with_name("error-catalog.json").read_text(encoding="utf-8"))
-        self.assertEqual(len(catalog), 87)
+        self.assertEqual(len(catalog), 91)
         self.assertNotIn("call_limit_reached", catalog)
         seen = []
-        with sdk.SystemZero(api_key="SYNTHETIC", max_retries=0, transport=httpx.MockTransport(
+        with sdk.RightNow(api_key="SYNTHETIC", max_retries=0, transport=httpx.MockTransport(
                 lambda request: (seen.append(request), httpx.Response(200, json={"answers": {}}))[1])) as client:
             handler = tools.create_tool_handler(client, max_decide_calls=0)
             self.assertEqual(handler("system_zero_decide", TOOL_ARGUMENTS), CALL_LIMIT_REFUSAL)
@@ -93,7 +93,7 @@ class LiveBehaviorTests(unittest.TestCase):
             seen.append(request)
             return httpx.Response(200, json={"answers": {}}, headers={"x-request-id": "req_synthetic_count"})
 
-        with sdk.SystemZero(api_key="SYNTHETIC", transport=httpx.MockTransport(send), max_retries=0) as client:
+        with sdk.RightNow(api_key="SYNTHETIC", transport=httpx.MockTransport(send), max_retries=0) as client:
             handler = tools.create_tool_handler(client, max_decide_calls=1)
             self.assertEqual(handler("system_zero_decide", TOOL_ARGUMENTS), {
                 "answers": {}, "status": "ok", "request_id": "req_synthetic_count",
@@ -109,20 +109,20 @@ class LiveBehaviorTests(unittest.TestCase):
         catalog = json.loads(Path(tools.__file__).with_name("error-catalog.json").read_text(encoding="utf-8"))
         for status, body in ((403, {"error": remote_error}), (200, {"answers": {"ready": {"error": remote_error}}})):
             with self.subTest(status=status):
-                with sdk.SystemZero(api_key="SYNTHETIC", max_retries=0, transport=httpx.MockTransport(
+                with sdk.RightNow(api_key="SYNTHETIC", max_retries=0, transport=httpx.MockTransport(
                         lambda _request: httpx.Response(status, json=body))) as client:
                     handler = tools.create_tool_handler(client, max_decide_calls=1)
                     result = handler("system_zero_decide", TOOL_ARGUMENTS)
                     self.assertEqual((result["status"], result["request_id"]), ("error", None))
-                    self.assertEqual(result["error"], {"code": "system_zero_unavailable",
-                                                     "message": catalog["system_zero_unavailable"]["message"]})
+                    self.assertEqual(result["error"], {"code": "model_unavailable",
+                                                     "message": catalog["model_unavailable"]["message"]})
                     self.assertEqual(handler.budget, {"decide_calls": 1})
 
     def test_live_gateway_refusals_are_preserved(self):
         for code, status in (("invalid_api_key", 401), ("monthly_cap_reached", 429), ("idempotency_conflict", 409),
                              ("auth_error", 403), ("account_suspended", 403), ("model_not_found", 404)):
             with self.subTest(code=code):
-                with sdk.SystemZero(api_key="SYNTHETIC", max_retries=0, transport=httpx.MockTransport(
+                with sdk.RightNow(api_key="SYNTHETIC", max_retries=0, transport=httpx.MockTransport(
                         lambda _request: httpx.Response(status, json={"request_id": "synthetic-request", "error": {
                             "code": code, "type": "api_error", "message": "Synthetic refusal.", "retryable": False}}))) as client:
                     handler = tools.create_tool_handler(client)
@@ -143,7 +143,7 @@ class LiveBehaviorTests(unittest.TestCase):
                     seen.append(request)
                     return httpx.Response(status, json={"error": {
                         "code": code, "type": kind, "message": "Synthetic refusal.", "retryable": retryable}})
-                with sdk.SystemZero(api_key="SYNTHETIC", transport=httpx.MockTransport(send)) as client:
+                with sdk.RightNow(api_key="SYNTHETIC", transport=httpx.MockTransport(send)) as client:
                     with self.assertRaises(getattr(sdk, class_name)) as caught:
                         client.decide(REQUEST)
                     self.assertEqual((caught.exception.code, caught.exception.status, caught.exception.retryable),
@@ -163,7 +163,7 @@ class LiveBehaviorTests(unittest.TestCase):
                     return httpx.Response(status, json={"error": {
                         "code": "future_refusal", "type": kind,
                         "message": "Synthetic refusal.", "retryable": retryable}})
-                with sdk.SystemZero(api_key="SYNTHETIC", transport=httpx.MockTransport(send_future),
+                with sdk.RightNow(api_key="SYNTHETIC", transport=httpx.MockTransport(send_future),
                                     max_retries=2, random=lambda: 0, sleep=lambda _: None) as client:
                     with self.assertRaises(getattr(sdk, class_name)) as caught:
                         client.decide(REQUEST)
@@ -173,8 +173,8 @@ class LiveBehaviorTests(unittest.TestCase):
 
     def test_secure_base_is_accepted_and_insecure_remote_base_is_refused(self):
         with self.assertRaises(ValueError):
-            sdk.SystemZero(api_key="SYNTHETIC", base_url="http://sdk.example.com/v1")
-        with sdk.SystemZero(api_key="SYNTHETIC", base_url="https://sdk.example.com/v1", transport=httpx.MockTransport(
+            sdk.RightNow(api_key="SYNTHETIC", base_url="http://sdk.example.com/v1")
+        with sdk.RightNow(api_key="SYNTHETIC", base_url="https://sdk.example.com/v1", transport=httpx.MockTransport(
                 lambda _request: self.fail("unexpected transport"))):
             pass
 
@@ -182,7 +182,7 @@ class LiveBehaviorTests(unittest.TestCase):
         api_key = "SYNTHETIC_KEY"
         shaped = "rnsk_" + "Q" * 40
         echo = api_key + " Bearer SYNTHETIC_BEARER " + shaped
-        with sdk.SystemZero(api_key=api_key, max_retries=0, transport=httpx.MockTransport(
+        with sdk.RightNow(api_key=api_key, max_retries=0, transport=httpx.MockTransport(
                 lambda _request: httpx.Response(400, json={"request_id": echo, "error": {
                     "code": "invalid_request", "type": "invalid_request_error", "message": echo, "retryable": False}}))) as client:
             result = tools.create_tool_handler(client)("system_zero_list_models", {})

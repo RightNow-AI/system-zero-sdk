@@ -1,3 +1,4 @@
+import type { WireName } from '../../wire.js';
 import { Buffer } from 'node:buffer';
 import type { Readable, Writable } from 'node:stream';
 import { createToolHandler, TOOL_DEFINITIONS, type ToolHandlerOptions } from '../function-tools/index.js';
@@ -8,7 +9,7 @@ export const SUPPORTED_PROTOCOL_VERSIONS = [CURRENT_PROTOCOL_VERSION, LEGACY_PRO
 // The HTTP caller cap is 3,665,920 bytes. JSON tool wrapping can escape that
 // content again; this transport bound leaves room for the complete caller body.
 export const MAX_FRAME_BYTES = 24 * 1024 * 1024;
-const SERVER_INFO = { name: 'system-zero', version: '0.4.7' } as const;
+const SERVER_INFO = { name: 'rightnow', version: '0.5.0' } as const;
 const CAPABILITIES = { tools: { listChanged: false } } as const;
 const CACHE = { ttlMs: 3_600_000, cacheScope: 'public' } as const;
 const VERSION_FIELD = 'io.modelcontextprotocol/protocolVersion';
@@ -71,8 +72,8 @@ function toolResult(id: RequestId, value: ToolResult, modern: boolean): RpcReply
  * Modern requests carry their own version and capabilities. The legacy
  * handshake remains available for clients using the previous published era.
  */
-export function createMcpServer(options: McpServerOptions = {}): McpServer {
-  const handleToolCall = options.handleToolCall ?? createToolHandler({ dangerZone: options.dangerZone });
+export function createMcpServer(options: McpServerOptions = {}, wire: WireName = 'rightnow-decision'): McpServer {
+  const handleToolCall = options.handleToolCall ?? createToolHandler({ dangerZone: options.dangerZone }, wire);
   let initialized = false;
   let initializationSent = false;
   const active = new Map<RequestId, { cancelled: boolean }>();
@@ -167,8 +168,8 @@ export interface StdioOptions {
 }
 
 /** Newline JSON-RPC framing, with bounded input and backpressure on stdout. */
-export async function serveStdio(options: StdioOptions = {}): Promise<void> {
-  const server = options.server ?? createMcpServer();
+export async function serveStdio(options: StdioOptions = {}, wire: WireName = 'rightnow-decision'): Promise<void> {
+  const server = options.server ?? createMcpServer({}, wire);
   const input = options.input ?? process.stdin;
   const output = options.output ?? process.stdout;
   const pending = new Set<Promise<void>>();

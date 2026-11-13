@@ -12,18 +12,18 @@ import httpx
 import pytest
 from websockets.asyncio.server import serve
 
-import system_zero as sdk
-from system_zero import types
-from system_zero import (
+import rightnow as sdk
+from rightnow import types
+from rightnow import (
     DecideReply, DecisionProvenance, ProvenanceAttachmentClass, ProvenanceReplyFields,
     ProvenanceRoute, StreamDecision, SystemZero, SystemZeroStreamClient, decisions_for, provenance_for,
 )
 
 
 FIXTURES = json.loads((Path(__file__).resolve().parents[2] / "fixtures" / "provenance" / "cases.json").read_text(encoding="utf-8"))
-REQUEST = {"model": "system-zero", "state": "SYNTHETIC",
+REQUEST = {"model": "rightnow-decision", "state": "SYNTHETIC",
            "questions": {"ready": {"type": "boolean", "instructions": "Ready?"}}}
-PROTOCOL = "system-zero.stream.v1"
+PROTOCOL = "rightnow-decision.stream.v1"
 LOOPBACK = ".".join(map(str, (127, 0, 0, 1)))
 
 

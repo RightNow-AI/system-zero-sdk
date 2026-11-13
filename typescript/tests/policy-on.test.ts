@@ -29,11 +29,11 @@ describe("released policy scope and shared readers", () => {
     expect(scores[0]).toMatchObject({ outcome: "abstained", correct: false, confidence: null, code: null });
   });
   it("lets an abstained flow use its default branch without inventing a decision", async () => {
-    const reply = { id: "szd_synthetic", model: "system-zero", served_by: "synthetic", created: 1,
+    const reply = { id: "szd_synthetic", model: "rightnow-decision", served_by: "synthetic", created: 1,
       context: { route: "direct", tokens: 1 }, answers: { q: fixtures.abstained[0].answer },
       usage: { input_tokens: 1, cached_input_tokens: 0, media_tokens: 0, long_input_tokens: 0, media_items: 0, thought_tokens: 1 } };
     const client = new SystemZeroClient({ apiKey: "SYNTHETIC", maxRetries: 0, timeout: 1000, fetch: async () => Response.json(reply) });
-    const trace = await runFlow(client, { version: 1, request: { model: "system-zero", state: "SYNTHETIC" },
+    const trace = await runFlow(client, { version: 1, request: { model: "rightnow-decision", state: "SYNTHETIC" },
       steps: [{ id: "first", questions: { q: { type: "boolean", instructions: "SYNTHETIC" } }, next: { rules: [], default: null } }] },
     { run_id: "policy-on-flow", deadline_ms: 10000, include_content: true, now: () => 0 });
     expect(trace.status).toBe("completed");

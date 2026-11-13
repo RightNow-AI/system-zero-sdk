@@ -6,7 +6,7 @@ import { SYSTEM_ZERO_ERRORS } from '../src/integrations/error-catalog.js';
 import { createToolHandler } from '../src/integrations/function-tools/index.js';
 
 const request = {
-  model: 'system-zero', state: 'SYNTHETIC state',
+  model: 'rightnow-decision', state: 'SYNTHETIC state',
   questions: {
     zebra: { type: 'boolean' as const, instructions: 'Is this synthetic?' },
     first: { type: 'boolean' as const, instructions: 'Is this a test?' },
@@ -30,7 +30,7 @@ describe('live HTTP and local helper behavior', () => {
       'X-Latency-Ms': '12.5', 'X-RightNow-Idempotent-Replay': 'true',
     } });
     const transport = vi.fn(async (url: string | URL | Request, init?: RequestInit) => {
-      expect(new URL(String(url)).pathname).toBe('/v1/system-zero/decide');
+      expect(new URL(String(url)).pathname).toBe('/v1/decision-model/decide');
       expect(init?.method).toBe('POST');
       expect(init?.body).toBe(JSON.stringify(request));
       const headers = new Headers(init?.headers);
@@ -77,7 +77,7 @@ describe('live HTTP and local helper behavior', () => {
   });
 
   it('refuses local call admission before transport without an API error code', async () => {
-    expect(Object.keys(SYSTEM_ZERO_ERRORS)).toHaveLength(87);
+    expect(Object.keys(SYSTEM_ZERO_ERRORS)).toHaveLength(91);
     expect(Object.hasOwn(SYSTEM_ZERO_ERRORS, 'call_limit_reached')).toBe(false);
     const transport = vi.fn(async () => Response.json({ answers: {} }));
     const client = new sdk.SystemZeroClient({ apiKey: 'SYNTHETIC', fetch: transport, maxRetries: 0 });
@@ -114,7 +114,7 @@ describe('live HTTP and local helper behavior', () => {
       const handler = createToolHandler({ client, maxDecideCalls: 1 });
       expect(await handler('system_zero_decide', toolArguments)).toMatchObject({
         status: 'error', request_id: null,
-        error: { code: 'system_zero_unavailable', message: SYSTEM_ZERO_ERRORS.system_zero_unavailable[1] },
+        error: { code: 'model_unavailable', message: SYSTEM_ZERO_ERRORS.model_unavailable[1] },
       });
       expect(transport).toHaveBeenCalledOnce();
       expect(handler.budget).toEqual({ decideCalls: 1 });

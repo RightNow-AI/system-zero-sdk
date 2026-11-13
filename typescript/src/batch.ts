@@ -1,3 +1,4 @@
+import { wireFor } from './wire.js';
 import { createHash } from 'node:crypto';
 import { appendFileSync, closeSync, existsSync, fsyncSync, openSync, readFileSync, ftruncateSync, unlinkSync, mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
@@ -89,7 +90,7 @@ function readRows<T>(path: string): T[] {
 /** Offline persistence plus ordinary decide calls. Use one results path and API key per run. */
 export async function runBatch(client: Pick<SystemZeroClient, 'decide' | 'options'>, input: readonly BatchItem[], options: BatchOptions): Promise<BatchResult> {
   // One elapsed deadline includes preparation and is shared by every item.
-  if (options.dangerZone !== undefined && !['accept', 'long_context_64k', 'long_context_128k', 'long_context_1m'].includes(options.dangerZone)) invalid('SZ-Danger-Zone');
+  if (options.dangerZone !== undefined && !['accept', 'long_context_64k', 'long_context_128k', 'long_context_1m'].includes(options.dangerZone)) invalid(wireFor(client).dangerZoneHeader);
   const started = performance.now();
   const now = options.now ?? Date.now;
   const concurrency = options.concurrency ?? 2; const retries = options.maxRetries ?? client.options.maxRetries;
@@ -159,7 +160,7 @@ export async function runBatch(client: Pick<SystemZeroClient, 'decide' | 'option
         const started = performance.now();
         const row: BatchRecord = { ...a, outcome: 'error', code: 'service_unavailable', attempts: 0, latency_ms: 0, usage: null, questions: [] };
         if (performance.now() + client.options.timeout > deadline || now() + client.options.timeout >= a.admitted_at_ms + REPLAY_MS) {
-          stopped = 'deadline'; row.code = 'system_zero_timeout';
+          stopped = 'deadline'; row.code = wireFor(client).codes.timeout;
         } else {
           try {
             // The transport owns the only recovery policy. Admission can narrow

@@ -1,0 +1,54 @@
+{
+  "name": "@rightnowai/system-zero",
+  "version": "0.5.0",
+  "type": "module",
+  "description": "Compatibility shim for @rightnowai/rightnow",
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "main": "./index.js",
+  "types": "./index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "import": "./index.js"
+    },
+    "./stream": {
+      "types": "./stream.d.ts",
+      "import": "./stream.js"
+    },
+    "./integrations/function-tools": {
+      "types": "./integrations/function-tools.d.ts",
+      "import": "./integrations/function-tools.js"
+    },
+    "./integrations/mcp-server": {
+      "types": "./integrations/mcp-server.d.ts",
+      "import": "./integrations/mcp-server.js"
+    },
+    "./integrations/mcp-server/main": {
+      "types": "./integrations/mcp-server/main.d.ts",
+      "import": "./integrations/mcp-server/main.js"
+    }
+  },
+  "dependencies": {
+    "@rightnowai/rightnow": "0.5.0"
+  },
+  "files": [
+    "*.js",
+    "*.d.ts",
+    "stream.*",
+    "integrations",
+    "README.md",
+    "LICENSE",
+    "NOTICE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/RightNow-AI/rightnow-sdk.git",
+    "directory": "shims/typescript"
+  }
+}

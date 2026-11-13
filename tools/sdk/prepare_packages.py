@@ -76,7 +76,7 @@ def prepare(root: Path, output: Path) -> None:
     staged["python/pyproject.toml"] = read(root / "python/pyproject.toml")
     npm = json.loads(staged["npm/package.json"])
     python = tomllib.loads(staged["python/pyproject.toml"])["project"]
-    if (npm.get("name") != "@rightnowai/system-zero" or python.get("name") != "rightnow-system-zero"
+    if (npm.get("name") != "@rightnowai/rightnow" or python.get("name") != "rightnow-sdk"
             or npm.get("version") != python.get("version")):
         raise ValueError("SDK package identities must agree before staging")
     config = json.loads(read(root / "typescript/tsconfig.json"))
@@ -88,8 +88,13 @@ def prepare(root: Path, output: Path) -> None:
         source_root = root / source / "src"
         for path in sources(source_root, suffixes):
             staged[f"{destination}/src/{path.relative_to(source_root).as_posix()}"] = read(path)
-    if "python/src/system_zero/__init__.py" not in staged:
+    if "python/src/rightnow/__init__.py" not in staged:
         raise ValueError("The Python import package must be present")
+    for language, destination in (("typescript", "npm-shim"), ("python", "python-shim")):
+        directory = root / "shims" / language
+        regular(directory, directory=True)
+        for path in sources(directory, {".js", ".ts", ".py", ".toml", ".json", ".md", ""}):
+            staged[destination + "/" + path.relative_to(directory).as_posix()] = read(path)
     for filename, value in sorted(staged.items()):
         path = output / filename
         path.parent.mkdir(parents=True, exist_ok=True)

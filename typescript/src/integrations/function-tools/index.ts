@@ -1,3 +1,4 @@
+import { WIRES, wireFor, type Wire, type WireName } from '../../wire.js';
 import { createHash } from 'node:crypto';
 import { checkedBaseURL, redactClientText, withRetryContext, type RequestOptions } from '../../client.js';
 import { SystemZeroClient } from '../../client.js';
@@ -203,7 +204,8 @@ function structured(value: unknown): StructuredJson {
 }
 
 /** Bound provider volume, then validate shape; decide owns its request caps and availability. */
-export function validateToolArguments(name: string, args: unknown): DecideRequest | Record<string, never> {
+export function validateToolArguments(name: string, args: unknown, wireName: WireName = 'rightnow-decision'): DecideRequest | Record<string, never> {
+  const wire = WIRES[wireName];
   try {
     const rawValues = typeof args === 'string' ? screenJsonText(args) : undefined;
     let value: unknown = typeof args === 'string' ? JSON.parse(args) : args;
@@ -238,7 +240,7 @@ export function validateToolArguments(name: string, args: unknown): DecideReques
       } else question = { type: 'score', instructions, criteria: item.options as string[] };
       entries.push([name, question]);
     }
-    return { model: input.model === null ? 'system-zero' : input.model as string, state: structured(input.state), questions: Object.fromEntries(entries), ...(input.attachments === null ? {} : { attachments: input.attachments as DecideRequest['attachments'] }) };
+    return { model: input.model === null ? wire.model : input.model as string, state: structured(input.state), questions: Object.fromEntries(entries), ...(input.attachments === null ? {} : { attachments: input.attachments as DecideRequest['attachments'] }) };
   } catch { invalid(); }
 }
 
@@ -274,13 +276,13 @@ function refusal(code: SystemZeroErrorCode, requestId: string | null = null, mes
   return { status: code.endsWith('_not_available') ? 'held' : 'error', request_id: requestId, error: { code, message } };
 }
 
-function success(data: Record<string, unknown>, requestId: string | null): ToolResult {
+function success(data: Record<string, unknown>, requestId: string | null, wire: Wire): ToolResult {
   const answers = record(data.answers) ? data.answers : {};
   const names = Object.keys(answers).sort((a, b) => Buffer.compare(Buffer.from(a), Buffer.from(b)));
   if (names.length && names.every(name => record(answers[name]) && record(answers[name].error))) {
     const codes = names.map(name => {
       const code = ((answers[name] as Record<string, unknown>).error as Record<string, unknown>).code;
-      return typeof code === 'string' && Object.hasOwn(SYSTEM_ZERO_ERRORS, code) ? code as SystemZeroErrorCode : 'system_zero_unavailable';
+      return typeof code === 'string' && Object.hasOwn(SYSTEM_ZERO_ERRORS, code) ? code as SystemZeroErrorCode : wire.codes.unavailable;
     });
     const code = codes.find(code => !code.endsWith('_not_available')) ?? codes[0]!;
     return { ...data, ...refusal(code, requestId) };
@@ -288,8 +290,9 @@ function success(data: Record<string, unknown>, requestId: string | null): ToolR
   return { ...data, status: 'ok', request_id: requestId };
 }
 
-export function createToolHandler(options: ToolHandlerOptions = {}): ToolHandler {
-  if (options.dangerZone !== undefined && !['accept', 'long_context_64k', 'long_context_128k', 'long_context_1m'].includes(options.dangerZone)) throw new InvalidRequestError('The request option must be an explicit context class or accept.', { status: 400, type: 'invalid_request_error', code: 'invalid_request', param: 'SZ-Danger-Zone' });
+export function createToolHandler(options: ToolHandlerOptions = {}, wireName: WireName = 'rightnow-decision'): ToolHandler {
+  const wire = options.client ? wireFor(options.client) : WIRES[wireName];
+  if (options.dangerZone !== undefined && !['accept', 'long_context_64k', 'long_context_128k', 'long_context_1m'].includes(options.dangerZone)) throw new InvalidRequestError('The request option must be an explicit context class or accept.', { status: 400, type: 'invalid_request_error', code: 'invalid_request', param: wire.dangerZoneHeader });
   const namespace = options.namespace ?? 'system-zero-tools-v1';
   const maxCalls = options.maxDecideCalls ?? 100;
   if (typeof namespace !== 'string' || !namespace || !validString(namespace) || (!Number.isSafeInteger(maxCalls) || maxCalls < 0)) invalid();
@@ -298,24 +301,24 @@ export function createToolHandler(options: ToolHandlerOptions = {}): ToolHandler
   let decideCalls = 0;
   const invoke = async (name: string, args: unknown): Promise<ToolResult> => {
     try {
-      const request = validateToolArguments(name, args);
+      const request = validateToolArguments(name, args, wire.name);
       if (name === 'system_zero_list_models') {
-        client ??= new SystemZeroClient({ baseURL: options.baseURL });
+        client ??= new SystemZeroClient({ baseURL: options.baseURL }, wire.name);
         const { data, metadata } = await client.models.list(withRetryContext({}, { workflowRecovery: true })).withResponse();
-        if (!record(data)) return refusal('system_zero_unavailable');
+        if (!record(data)) return refusal(wire.codes.unavailable);
         return { ...data, status: 'ok', request_id: metadata.requestId };
       }
       if (decideCalls >= maxCalls) return { status: 'error', request_id: null, error: { code: 'call_limit_reached', message: 'The local call limit has been reached.' } };
       const key = deterministicKey(namespace, request);
-      client ??= new SystemZeroClient({ baseURL: options.baseURL });
+      client ??= new SystemZeroClient({ baseURL: options.baseURL }, wire.name);
       // Admit synchronously so parallel callers share the count cap.
       decideCalls++;
       const { data, metadata } = await client.decide(request as DecideRequest, withRetryContext({ idempotencyKey: key, ...(options.dangerZone === undefined ? {} : { dangerZone: options.dangerZone }) }, { workflowRecovery: true })).withResponse();
-      if (!record(data)) return refusal('system_zero_unavailable');
-      return success(data, metadata.requestId || data.id || null);
+      if (!record(data)) return refusal(wire.codes.unavailable);
+      return success(data, metadata.requestId || data.id || null, wire);
     } catch (error) {
       if (error instanceof SystemZeroError && error.code && Object.hasOwn(SYSTEM_ZERO_ERRORS, error.code)) return refusal(error.code as SystemZeroErrorCode, error.request_id, error.message);
-      return refusal('system_zero_unavailable');
+      return refusal(wire.codes.unavailable);
     }
   };
   const handler = async (name: string, args: unknown): Promise<ToolResult> => cleanResult(await invoke(name, args), client);

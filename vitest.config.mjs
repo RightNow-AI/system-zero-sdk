@@ -8,12 +8,15 @@ export default {
   cacheDir: './tmp/vite',
   resolve: {
     alias: {
+      '@rightnowai/rightnow/stream': fileURLToPath(new URL('./typescript/src/stream.ts', import.meta.url)),
+      '@rightnowai/rightnow/integrations/function-tools': fileURLToPath(new URL('./typescript/src/integrations/function-tools/index.ts', import.meta.url)),
+      '@rightnowai/rightnow': fileURLToPath(new URL('./typescript/src/index.ts', import.meta.url)),
       vitest: fileURLToPath(new URL('./dist/index.js', pathToFileURL(dependencies.resolve('vitest/package.json')))),
       ...Object.fromEntries(['typescript'].map(name => [name, dependencies.resolve(name)])),
     },
   },
   test: {
-    include: ['typescript/tests/**/*.test.ts', 'integrations/**/*.test.ts'],
+    include: ['typescript/tests/**/*.test.ts', 'integrations/**/*.test.ts', 'shims/typescript/tests/**/*.test.ts'],
     environment: 'node',
     maxWorkers: 2,
     fileParallelism: false,

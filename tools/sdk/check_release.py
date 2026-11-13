@@ -27,16 +27,18 @@ from types import ModuleType
 from urllib.parse import unquote, urlsplit
 import zipfile
 import zlib
-NPM_NAME = '@rightnowai/system-zero'
-PYTHON_NAME = 'rightnow-system-zero'
-IMPORT_NAME = 'system_zero'
+NPM_NAME = '@rightnowai/rightnow'
+PYTHON_NAME = 'rightnow-sdk'
+IMPORT_NAME = 'rightnow'
+NPM_SHIM_NAME = '@rightnowai/system-zero'
+PYTHON_SHIM_NAME = 'rightnow-system-zero'
 DRAFT_IMPORT = '_'.join(('system', 'zero', 'draft'))
 MAX_MEMBER_BYTES = 16 * 1024 * 1024
 MAX_ARCHIVE_BYTES = 64 * 1024 * 1024
 MAX_MEMBERS = 10000
 MAX_CONTAINER_BYTES = MAX_ARCHIVE_BYTES + MAX_MEMBERS * 1024 + 65536
 URL = re.compile('(?:[a-z][a-z0-9+.-]*://|//(?=[a-z0-9_]|\\[))[^\\s<>\\"\'`\\\\]+', re.IGNORECASE)
-PRIVATE_REPOSITORY = re.compile('github\\.com/(?!RightNow\\-AI/system\\-zero\\-sdk(?:\\.git)?(?:[/\\s?#\\"\']|$))[^/\\s]+/[^/\\s]+', re.IGNORECASE)
+PRIVATE_REPOSITORY = re.compile('github\\.com/(?!RightNow\\-AI/rightnow\\-sdk(?:\\.git)?(?:[/\\s?#\\"\']|$))[^/\\s]+/[^/\\s]+', re.IGNORECASE)
 SEMVER = re.compile('sdk-v(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-((?:0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*)(?:\\.(?:0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*))*))?(?:\\+([0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*))?')
 STRUCTURAL_RULES = (('tag must', 'tag-format'), ('releases require', 'version-format'), ('version 0.0.0', 'reserved-version'), ('npm package name', 'npm-package-name'), ('Python package name', 'python-package-name'), ('package versions', 'source-version'), ('rename must', 'rename-required'), ('artifact import package', 'artifact-import'), ('npm artifact version', 'artifact-version'), ('Python artifact version', 'artifact-version'), ('npm artifact package name', 'npm-package-name'), ('Python artifact package name', 'python-package-name'), ('artifact filename', 'artifact-filename'), ('expected exactly', 'artifact-inventory'), ('artifact manifest is missing', 'manifest-missing'), ('artifact manifest differs', 'manifest-mismatch'), ('artifact content contains an internal URL or private', 'private-repository'), ('artifact content contains an internal URL', 'internal-url'), ('artifact content has duplicate JSON', 'invalid-metadata'))
 
@@ -130,6 +132,12 @@ def check_source(root: Path, tag: str) -> str:
     packages = root / 'python/src'
     require((packages / IMPORT_NAME / '__init__.py').is_file() and (not (packages / DRAFT_IMPORT).exists()), 'rename must be complete before releasing the SDKs')
     require({path.name for path in packages.iterdir() if path.is_dir() and path.name != '__pycache__'} == {IMPORT_NAME}, 'Python import package inventory is invalid')
+    if tuple(map(int, version.split('.'))) >= (0, 5, 0):
+        shim_npm = json.loads((root / 'shims/typescript/package.json').read_text(encoding='utf-8'))
+        with (root / 'shims/python/pyproject.toml').open('rb') as stream:
+            shim_python = tomllib.load(stream)['project']
+        require(shim_npm.get('name') == NPM_SHIM_NAME and shim_npm.get('version') == version and (shim_npm.get('dependencies') == {NPM_NAME: version}), 'invalid npm compatibility dependency')
+        require(shim_python.get('name') == PYTHON_SHIM_NAME and shim_python.get('version') == version and (shim_python.get('dependencies') == [PYTHON_NAME + '==' + version]), 'invalid Python compatibility dependency')
     return version
 
 def archive_names(names: list[str], directories: set[str]) -> None:
@@ -187,6 +195,7 @@ def normalized_forms(value: str) -> tuple[list[str], str]:
     else:
         require(ESCAPE.sub(decode, forms[-1]) == forms[-1], 'nested escape limit', 'scan-limit')
     return (forms, ''.join(forms[-1].split()))
+_CONTROL_CHARACTER = re.compile('[\\x00-\\x08\\x0b\\x0c\\x0e-\\x1f\\x7f-\\x9f]')
 
 def decode_text(raw: bytes) -> str:
     """Binary data is refused, never silently skipped; UTF-8/UTF-16 text is supported."""
@@ -196,7 +205,7 @@ def decode_text(raw: bytes) -> str:
         value = raw.decode('utf-16' if raw.startswith((b'\xff\xfe', b'\xfe\xff')) else 'utf-8-sig')
     except UnicodeDecodeError:
         raise ReleaseError('unsupported binary data', 'binary-content') from None
-    require(not any((ord(character) < 32 and character not in '\t\r\n' or 127 <= ord(character) < 160 for character in value)), 'unsupported binary or control data', 'binary-content')
+    require(_CONTROL_CHARACTER.search(value) is None, 'unsupported binary or control data', 'binary-content')
     return value
 
 def public_project_urls(repository: str) -> dict[str, str]:
@@ -263,7 +272,8 @@ def check_npm_metadata(raw: bytes) -> None:
     require(not lifecycle.intersection(scripts), 'artifact content has npm lifecycle hooks', 'npm-lifecycle')
     for name in ('dependencies', 'optionalDependencies', 'peerDependencies'):
         if name in package:
-            require(isinstance(package[name], dict) and (not package[name]), 'artifact content has npm runtime dependencies', 'npm-runtime-dependencies')
+            expected = {'@rightnowai/rightnow': package.get('version')} if name == 'dependencies' and package.get('name') == NPM_SHIM_NAME else {}
+            require(isinstance(package[name], dict) and package[name] == expected, 'artifact content has npm runtime dependencies', 'npm-runtime-dependencies')
     for name in ('bundledDependencies', 'bundleDependencies'):
         if name in package:
             require(isinstance(package[name], list) and (not package[name]), 'artifact content has npm bundled dependencies', 'npm-runtime-dependencies')
@@ -429,7 +439,8 @@ def check_npm(path: Path, version: str) -> list[str]:
         package = json.loads(tar_bytes(archive, 'package/package.json'))
         require(package.get('name') == NPM_NAME, f'npm artifact package name must be {NPM_NAME}')
         require(package.get('version') == version, f'npm artifact version must equal tag {version}')
-        require('package/dist/index.js' in names, 'npm artifact built entrypoint is missing')
+        entrypoint = 'package/index.js' if NPM_NAME == NPM_SHIM_NAME else 'package/dist/index.js'
+        require(entrypoint in names, 'npm artifact built entrypoint is missing')
         check_tar_contents(archive, ('package/',), npm_metadata=True)
         return names
 
@@ -451,7 +462,7 @@ def check_public_python_identity(raw: bytes, version: str) -> None:
     require(versions == [version], f'Python artifact version must equal tag {version}')
     require(metadata.get_all('Requires-Python', []) == ['>=3.10'], 'invalid Python version requirement', 'python-runtime-metadata')
     requirements = metadata.get_all('Requires-Dist', [])
-    expected = {'httpx': {'>=0.28.1', '<0.29'}, 'httpcore': {'>=1.0.9', '<2'}, 'websockets': {'>=15.0.1', '<16'}}
+    expected = {'rightnow-sdk': {'==' + version}} if PYTHON_NAME == PYTHON_SHIM_NAME else {'httpx': {'>=0.28.1', '<0.29'}, 'httpcore': {'>=1.0.9', '<2'}, 'websockets': {'>=15.0.1', '<18'}}
     found = {}
     for value in requirements:
         match = re.fullmatch('([a-zA-Z0-9_-]+)\\s*(\\([^()]+\\)|[^()]+)', str(value).strip())
@@ -611,26 +622,54 @@ def check_sdist(path: Path, version: str) -> list[str]:
         check_tar_contents(archive, (f'{PurePosixPath(metadata[0]).parts[0]}/',))
         return names
 
+@contextmanager
+def compatibility_identity():
+    """Use the same bounded archive scanners for the legacy forwarding packages."""
+    global NPM_NAME, PYTHON_NAME, IMPORT_NAME
+    primary = (NPM_NAME, PYTHON_NAME, IMPORT_NAME)
+    NPM_NAME, PYTHON_NAME, IMPORT_NAME = (NPM_SHIM_NAME, PYTHON_SHIM_NAME, 'system_zero')
+    try:
+        yield
+    finally:
+        NPM_NAME, PYTHON_NAME, IMPORT_NAME = primary
+
 def check_artifacts(directory: Path, tag: str, version: str, write_manifest: bool) -> None:
     require(directory.is_dir(), 'artifact directory is missing')
-    files: list[Path] = []
-    for parent in directory.iterdir():
-        if parent.name == 'manifest.json':
-            require(parent.is_file() and (not parent.is_symlink()), 'invalid artifact manifest')
-            continue
-        require(parent.name in {'npm', 'python'} and parent.is_dir() and (not parent.is_symlink()), 'expected exactly one npm tarball, one wheel and one sdist')
-        for path in parent.iterdir():
-            require(path.is_file() and (not path.is_symlink()), 'unexpected artifact directory or symlink')
-            files.append(path)
-    npm = [path for path in files if path.parent.name == 'npm' and path.name.endswith('.tgz')]
-    wheels = [path for path in files if path.parent.name == 'python' and path.name.endswith('.whl')]
-    sdists = [path for path in files if path.parent.name == 'python' and path.name.endswith('.tar.gz')]
-    require(len(files) == 3 and len(npm) == len(wheels) == len(sdists) == 1, 'expected exactly one npm tarball, one wheel and one sdist')
-    npm_stem = NPM_NAME.removeprefix('@').replace('/', '-')
-    python_stem = PYTHON_NAME.replace('-', '_')
-    require(npm[0].name == f'{npm_stem}-{version}.tgz' and wheels[0].name == f'{python_stem}-{version}-py3-none-any.whl' and (sdists[0].name == f'{python_stem}-{version}.tar.gz'), f'artifact filename must match tag {version}')
-    inventories = [(npm[0], check_npm(npm[0], version)), (wheels[0], check_wheel(wheels[0], version)), (sdists[0], check_sdist(sdists[0], version))]
-    manifest = {'schema': 1, 'tag': tag, 'npm': {'name': NPM_NAME, 'version': version}, 'python': {'name': PYTHON_NAME, 'version': version}, 'files': {path.relative_to(directory).as_posix(): hashlib.sha256(path.read_bytes()).hexdigest() for path in sorted(files)}}
+    manifest_path = directory / 'manifest.json'
+    require(not manifest_path.is_symlink() and (not manifest_path.exists() or manifest_path.is_file()), 'invalid artifact manifest')
+    families = [('npm', 'python', False)]
+    if tuple(map(int, version.split('.'))) >= (0, 5, 0):
+        families.append(('npm-shim', 'python-shim', True))
+    allowed = {name for npm_dir, python_dir, _ in families for name in (npm_dir, python_dir)}
+    require({path.name for path in directory.iterdir()} <= allowed | {'manifest.json'}, 'unexpected artifact directory')
+    files = []
+    inventories = []
+    identities = {}
+    for npm_dir, python_dir, shim in families:
+
+        def check_family():
+            for name in (npm_dir, python_dir):
+                parent = directory / name
+                require(parent.is_dir() and (not parent.is_symlink()), 'missing artifact family')
+                require(all((path.is_file() and (not path.is_symlink()) for path in parent.iterdir())), 'unexpected artifact directory or symlink')
+            npm = list((directory / npm_dir).iterdir())
+            python = list((directory / python_dir).iterdir())
+            wheels = [path for path in python if path.name.endswith('.whl')]
+            sdists = [path for path in python if path.name.endswith('.tar.gz')]
+            require(len(npm) == len(wheels) == len(sdists) == 1 and len(python) == 2, 'expected exactly one npm tarball, one wheel and one sdist per package family')
+            npm_stem = NPM_NAME.removeprefix('@').replace('/', '-')
+            python_stem = PYTHON_NAME.replace('-', '_')
+            require(npm[0].name == f'{npm_stem}-{version}.tgz' and wheels[0].name == f'{python_stem}-{version}-py3-none-any.whl' and (sdists[0].name == f'{python_stem}-{version}.tar.gz'), f'artifact filename must match tag {version}')
+            inventories.extend([(npm[0], check_npm(npm[0], version)), (wheels[0], check_wheel(wheels[0], version)), (sdists[0], check_sdist(sdists[0], version))])
+            files.extend(npm + python)
+            identities[npm_dir] = {'name': NPM_NAME, 'version': version}
+            identities[python_dir] = {'name': PYTHON_NAME, 'version': version}
+        if shim:
+            with compatibility_identity():
+                check_family()
+        else:
+            check_family()
+    manifest = {'schema': 1, 'tag': tag, **identities, 'files': {path.relative_to(directory).as_posix(): hashlib.sha256(path.read_bytes()).hexdigest() for path in sorted(files)}}
     path = directory / 'manifest.json'
     if write_manifest:
         path.write_text(json.dumps(manifest, indent=2, sort_keys=True) + '\n', encoding='utf-8', newline='\n')

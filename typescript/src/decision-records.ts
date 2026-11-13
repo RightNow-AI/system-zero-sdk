@@ -1,3 +1,4 @@
+import { WIRES, type Wire } from './wire.js';
 import { APIPromise, type RequestOptions } from './client.js';
 import type { PolicyReply } from './policy.js';
 import { NotFoundError, SystemZeroError, type ErrorFields } from './errors.js';
@@ -37,7 +38,7 @@ export interface DecisionTraceUsage {
 
 /** Null means the existing records do not retain that field; no content is inferred. */
 export interface DecisionTrace {
-  object: 'system_zero.decision_trace';
+  object: Wire['traceObject'];
   id: string;
   request_id: string | null;
   created: number;
@@ -76,10 +77,10 @@ function lookupError(error: unknown): unknown {
 }
 
 /** Uses ordinary GET retries/auth, with no decide call, content cache, or new idempotency key. */
-export function createDecisionRecords(request: DecisionRecordsRequest): DecisionRecords {
+export function createDecisionRecords(request: DecisionRecordsRequest, wire: Wire = WIRES['rightnow-decision']): DecisionRecords {
   function get<T>(id: string, suffix: string, options: DecisionLookupOptions): APIPromise<T> {
     if (typeof id !== 'string' || id.length !== 36 || !/^szd_[a-f0-9]{32}$/u.test(id)) throw new TypeError('The decision ID is invalid.');
-    const result = request<T>('GET', `/system-zero/decisions/${id}${suffix}`, undefined, options)
+    const result = request<T>('GET', `${wire.paths.decisions}/${id}${suffix}`, undefined, options)
       .withResponse().then(response => {
         return response;
       }).catch((error: unknown) => { throw lookupError(error); });
@@ -87,6 +88,6 @@ export function createDecisionRecords(request: DecisionRecordsRequest): Decision
   }
   return Object.freeze({
     getDecision: (id: string, options: DecisionLookupOptions = {}) => get<PolicyReply>(id, '', options),
-    getDecisionTrace: (id: string, options: DecisionLookupOptions = {}) => get<DecisionTrace>(id, '/trace', options),
+    getDecisionTrace: (id: string, options: DecisionLookupOptions = {}) => get<DecisionTrace>(id, wire.paths.trace, options),
   });
 }

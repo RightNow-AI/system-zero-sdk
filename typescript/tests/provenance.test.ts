@@ -7,12 +7,12 @@ import type { DecisionProvenance, LegacyReplayReply, ProvenanceAttachmentClass, 
 
 type Fixture = { name: string; replayed: boolean; request_id: string; reply: SystemZeroReply };
 const fixtures: Fixture[] = JSON.parse(readFileSync(new URL('../../fixtures/provenance/cases.json', import.meta.url), 'utf8'));
-const request = { model: 'system-zero', state: 'SYNTHETIC', questions: { ready: { type: 'boolean' as const, instructions: 'Ready?' } } };
+const request = { model: 'rightnow-decision', state: 'SYNTHETIC', questions: { ready: { type: 'boolean' as const, instructions: 'Ready?' } } };
 
 function fixtureSocket(fixture: Fixture) {
   return class Socket extends EventEmitter {
     readyState = 0;
-    protocol = 'system-zero.stream.v1';
+    protocol = 'rightnow-decision.stream.v1';
     seq = 0;
     constructor() {
       super();

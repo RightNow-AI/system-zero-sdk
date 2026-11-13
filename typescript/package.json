@@ -1,13 +1,13 @@
 {
-  "name": "@rightnowai/system-zero",
-  "version": "0.4.7",
+  "name": "@rightnowai/rightnow",
+  "version": "0.5.0",
   "license": "Apache-2.0",
-  "homepage": "https://github.com/RightNow-AI/system-zero-sdk",
+  "homepage": "https://github.com/RightNow-AI/rightnow-sdk",
   "type": "module",
   "engines": {
     "node": ">=22"
   },
-  "description": "RightNow System Zero API client with typed decisions and client-side workflows.",
+  "description": "RightNow decision model API client with typed decisions and client-side workflows.",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
@@ -54,15 +54,15 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/RightNow-AI/system-zero-sdk.git",
+    "url": "https://github.com/RightNow-AI/rightnow-sdk.git",
     "directory": "typescript"
   },
   "bugs": {
-    "url": "https://github.com/RightNow-AI/system-zero-sdk/issues"
+    "url": "https://github.com/RightNow-AI/rightnow-sdk/issues"
   },
   "author": "RightNow AI, Inc.",
   "keywords": [
-    "system-zero",
+    "rightnow",
     "api",
     "typescript",
     "decisions"

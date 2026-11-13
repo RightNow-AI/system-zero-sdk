@@ -9,6 +9,9 @@ export interface ErrorFields {
   param?: string | null;
   retryable?: boolean;
   details?: Record<string, unknown>;
+  limit_cents?: number;
+  spent_cents?: number;
+  resets_at?: string;
   request_id?: string | null;
   idempotencyKey?: string | null;
   headers?: Headers;
@@ -16,13 +19,16 @@ export interface ErrorFields {
 }
 
 /** All HTTP, connection and timeout errors inherit this base. Codes are open strings. */
-export class SystemZeroError extends Error {
+export class RightNowError extends Error {
   readonly status: number | null;
   readonly type: string | null;
   readonly code: string | null;
   readonly param: string | null;
   readonly retryable: boolean;
   readonly details: Record<string, unknown> | undefined;
+  readonly limit_cents: number | undefined;
+  readonly spent_cents: number | undefined;
+  readonly resets_at: string | undefined;
   readonly request_id: string | null;
   idempotencyKey: string | null;
   readonly headers: Headers;
@@ -38,6 +44,9 @@ export class SystemZeroError extends Error {
     this.param = fields.param ?? null;
     this.retryable = fields.retryable ?? false;
     this.details = fields.details;
+    this.limit_cents = fields.limit_cents;
+    this.spent_cents = fields.spent_cents;
+    this.resets_at = fields.resets_at;
     this.request_id = fields.request_id ?? null;
     this.idempotencyKey = fields.idempotencyKey ?? null;
     this.headers = new Headers(fields.headers);
@@ -45,15 +54,15 @@ export class SystemZeroError extends Error {
   }
 }
 
-export class InvalidRequestError extends SystemZeroError {}
+export class InvalidRequestError extends RightNowError {}
 /** Admission estimate exceeded the cap before any node work or usage counting. */
 export class PolicyMaxCostExceededError extends InvalidRequestError { readonly counted = false; }
 /** Completed work counts toward usage and computed cost despite the confidence refusal. */
 export class PolicyConfidenceFailedError extends InvalidRequestError { readonly counted = true; }
-export class AuthenticationError extends SystemZeroError {}
-export class PermissionError extends SystemZeroError {}
-export class NotFoundError extends SystemZeroError {}
-export class RateLimitError extends SystemZeroError {}
+export class AuthenticationError extends RightNowError {}
+export class PermissionError extends RightNowError {}
+export class NotFoundError extends RightNowError {}
+export class RateLimitError extends RightNowError {}
 export class StreamLimitError extends RateLimitError {
   readonly limit: number | null;
   readonly retry_after: string | null;
@@ -77,9 +86,9 @@ export class StreamLimitError extends RateLimitError {
     this.should_retry = hint === 'true' || (hint !== 'false' && this.retryable);
   }
 }
-export class OverloadedError extends SystemZeroError {}
-export class APIError extends SystemZeroError {}
-export class ServerError extends SystemZeroError {}
+export class OverloadedError extends RightNowError {}
+export class APIError extends RightNowError {}
+export class ServerError extends RightNowError {}
 export interface ConnectionErrorFields extends ErrorFields {
   transport_code?: string | null;
   request_sent?: boolean | null;
@@ -104,7 +113,7 @@ function transportFailure(cause: unknown): { code: string | null; timeout: boole
   return { code, timeout };
 }
 
-export class APIConnectionError extends SystemZeroError {
+export class APIConnectionError extends RightNowError {
   readonly transport_code: string | null;
   readonly request_sent: boolean | null;
 
@@ -162,7 +171,7 @@ const classes = {
   server_error: ServerError,
 } as const;
 
-for (const kind of [SystemZeroError, APIConnectionError, APITimeoutError, StreamLimitError,
+for (const kind of [RightNowError, APIConnectionError, APITimeoutError, StreamLimitError,
   CapabilityNotAvailableError, ...Object.values(classes), ...Object.values(codeClasses)]) {
   registerErrorPrototype(kind.prototype);
 }
@@ -172,7 +181,7 @@ function record(value: unknown): value is Record<string, unknown> {
 }
 
 /** A response is parsed defensively; proxy bodies and future envelope types stay usable. */
-export function responseError(status: number, headers: Headers, body: unknown, fallbackRetryable: boolean): SystemZeroError {
+export function responseError(status: number, headers: Headers, body: unknown, fallbackRetryable: boolean): RightNowError {
   const envelope = record(body) && record(body.error) ? body : null;
   const error = envelope?.error as Partial<ErrorEnvelope['error']> | undefined;
   const type = typeof error?.type === 'string' ? error.type : 'api_error';
@@ -186,5 +195,12 @@ export function responseError(status: number, headers: Headers, body: unknown, f
     request_id: typeof envelope?.request_id === 'string' ? envelope.request_id : headers.get('x-request-id'),
   };
   if (record(error?.details)) fields.details = error.details;
+  const limit = error?.limit_cents, spent = error?.spent_cents;
+  if (typeof limit === 'number' && Number.isSafeInteger(limit) && limit >= 0) fields.limit_cents = limit;
+  if (typeof spent === 'number' && Number.isSafeInteger(spent) && spent >= 0) fields.spent_cents = spent;
+  if (typeof error?.resets_at === 'string') fields.resets_at = error.resets_at;
   return new ErrorClass(typeof error?.message === 'string' ? error.message : `RightNow HTTP request failed with status ${status}.`, fields);
 }
+
+/** @deprecated Use RightNowError. */
+export { RightNowError as SystemZeroError };

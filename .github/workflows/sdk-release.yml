@@ -81,14 +81,17 @@ jobs:
           "$SDK_RELEASE_TEMP/venv/bin/python" -I -B -X utf8 -m pip install --disable-pip-version-check --no-cache-dir --require-hashes --only-binary :all: -r tools/sdk/build-requirements.txt
           python -I -B -X utf8 -m venv "$SDK_RELEASE_TEMP/runtime"
           "$SDK_RELEASE_TEMP/runtime/bin/python" -I -B -X utf8 -m pip install --disable-pip-version-check --no-cache-dir --require-hashes --only-binary :all: -r tools/sdk/runtime-requirements.txt
-      - name: Stage and build both public SDK packages
+      - name: Stage and build all four public SDK packages
         run: |
           python -I -B -X utf8 tools/sdk/prepare_packages.py --root . --output "$SDK_RELEASE_TEMP/stage"
           node typescript/node_modules/typescript/bin/tsc -p "$SDK_RELEASE_TEMP/stage/npm/tsconfig.json"
-          mkdir -p "$SDK_RELEASE_TEMP/dist/npm" "$SDK_RELEASE_TEMP/dist/python"
+          mkdir -p "$SDK_RELEASE_TEMP/dist/npm" "$SDK_RELEASE_TEMP/dist/python" "$SDK_RELEASE_TEMP/dist/npm-shim" "$SDK_RELEASE_TEMP/dist/python-shim"
           npm pack "$SDK_RELEASE_TEMP/stage/npm" --ignore-scripts --pack-destination "$SDK_RELEASE_TEMP/dist/npm"
           "$SDK_RELEASE_TEMP/venv/bin/python" -I -B -X utf8 -m build --no-isolation "$SDK_RELEASE_TEMP/stage/python" --outdir "$SDK_RELEASE_TEMP/dist/python"
-          python -I -B -X utf8 tools/sdk/canonicalize_sdist.py --sdist "$SDK_RELEASE_TEMP/dist/python/rightnow_system_zero-${SDK_BUILD_TAG#sdk-v}.tar.gz"
+          python -I -B -X utf8 tools/sdk/canonicalize_sdist.py --sdist "$SDK_RELEASE_TEMP/dist/python/rightnow_sdk-${SDK_BUILD_TAG#sdk-v}.tar.gz"
+          npm pack "$SDK_RELEASE_TEMP/stage/npm-shim" --ignore-scripts --pack-destination "$SDK_RELEASE_TEMP/dist/npm-shim"
+          "$SDK_RELEASE_TEMP/venv/bin/python" -I -B -X utf8 -m build --no-isolation "$SDK_RELEASE_TEMP/stage/python-shim" --outdir "$SDK_RELEASE_TEMP/dist/python-shim"
+          python -I -B -X utf8 tools/sdk/canonicalize_sdist.py --sdist "$SDK_RELEASE_TEMP/dist/python-shim/rightnow_system_zero-${SDK_BUILD_TAG#sdk-v}.tar.gz"
       - name: Smoke the staged public entrypoints offline
         run: |
           node tools/sdk/smoke.mjs "$SDK_RELEASE_TEMP/stage/npm"
@@ -171,7 +174,7 @@ jobs:
           python -I -B -X utf8 -m pip install --disable-pip-version-check --no-cache-dir --require-hashes --only-binary :all: -r tools/sdk/runtime-requirements.txt -r tools/sdk/build-requirements.txt -r tools/sdk/test-requirements.txt
           python -I -B -X utf8 -m pip install --disable-pip-version-check --no-cache-dir --no-deps --no-build-isolation ./python
       - name: Test the Python SDK and function tools
-        run: python -I -B -X utf8 -m pytest python/tests integrations/function-tools -c python/pyproject.toml -q -p no:cacheprovider
+        run: python -I -B -X utf8 -m pytest python/tests shims/python/tests integrations/function-tools -c python/pyproject.toml -q -p no:cacheprovider
       - name: Smoke the public entrypoints offline
         run: python -I -B -X utf8 tools/sdk/smoke.py
 
@@ -208,9 +211,54 @@ jobs:
           git fetch --no-tags "$SDK_PUBLIC_REPOSITORY" main
           git merge-base --is-ancestor "$GITHUB_SHA" FETCH_HEAD
 
+  publish_pypi:
+    name: Publish verified Python artifacts
+    needs: [build, typescript, python, publication_gate]
+    if: ${{ github.event_name == 'push' && github.ref_type == 'tag' && needs.build.outputs.source_public == 'true' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment: sdk-release-pypi
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      SDK_MANIFEST_SHA256: ${{ needs.build.outputs.manifest_sha256 }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Check out the exact tagged manifests and verifier
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Set up Python for the standard-library verifier
+        uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # v6.0.0
+        with:
+          python-version: '3.13'
+      - name: Download the single verified build
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: sdk-release-${{ github.sha }}
+          path: sdk-release-dist
+      - name: Bind the downloaded manifest to the build output
+        run: python -I -B -X utf8 tools/sdk/verify_manifest.py --manifest sdk-release-dist/manifest.json
+      - name: Recheck source versions and package contents
+        run: python -I -B -X utf8 tools/sdk/check_release.py --root . --tag "$GITHUB_REF_NAME" --ref "$GITHUB_REF" --artifacts sdk-release-dist --check-contents
+      - name: Publish PyPI with trusted publishing and attestations
+        uses: pypa/gh-action-pypi-publish@ed0c53931b1dc9bd32cbe73a98c7f6766f8a527e # v1.13.0
+        with:
+          packages-dir: sdk-release-dist/python/
+          attestations: ${{ needs.build.outputs.source_public }}
+      - name: Publish Python compatibility distribution with trusted publishing and attestations
+        uses: pypa/gh-action-pypi-publish@ed0c53931b1dc9bd32cbe73a98c7f6766f8a527e # v1.13.0
+        with:
+          packages-dir: sdk-release-dist/python-shim/
+          attestations: ${{ needs.build.outputs.source_public }}
+
   publish_npm:
     name: Publish verified npm artifact
-    needs: [build, typescript, python, publication_gate]
+    needs: [build, typescript, python, publication_gate, publish_pypi]
     if: ${{ github.event_name == 'push' && github.ref_type == 'tag' && needs.build.outputs.source_public == 'true' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 10
@@ -270,47 +318,9 @@ jobs:
       - name: Publish npm with trusted publishing and provenance
         env:
           npm_config_provenance: ${{ needs.build.outputs.source_public }}
-        run: npm publish ./sdk-release-dist/npm/*.tgz --access public --ignore-scripts
-
-  publish_pypi:
-    name: Publish verified Python artifacts
-    needs: [build, typescript, python, publication_gate]
-    if: ${{ github.event_name == 'push' && github.ref_type == 'tag' && needs.build.outputs.source_public == 'true' }}
-    runs-on: ubuntu-24.04
-    timeout-minutes: 10
-    environment: sdk-release-pypi
-    permissions:
-      contents: read
-      id-token: write
-    env:
-      SDK_MANIFEST_SHA256: ${{ needs.build.outputs.manifest_sha256 }}
-    defaults:
-      run:
-        shell: bash
-    steps:
-      - name: Check out the exact tagged manifests and verifier
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: ${{ github.sha }}
-          persist-credentials: false
-      - name: Set up Python for the standard-library verifier
-        uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # v6.0.0
-        with:
-          python-version: '3.13'
-      - name: Download the single verified build
-        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
-        with:
-          name: sdk-release-${{ github.sha }}
-          path: sdk-release-dist
-      - name: Bind the downloaded manifest to the build output
-        run: python -I -B -X utf8 tools/sdk/verify_manifest.py --manifest sdk-release-dist/manifest.json
-      - name: Recheck source versions and package contents
-        run: python -I -B -X utf8 tools/sdk/check_release.py --root . --tag "$GITHUB_REF_NAME" --ref "$GITHUB_REF" --artifacts sdk-release-dist --check-contents
-      - name: Publish PyPI with trusted publishing and attestations
-        uses: pypa/gh-action-pypi-publish@ed0c53931b1dc9bd32cbe73a98c7f6766f8a527e # v1.13.0
-        with:
-          packages-dir: sdk-release-dist/python/
-          attestations: ${{ needs.build.outputs.source_public }}
+        run: |
+          npm publish ./sdk-release-dist/npm/*.tgz --access public --ignore-scripts
+          npm publish ./sdk-release-dist/npm-shim/*.tgz --access public --ignore-scripts
 
   rehearsal:
     name: Rehearse verified artifacts without publication

@@ -55,6 +55,18 @@ export default {
     "status": 404,
     "message": "The requested model is not available."
   },
+  "model_serving_unattested": {
+    "status": 503,
+    "message": "The service is temporarily unavailable."
+  },
+  "model_timeout": {
+    "status": 504,
+    "message": "The RightNow decision model exceeded the response deadline."
+  },
+  "model_unavailable": {
+    "status": 503,
+    "message": "The RightNow decision model is temporarily unavailable."
+  },
   "monthly_cap_reached": {
     "status": 429,
     "message": "This workspace reached its monthly decision cap."

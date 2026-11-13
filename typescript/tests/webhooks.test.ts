@@ -82,11 +82,11 @@ describe('webhook management resource', () => {
       expect(Object.keys(delivery).sort()).toEqual(['attempt', 'created', 'event_id', 'latency_ms', 'outcome', 'status_code', 'type']);
     }
     expect(request.mock.calls).toEqual([
-      ['POST', '/system-zero/webhooks', JSON.stringify({ url: endpoint.url, events: ['decision.completed'] }), options, { idempotency: false, maxRetries: 0 }],
-      ['GET', '/system-zero/webhooks', undefined, {}, { idempotency: false }],
-      ['DELETE', `/system-zero/webhooks/${id}`, undefined, {}, { idempotency: false }],
-      ['POST', `/system-zero/webhooks/${id}/rotate-secret`, '{}', {}, { idempotency: false, maxRetries: 0 }],
-      ['GET', `/system-zero/webhooks/${id}/deliveries`, undefined, {}, { idempotency: false }],
+      ['POST', '/decision-model/webhooks', JSON.stringify({ url: endpoint.url, events: ['decision.completed'] }), options, { idempotency: false, maxRetries: 0 }],
+      ['GET', '/decision-model/webhooks', undefined, {}, { idempotency: false }],
+      ['DELETE', `/decision-model/webhooks/${id}`, undefined, {}, { idempotency: false }],
+      ['POST', `/decision-model/webhooks/${id}/rotate-secret`, '{}', {}, { idempotency: false, maxRetries: 0 }],
+      ['GET', `/decision-model/webhooks/${id}/deliveries`, undefined, {}, { idempotency: false }],
     ]);
   });
 
@@ -104,7 +104,7 @@ describe('webhook management resource', () => {
     const options = { limit, clientRequestId: 'req_log' };
     await new Webhooks(request as WebhookRequest).deliveries(id, options);
     expect(request.mock.calls).toEqual([
-      ['GET', `/system-zero/webhooks/${id}/deliveries?limit=${limit}`, undefined, options, { idempotency: false }],
+      ['GET', `/decision-model/webhooks/${id}/deliveries?limit=${limit}`, undefined, options, { idempotency: false }],
     ]);
     expect((request.mock.calls as unknown as unknown[][])[0]![3]).toBe(options);
   });
