@@ -28,11 +28,11 @@ authors = [{name = "RightNow AI, Inc."}]
 keywords = ["rightnow", "api", "decisions"]
 
 [project.urls]
-Changelog = "https://github.com/RightNow-AI/rightnow-sdk/blob/main/CHANGELOG.md"
-Source = "https://github.com/RightNow-AI/rightnow-sdk"
-Issues = "https://github.com/RightNow-AI/rightnow-sdk/issues"
-Homepage = "https://github.com/RightNow-AI/rightnow-sdk"
-Documentation = "https://github.com/RightNow-AI/rightnow-sdk"
+Changelog = "https://github.com/RightNow-AI/system-zero-sdk/blob/main/CHANGELOG.md"
+Source = "https://github.com/RightNow-AI/system-zero-sdk"
+Issues = "https://github.com/RightNow-AI/system-zero-sdk/issues"
+Homepage = "https://github.com/RightNow-AI/system-zero-sdk"
+Documentation = "https://github.com/RightNow-AI/system-zero-sdk"
 
 [tool.setuptools.packages.find]
 where = ["src"]

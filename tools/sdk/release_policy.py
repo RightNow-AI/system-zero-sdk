@@ -13,7 +13,7 @@ import sys
 # Publishing requires the configured SDK repository.
 SDK_SOURCE_PUBLIC = True
 PUBLIC_CI_MODE = 'hosted'
-PUBLIC_SDK_REPOSITORY = "https://github.com/RightNow-AI/rightnow-sdk.git"
+PUBLIC_SDK_REPOSITORY = "https://github.com/RightNow-AI/system-zero-sdk.git"
 PUBLISH_WAIT = "Publishing waits for the public SDK repository."
 
 

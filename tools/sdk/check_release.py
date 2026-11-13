@@ -38,7 +38,7 @@ MAX_ARCHIVE_BYTES = 64 * 1024 * 1024
 MAX_MEMBERS = 10000
 MAX_CONTAINER_BYTES = MAX_ARCHIVE_BYTES + MAX_MEMBERS * 1024 + 65536
 URL = re.compile('(?:[a-z][a-z0-9+.-]*://|//(?=[a-z0-9_]|\\[))[^\\s<>\\"\'`\\\\]+', re.IGNORECASE)
-PRIVATE_REPOSITORY = re.compile('github\\.com/(?!RightNow\\-AI/rightnow\\-sdk(?:\\.git)?(?:[/\\s?#\\"\']|$))[^/\\s]+/[^/\\s]+', re.IGNORECASE)
+PRIVATE_REPOSITORY = re.compile('github\\.com/(?!RightNow\\-AI/system\\-zero\\-sdk(?:\\.git)?(?:[/\\s?#\\"\']|$))[^/\\s]+/[^/\\s]+', re.IGNORECASE)
 SEMVER = re.compile('sdk-v(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-((?:0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*)(?:\\.(?:0|[1-9][0-9]*|[0-9]*[A-Za-z-][0-9A-Za-z-]*))*))?(?:\\+([0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*))?')
 STRUCTURAL_RULES = (('tag must', 'tag-format'), ('releases require', 'version-format'), ('version 0.0.0', 'reserved-version'), ('npm package name', 'npm-package-name'), ('Python package name', 'python-package-name'), ('package versions', 'source-version'), ('rename must', 'rename-required'), ('artifact import package', 'artifact-import'), ('npm artifact version', 'artifact-version'), ('Python artifact version', 'artifact-version'), ('npm artifact package name', 'npm-package-name'), ('Python artifact package name', 'python-package-name'), ('artifact filename', 'artifact-filename'), ('expected exactly', 'artifact-inventory'), ('artifact manifest is missing', 'manifest-missing'), ('artifact manifest differs', 'manifest-mismatch'), ('artifact content contains an internal URL or private', 'private-repository'), ('artifact content contains an internal URL', 'internal-url'), ('artifact content has duplicate JSON', 'invalid-metadata'))
 

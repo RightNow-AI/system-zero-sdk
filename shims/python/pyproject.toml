@@ -20,5 +20,5 @@ where = ["src"]
 "*" = ["py.typed"]
 
 [project.urls]
-Source = "https://github.com/RightNow-AI/rightnow-sdk"
-Issues = "https://github.com/RightNow-AI/rightnow-sdk/issues"
+Source = "https://github.com/RightNow-AI/system-zero-sdk"
+Issues = "https://github.com/RightNow-AI/system-zero-sdk/issues"

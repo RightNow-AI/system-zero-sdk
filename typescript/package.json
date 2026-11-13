@@ -2,7 +2,7 @@
   "name": "@rightnowai/rightnow",
   "version": "0.5.0",
   "license": "Apache-2.0",
-  "homepage": "https://github.com/RightNow-AI/rightnow-sdk",
+  "homepage": "https://github.com/RightNow-AI/system-zero-sdk",
   "type": "module",
   "engines": {
     "node": ">=22"
@@ -54,11 +54,11 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/RightNow-AI/rightnow-sdk.git",
+    "url": "https://github.com/RightNow-AI/system-zero-sdk.git",
     "directory": "typescript"
   },
   "bugs": {
-    "url": "https://github.com/RightNow-AI/rightnow-sdk/issues"
+    "url": "https://github.com/RightNow-AI/system-zero-sdk/issues"
   },
   "author": "RightNow AI, Inc.",
   "keywords": [

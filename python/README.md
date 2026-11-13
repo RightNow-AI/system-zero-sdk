@@ -225,7 +225,7 @@ Every HTTP attempt sends `X-SDK-Retry-Count`, starting at `0`, and a
 A blank or whitespace-only `client_request_id` omits the
 `X-Client-Request-Id` header.
 
-Keep API keys on trusted servers. Don't enable DEBUG logging for the HTTP or WebSocket libraries in production; it can record request headers, including your API key. See [the security policy](https://github.com/RightNow-AI/rightnow-sdk/blob/main/SECURITY.md)
+Keep API keys on trusted servers. Don't enable DEBUG logging for the HTTP or WebSocket libraries in production; it can record request headers, including your API key. See [the security policy](https://github.com/RightNow-AI/system-zero-sdk/blob/main/SECURITY.md)
 for private vulnerability reporting.
 
 ## Latency
