@@ -4,7 +4,7 @@ TypeScript and Python clients for the RightNow decision model API.
 
 1M is not available.
 
-The API has no tool calling: its request schema is strict and rejects tool-calling fields. The SDK provides "RightNow as a tool" for other models through the function-tool helpers and the MCP server adapter (the server ships in the TypeScript package).
+The API has no tool calling: its request schema is strict and rejects tool-calling fields. With a key from the API keys page (it starts with `rp_`), the SDK refuses those fields before any request. The SDK provides "RightNow as a tool" for other models through the function-tool helpers and the MCP server adapter (the server ships in the TypeScript package).
 
 - [TypeScript](typescript/README.md): `npm install @rightnowai/rightnow`
 - [Python](python/README.md): `pip install rightnow-sdk`
@@ -13,7 +13,7 @@ The API has no tool calling: its request schema is strict and rejects tool-calli
 See [CHANGELOG.md](CHANGELOG.md) for package versions and changes.
 See [SECURITY.md](SECURITY.md) for private vulnerability reporting and [LICENSE](LICENSE) for Apache 2.0 terms.
 
-`idempotency: "auto"` (TypeScript) or `idempotency="auto"` (Python) generates keys for safe automatic retries and keeps the answer for 24 hours for replay and `GET /v1/decision-model/decisions/{id}`. The default `"off"` stores nothing unless you supply a key; a 1M request always sends a key.
+`idempotency: "auto"` (TypeScript) or `idempotency="auto"` (Python) generates keys for safe automatic retries: a retry with the same key reads the first answer. With an older key that starts with `rnsk_`, that answer is kept for 24 hours and `GET /v1/decision-model/decisions/{id}` reads it; with a key from the API keys page (it starts with `rp_`), decision lookups are not available with it yet. The default `"off"` stores nothing unless you supply a key; a 1M request always sends a key.
 
 ## Tool selection
 
@@ -80,6 +80,9 @@ ordinary inline request directly as shown below.
 Video is supported through ordinary inline attachments. Send one silent H.264 MP4 video as an inline base64 data URL. Maximum duration: 10 seconds. Maximum dimensions: 1920 x 1080. Maximum decoded file size: 2,621,440 bytes (2.5 MiB). The complete JSON request must fit 3,665,920 bytes, including base64 and questions. Rotated videos, soundtracks, separate attachments and video upload references are not supported.
 
 Use `videoAttachment({ name: 'clip', data: bytes })` in TypeScript or `video_attachment(name='clip', data=bytes)` in Python. Video helpers encode the bytes; the API performs complete-file validation. A `video_not_available` response becomes `VideoNotAvailableError`, preserving status, code, message and request ID.
+
+With a key from the API keys page (it starts with `rp_`), requests carry no attachments and model discovery is not available with it yet.
+
 ```ts
 import { readFileSync } from 'node:fs';
 import { RightNowClient, inlineAttachment, validateAttachments } from '@rightnowai/rightnow';
@@ -137,6 +140,8 @@ limits and signature screen. `inline_attachment` encodes one input;
 
 ## LongContextRequest opt-in
 
+With a key from the API keys page (it starts with `rp_`), the long context classes are not available with it yet.
+
 Select the class for the state size explicitly. In TypeScript:
 
 ```ts
@@ -193,6 +198,8 @@ served contract and `enabled.openapi.json` contains the additional request shape
 
 ## Request policy
 
+With a key from the API keys page (it starts with `rp_`), request policy is not available with it yet.
+
 Every workspace can send `policy` on ordinary decide calls and stream starts.
 `min_confidence` sets a minimum answer confidence greater than zero and at most
 one. Below it, the answer keeps `confidence`, adds `abstained: true` and
@@ -243,8 +250,10 @@ for result in decisions_for(reply).values():
 
 ## Decision records
 
-Read a decision again by its id with the same API key and workspace. Only decides
-sent with an `Idempotency-Key` are kept, for 24 hours. The stored reply is returned
+With a key from the API keys page (it starts with `rp_`), decision lookups are not available with it yet.
+
+With an older key that starts with `rnsk_`, read a decision again by its id with the same API key and workspace; only
+its decides sent with an `Idempotency-Key` are kept, for 24 hours. The stored reply is returned
 unchanged. Its trace carries no content; some members are null in this version.
 
 An unknown id, an unkeyed decision, another key or workspace, or an expired record
@@ -276,6 +285,8 @@ trace = client.get_decision_trace(reply["id"])
 ```
 
 ## Decision provenance
+
+With a key from the API keys page (it starts with `rp_`), decision provenance is not available with it yet.
 
 Every ordinary decide reply carries `provenance`, including replies delivered by
 stream. It adds no cost. The largest context class does not carry it, a reply
@@ -309,6 +320,8 @@ if reply.get("provenance"):
 ```
 
 ## Webhooks
+
+With a key from the API keys page (it starts with `rp_`), webhooks are not available with it yet.
 
 Create an endpoint for `decision.completed`, `decision.refused` or `stream.closed`.
 `decision.completed` events are sent when the decision's usage is recorded, usually within about a minute of the answer, and can include decisions answered a few minutes before the endpoint was created.

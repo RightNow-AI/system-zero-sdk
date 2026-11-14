@@ -330,6 +330,10 @@ class RightNowStreamClient(AsyncIterator[StreamEvent]):
         if key is None:
             raise ValueError("Set api_key or RIGHTNOW_API_KEY.")
         key = _checked_stream_key(key)
+        if key.startswith("rp_"):
+            # A key that starts with rp_ is served for decide alone; refused before any connection.
+            from .client import _RP_METHOD_MESSAGE, _rp_refusal
+            raise _rp_refusal(_RP_METHOD_MESSAGE, None)
         stream_url = _checked_stream_url(self._wire.stream_url if stream_url is None else stream_url)
         if reconnect_policy not in {"latest", "never"}:
             raise ValueError("reconnect_policy must be latest or never.")

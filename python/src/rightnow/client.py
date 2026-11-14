@@ -3,10 +3,14 @@
 from ._wire import _wire_for, _DANGER_ZONE_HEADERS, _DEFAULT_BASE_URL, _VERSION
 from ._redaction import redact, Secret, protected, reveal
 
+from dataclasses import replace as _replace
+from email.utils import parsedate_to_datetime as _parsedate
 import ipaddress
 import json
+import math
 import os
 import random as random_module
+import re
 import sys
 import time
 from types import MappingProxyType
@@ -21,7 +25,7 @@ from ._transport import AttemptState, default_transport, attempt_state
 from ._connection import ResponseCloseGuard, connection_error, is_transport_error
 from ._retry import _IDEMPOTENCY_UNSET, _idempotency_mode, _recover_workflow, _retry_context, _retry_response, _retry_wait
 from .decision_records import DecisionRecords, DecisionTrace
-from .errors import APIConnectionError, APIError, APITimeoutError, InvalidRequestError, LongContextNotAvailableError, SystemZeroError, error_class
+from .errors import APIConnectionError, APIError, APITimeoutError, InvalidRequestError, KeyNotSupportedError, LongContextNotAvailableError, SystemZeroError, error_class
 from .policy import validate_request_policy
 from .response import ResponseResult, response_metadata
 from .types import DecideReply, DecideRequest, ModelList
@@ -107,6 +111,172 @@ def _long_context_unavailable(param: str) -> None:
         status=404, type="not_found_error", code="long_context_not_available", param=param)
 
 
+# A key that starts with rp_ is served by POST /decisions alone, and only for decide. That route takes the decision in its
+# own request shape and answers in its own shape; the client writes the one and reads the other into the decide types, so a
+# caller's code is the same for both kinds of key. Everything it does not serve is refused here, before any network call.
+_RP_PREFIX = "rp_"
+_RP_DECIDE_PATH = "/decisions"
+# The most questions that route takes in one call.
+_RP_MAX_QUESTIONS = 32
+# The request members that route serves. prompt_cache_key is sent so one program works with both kinds of key; it is not
+# used there yet.
+_RP_MEMBERS = frozenset({"model", "state", "questions", "attachments", "route", "mode", "prompt_cache_key"})
+_MILLION = 1_000_000
+_RP_METHOD_MESSAGE = ("A key that starts with rp_ calls decide() only. Streaming, uploads, webhooks, decision lookups and "
+                      "the model list are not available with it yet.")
+
+
+def _rp_refusal(message: str, param: Optional[str]) -> KeyNotSupportedError:
+    return KeyNotSupportedError(message, status=400, type="invalid_request_error", code="key_not_supported",
+                                param=param, retryable=False)
+
+
+def _rp_member(name: str) -> KeyNotSupportedError:
+    return _rp_refusal(name + " is not available with a key that starts with rp_ yet. Send decide() without it.", name)
+
+
+def _rp_body(request: Mapping[str, Any], danger_zone: Optional[str]) -> dict:
+    """The decide request in that route's shape: a boolean question is its noul question, and the model ids are its ids."""
+    # That route never receives the class header: the call would be answered without it.
+    if danger_zone is not None:
+        raise _rp_member("danger_zone")
+    # It refuses session_id and drops these members unread, so the call would be answered and charged without them.
+    for name in ("session_id", "policy"):
+        if name in request:
+            raise _rp_member(name)
+    # Any other member would be answered and charged without it, so it is refused too.
+    for name in request:
+        if name not in _RP_MEMBERS:
+            raise _rp_member(str(name))
+    attachments = request.get("attachments")
+    if attachments is not None and not (isinstance(attachments, list) and not attachments):
+        raise _rp_member("attachments")
+    for name in ("route", "mode"):
+        if name in request and request[name] != "standard":
+            raise _rp_member(name)
+    questions = request.get("questions")
+    if isinstance(questions, Mapping) and len(questions) > _RP_MAX_QUESTIONS:
+        raise _rp_refusal("A key that starts with rp_ takes at most 32 questions in one decide() call. Send the rest in "
+                          "another call.", "questions")
+    body = dict(request)
+    # That route refuses the attachments member whenever it is present; None or empty means none, so it is not sent.
+    body.pop("attachments", None)
+    model = request.get("model")
+    if isinstance(model, str):
+        body["model"] = re.sub(r"\Arightnow-decision(?=\Z|-[0-9]+\.[0-9]+\.[0-9]+\Z)", "system-zero", model)
+    if isinstance(questions, Mapping):
+        body["questions"] = {name: {**question, "type": "noul"}
+                             if isinstance(question, Mapping) and question.get("type") == "boolean" else question
+                             for name, question in questions.items()}
+    return body
+
+
+def _rp_units(value: Any) -> Optional[int]:
+    if type(value) in (int, float) and math.isfinite(value) and 0 <= value <= 1:
+        return math.floor(value * _MILLION + 0.5)
+    return None
+
+
+def _rp_answer(answer: Any) -> Any:
+    """One answer of that route read as the decide answer.
+
+    It names no calibration, so calibration_version is "unpublished" and calibrated is False. A refused question names no
+    code, so the refusal's code is decision_refused. Any other shape is kept.
+    """
+    if not isinstance(answer, Mapping):
+        return answer
+    kind = answer.get("type")
+    if kind == "refusal":
+        return {"error": {"code": "decision_refused", "retryable": False}}
+    if kind == "noul":
+        units = _rp_units(answer.get("noul"))
+        if units is None:
+            return answer
+        yes = units >= _MILLION / 2
+        return {"type": "boolean", "probability": units / _MILLION,
+                "confidence": max(units, _MILLION - units) / _MILLION, "calibration_version": "unpublished",
+                "decision": yes, "alternatives": [{"decision": not yes, "confidence": min(units, _MILLION - units) / _MILLION}],
+                "calibrated": False}
+    probabilities = answer.get("probabilities")
+    if kind in ("choice", "score") and isinstance(probabilities, Mapping):
+        units = {}
+        for key, value in probabilities.items():
+            amount = _rp_units(value)
+            if amount is None or not isinstance(key, str):
+                return answer
+            units[key] = amount
+        score = kind == "score"
+        if score and any(not key.isascii() or not key.isdecimal() for key in units):
+            return answer
+        # Highest first; a tie goes to the lower level of a score and to the lower key bytes otherwise.
+        order = sorted(units, key=lambda key: (-units[key], float(key) if score else key.encode("utf-8")))
+        selected = order[0] if score else answer.get("choice")
+        if not isinstance(selected, str) or selected not in units:
+            return answer
+        fields = {"confidence": units[selected] / _MILLION, "calibration_version": "unpublished", "decision": selected,
+                  "alternatives": [{"decision": key, "confidence": units[key] / _MILLION} for key in order if key != selected],
+                  "calibrated": False}
+        values = {key: amount / _MILLION for key, amount in units.items()}
+        if score:
+            return {"type": "score", "score": answer.get("score"), "legend": answer.get("legend"), "probabilities": values, **fields}
+        return {"type": "choice", "choice": selected, "probabilities": values, **fields}
+    return answer
+
+
+def _rp_count(value: Any) -> int:
+    return value if type(value) is int and value >= 0 else 0
+
+
+def _rp_reply(body: Any, model: Any, headers: Mapping[str, str], now: Callable[[], float]) -> dict:
+    """That route's answer read as the decide reply.
+
+    It sends no long input, no media items and no thought tokens: those counts are 0. context.tokens is its input token
+    count, and created is its Date header, or this client's clock without one. usage.cost (USD) and usage.cost_nanocents
+    are the call's charge as it states it.
+    """
+    if not isinstance(body, Mapping) or not isinstance(body.get("answers"), Mapping) or not isinstance(body.get("usage"), Mapping):
+        raise APIError("RightNow decision model API returned a non-JSON or invalid response.", status=200,
+                       request_id=headers.get("x-request-id"), headers=headers)
+    usage = body["usage"]
+    details = usage.get("input_tokens_details") if isinstance(usage.get("input_tokens_details"), Mapping) else {}
+    served = body.get("model")
+    # It names the served version by the old ids; a caller who sent the decision model's ids reads those ids back.
+    if isinstance(served, str) and isinstance(model, str) and model.startswith("rightnow-decision"):
+        served = re.sub(r"\Asystem-zero(?=\Z|-)", "rightnow-decision", served)
+    try:
+        created = math.floor(_parsedate(headers.get("date", "")).timestamp())
+    except (TypeError, ValueError, IndexError, OverflowError):
+        created = math.floor(now())
+    reply = {
+        "id": body.get("id"), "model": served, "served_by": served, "created": created,
+        "context": {"route": "direct", "tokens": _rp_count(usage.get("input_tokens"))},
+        "answers": {name: _rp_answer(answer) for name, answer in body["answers"].items()},
+        "usage": {"input_tokens": _rp_count(usage.get("input_tokens")), "cached_input_tokens": _rp_count(details.get("cached_tokens")),
+                  "media_tokens": _rp_count(usage.get("media_tokens")), "long_input_tokens": 0, "media_items": 0, "thought_tokens": 0},
+    }
+    if type(usage.get("cost")) in (int, float):
+        reply["usage"]["cost"] = usage["cost"]
+    if isinstance(usage.get("cost_nanocents"), str):
+        reply["usage"]["cost_nanocents"] = usage["cost_nanocents"]
+    return reply
+
+
+def _rp_decide(client: Any, request: Mapping[str, Any], *, idempotency_key: Optional[str], client_request_id: Optional[str],
+               idempotency: Any, headers: Optional[Mapping[str, str]], retry_budget: Optional[float],
+               danger_zone: Optional[str]) -> ResponseResult[DecideReply]:
+    """decide with a key that starts with rp_: POST /decisions in that route's request shape, read back as the decide reply."""
+    body = _rp_body(request, danger_zone)
+    result = client._request("POST", "/decisions", body=body, idempotency_key=idempotency_key,
+                             client_request_id=client_request_id, headers=headers, retry_budget=retry_budget,
+                             idempotency=idempotency)
+    # That route marks a stored answer it sends again with its own header of the same form.
+    replayed = result.metadata.replayed or any(
+        re.fullmatch(r"x-[a-z]+-idempotent-replay", name.lower()) is not None and value == "true" for name, value in result.headers.items())
+    metadata = _replace(result.metadata, replayed=True) if replayed and not result.metadata.replayed else result.metadata
+    return ResponseResult(cast(DecideReply, _rp_reply(result.data, request.get("model"), result.headers, client._now)),
+                          metadata, result.status, result.headers)
+
+
 class RightNow:
     """Server-side client. Do not ship API keys to a browser.
 
@@ -145,6 +315,8 @@ class RightNow:
             raise ValueError("max_retry_wait must be nonnegative, finite and at most 2147483.647 seconds.")
         checked_base_url = _checked_base_url(base_url)
         self._api_key = Secret(key)
+        # The key starts with rp_: decide goes to POST /decisions and every other method is refused.
+        self._rp_only = key.startswith(_RP_PREFIX)
         self.base_url = checked_base_url
         self.timeout = timeout
         self.max_retries = min(max_retries, 5)
@@ -234,6 +406,9 @@ class RightNow:
         retry_budget: Optional[float] = None,
         danger_zone: Optional[Literal["accept", "long_context_64k", "long_context_128k", "long_context_1m"]] = None,
     ) -> ResponseResult[DecideReply]:
+        if self._rp_only:
+            return _rp_decide(self, request, idempotency_key=idempotency_key, client_request_id=client_request_id,
+                              idempotency=idempotency, headers=headers, retry_budget=retry_budget, danger_zone=danger_zone)
         if danger_zone == "long_context_1m":
             if not isinstance(request.get("state"), str):
                 _long_context_unavailable("state")

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "rightnow-sdk"
-version = "0.5.0"
+version = "0.5.1"
 description = "RightNow decision model API client with typed decisions and client-side workflows."
 license = "Apache-2.0"
 license-files = ["LICENSE", "NOTICE"]

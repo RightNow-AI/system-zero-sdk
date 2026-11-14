@@ -1,7 +1,7 @@
 # RightNow decision model Python SDK
 
 
-The API has no tool calling: its request schema is strict and rejects tool-calling fields. The SDK provides "RightNow as a tool" for other models through the function-tool helpers and the MCP server adapter (the server ships in the TypeScript package).
+The API has no tool calling: its request schema is strict and rejects tool-calling fields. With a key from the API keys page (it starts with `rp_`), the SDK refuses those fields before any request. The SDK provides "RightNow as a tool" for other models through the function-tool helpers and the MCP server adapter (the server ships in the TypeScript package).
 
 Synchronous server-side Python client for the RightNow decision model API.
 
@@ -9,7 +9,7 @@ Requires Python 3.10 or later.
 
 Install with `pip install rightnow-sdk`; import it as `rightnow`.
 
-Set `RIGHTNOW_API_KEY` in the server environment, then call the API:
+Set `RIGHTNOW_API_KEY` in the server environment to your API key (it starts with `rp_`), then call the API:
 
 ```python
 from rightnow import RightNow
@@ -26,23 +26,29 @@ reply = client.decide({
     },
 })
 print(reply["answers"])
-print(client.models.list()["data"])
 ```
 
-The client calls `POST /decision-model/decide` and authenticated `GET /decision-model/models`.
-Boolean, choice and score questions use the same request. `decision_for` and
-`decisions_for` read typed answers and per-question refusals. Responses preserve
-the service's wire fields.
+With a key that starts with `rp_`, `decide` calls `POST /v1/decisions` and returns the same reply. That key works with
+`decide` alone: other methods, `danger_zone`, more than 32 questions, and any request member other than `model`,
+`state`, `questions`, `prompt_cache_key`, an empty `attachments` and a `route` or `mode` of `standard` raise
+`KeyNotSupportedError` before any request. `prompt_cache_key` is sent but not used with that key yet. The reply's
+`usage["cost"]` (USD) and `usage["cost_nanocents"]` state the charge, and `calibration_version` reads `unpublished`.
 
-Use `decide_with_response` or `models.list_with_response` for response metadata,
-including request IDs, rate limits, latency and replay status. Decide options
-accept `idempotency_key`. Both calls accept `client_request_id`, extra headers
-and `retry_budget`; model listing has no idempotency-key option. Client timeouts
+With an older key that starts with `rnsk_`, the client calls `POST /decision-model/decide` and authenticated `GET /decision-model/models`.
+Boolean, choice and score questions use the same request. `decision_for` and
+`decisions_for` read typed answers and per-question refusals. With an older key
+that starts with `rnsk_`, responses preserve the service's wire fields.
+
+Use `decide_with_response` for response metadata, including request IDs, rate limits,
+latency and replay status; with an older key that starts with `rnsk_`, `models.list_with_response`
+returns it too. Decide options accept `idempotency_key`, `client_request_id`, extra headers and
+`retry_budget`. With an older key that starts with `rnsk_`, model listing accepts `client_request_id`,
+extra headers and `retry_budget` and has no idempotency-key option. Client timeouts
 and retry waits are seconds: `timeout=150.0`, `max_retries=5`,
 `retry_budget=60.0` and `max_retry_wait=60.0`. Close the client or use its context
 manager to release the HTTP transport.
 
-Request bodies of 32 KB or more are sent gzip-compressed when that makes them at least 10 percent smaller; pass `compress_requests=False` to turn this off.
+Request bodies of 32 KB or more are sent gzip-compressed when that makes them at least 10 percent smaller; pass `compress_requests=False` to turn this off. With a key from the API keys page (it starts with `rp_`), request bodies are sent uncompressed.
 
 ## Media on decide
 
@@ -103,6 +109,9 @@ ordinary inline request directly as shown below.
 Video is supported through ordinary inline attachments. Send one silent H.264 MP4 video as an inline base64 data URL. Maximum duration: 10 seconds. Maximum dimensions: 1920 x 1080. Maximum decoded file size: 2,621,440 bytes (2.5 MiB). The complete JSON request must fit 3,665,920 bytes, including base64 and questions. Rotated videos, soundtracks, separate attachments and video upload references are not supported.
 
 Use `videoAttachment({ name: 'clip', data: bytes })` in TypeScript or `video_attachment(name='clip', data=bytes)` in Python. Video helpers encode the bytes; the API performs complete-file validation. A `video_not_available` response becomes `VideoNotAvailableError`, preserving status, code, message and request ID.
+
+With a key from the API keys page (it starts with `rp_`), requests carry no attachments and model discovery is not available with it yet.
+
 ```python
 from pathlib import Path
 from base64 import b64encode
@@ -131,10 +140,9 @@ limits and signature screen. `inline_attachment` encodes one input;
 `validate_attachments` also checks aggregate counts and decoded bytes.
 
 
-
 ## Ordinary HTTP retries
 
-`idempotency="auto"` generates keys for safe automatic retries and keeps the answer for 24 hours for replay and `GET /v1/decision-model/decisions/{id}`. The default `idempotency="off"` stores nothing unless you supply a key; a 1M request always sends a key.
+`idempotency="auto"` generates keys for safe automatic retries: a retry with the same key reads the first answer. With an older key that starts with `rnsk_`, that answer is kept for 24 hours and `GET /v1/decision-model/decisions/{id}` reads it; with a key from the API keys page (it starts with `rp_`), decision lookups are not available with it yet. The default `idempotency="off"` stores nothing unless you supply a key; a 1M request always sends a key.
 
 The defaults are five retries, 150 seconds per attempt, a 60-second total retry
 budget and a 60-second maximum wait. The retry count is capped at five, so one
@@ -159,13 +167,19 @@ GETs and keyed HTTP calls retry these marked responses:
 - HTTP 409: `idempotency_conflict`.
 
 Marked means `error.retryable` is `true` or the `x-should-retry` header is `true`.
-An explicit `false` in either marker vetoes retry. A cold pool answers marked
-503 `model_unavailable` with its wait in `Retry-After`.
+An explicit `false` in either marker vetoes retry. With an older key that starts
+with `rnsk_`, a cold pool answers marked 503 `model_unavailable` with its wait in
+`Retry-After`.
+
+With a key that starts with `rp_`, a keyed `decide` also retries HTTP 429 and HTTP 409 `idempotency_conflict`
+when `error.retryable` is absent, with the same key; an explicit `false` in either marker still vetoes retry.
+If a call still fails with HTTP 409 `idempotency_conflict` after the SDK's own retries, send it again with the same
+key, which the error carries as `error.idempotency_key`, never with a new key.
 
 A keyed POST or GET can also retry a qualifying connection failure or timeout
 before any response byte, even if the request was sent. Failures after a response byte never retry.
-Errors of authentication and permission types never retry. Python also refuses retry for
-codes containing `spend`, `budget`, `auth` or `api_key`.
+Errors of authentication and permission types never retry. For the marked responses listed above,
+Python also refuses retry when the code contains `spend`, `budget`, `auth` or `api_key`.
 
 `Retry-After-Ms` takes precedence; only when it is absent does `Retry-After`
 provide seconds or an HTTP date. The wait is never below the full-jitter floor
@@ -175,9 +189,10 @@ fall back to the seconds header.
 
 ## Workflow recovery and call limits
 
-`run_batch` and `run_flow` use ordinary `POST /decision-model/decide` calls with a stricter
+`run_batch` and `run_flow` use ordinary decide calls with a stricter
 recovery policy. Function tools use that policy for decide and model
-listing. Only a marked HTTP 429 refusal with one of these code/`details.cause`
+listing. With a key from the API keys page (it starts with `rp_`), the model list is not available with it yet.
+Only a marked HTTP 429 refusal with one of these code/`details.cause`
 pairs proves that no work ran and permits recovery:
 
 - `rate_limit_exceeded` with `key_rate` or `preauth`.
@@ -235,6 +250,7 @@ Close it at process shutdown. Default clients share a process-wide connection
 pool; closing one client does not close the pool. The transport keeps idle connections
 for up to 240 seconds, subject to the server closing sooner, so calls after a pause
 can skip connection setup. The first call after a long pause opens a new connection.
+With a key from the API keys page (it starts with `rp_`), streaming is not available with it yet.
 An open stream skips connection setup for subsequent decisions; reuse it while
 sending state changes. A context manager should span the application lifetime.
 
@@ -251,6 +267,8 @@ The three lists describe the same functions. Choose the shape your tool runner a
 Each list owns its schema objects. Pass the function name and its JSON arguments to the tool handler.
 
 ## Streaming decisions
+
+With a key from the API keys page (it starts with `rp_`), streaming is not available with it yet.
 
 Supply `RIGHTNOW_API_KEY` in the server environment before running this example.
 
@@ -295,7 +313,7 @@ arrives. In `on_change` mode, accepted mutations schedule decisions; in
 event. One decision can cover several accepted mutations.
 
 With auto idempotency enabled or a caller-supplied state key, reconnect restores the latest accepted state using stable idempotency keys;
-it never resends old wire frames. The default `latest` policy resumes the selected
+it never sends old wire frames again. The default `latest` policy resumes the selected
 decision mode. The `never` policy restores state in `on_request` mode, leaving
 the next decision to the caller. Neither policy retries authentication or protocol
 failures; an unkeyed stream refuses replay after a lost connection. Idle closure reopens lazily when new work arrives. Listen for
@@ -324,6 +342,8 @@ Tool selection: RightNow decision model picks which of your tools to call next, 
 
 Use `toolQuestions` / `tool_questions` and `selectTool` / `select_tool`. See [Tool selection](../TOOL-SELECTION.md) for examples and results.
 
+With a key from the API keys page (it starts with `rp_`), attachments are not available with it yet.
+
 Text, PDF and video fit 9 tools plus none, or 10 when required. Image or audio
 fits 25 tools plus none, or 26 when required. One question fits 32,768 bytes
 and 4,096 tokens. A single required tool is forced locally without a request.
@@ -336,6 +356,8 @@ sends its result back in the next request.
 Import `RightNow`, `RightNowStreamClient` and `RightNowError` from `rightnow`. Their `SystemZero*` spellings remain identical aliases. An explicit `api_key` wins over `RIGHTNOW_API_KEY`, which wins over the `SYSTEM_ZERO_API_KEY` fallback. The stream client is asynchronous; there is no separate asynchronous HTTP client.
 
 ## LongContextRequest opt-in
+
+With a key from the API keys page (it starts with `rp_`), the long context classes are not available with it yet.
 
 Select the class for the state size explicitly. In TypeScript:
 
@@ -393,6 +415,8 @@ served contract and `enabled.openapi.json` contains the additional request shape
 
 ## Request policy
 
+With a key from the API keys page (it starts with `rp_`), request policy is not available with it yet.
+
 Every workspace can send `policy` on ordinary decide calls and stream starts.
 `min_confidence` sets a minimum answer confidence greater than zero and at most
 one. Below it, the answer keeps `confidence`, adds `abstained: true` and
@@ -428,8 +452,10 @@ for result in decisions_for(reply).values():
 
 ## Decision records
 
-Read a decision again by its id with the same API key and workspace. Only decides
-sent with an `Idempotency-Key` are kept, for 24 hours. The stored reply is returned
+With a key from the API keys page (it starts with `rp_`), decision lookups are not available with it yet.
+
+With an older key that starts with `rnsk_`, read a decision again by its id with the same API key and workspace; only
+its decides sent with an `Idempotency-Key` are kept, for 24 hours. The stored reply is returned
 unchanged. Its trace carries no content; some members are null in this version.
 
 An unknown id, an unkeyed decision, another key or workspace, or an expired record
@@ -449,6 +475,8 @@ trace = client.get_decision_trace(reply["id"])
 ```
 
 ## Decision provenance
+
+With a key from the API keys page (it starts with `rp_`), decision provenance is not available with it yet.
 
 Every ordinary decide reply carries `provenance`, including replies delivered by
 stream. It adds no cost. The largest context class does not carry it, a reply
@@ -476,6 +504,8 @@ if reply.get("provenance"):
 ```
 
 ## Webhooks
+
+With a key from the API keys page (it starts with `rp_`), webhooks are not available with it yet.
 
 Create an endpoint for `decision.completed`, `decision.refused` or `stream.closed`.
 `decision.completed` events are sent when the decision's usage is recorded, usually within about a minute of the answer, and can include decisions answered a few minutes before the endpoint was created.

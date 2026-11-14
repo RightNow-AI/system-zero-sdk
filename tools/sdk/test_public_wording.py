@@ -35,5 +35,14 @@ class PublicWordingTests(unittest.TestCase):
             self.assertIn('public-wording', rules.public_wording_rule_ids(notice + '\nOther ' + term + ' feature.', name))
         self.assertIn('public-wording', rules.public_wording_rule_ids(notice, 'typescript/src/example.ts'))
 
+    def test_only_the_exact_completed_request_message_is_exempt(self):
+        message = rules._COMPLETED_REQUEST_MESSAGE
+        term = ''.join(map(chr, (114, 101, 115, 101, 110, 100)))
+        self.assertIn(' ' + term + ' ', message)
+        for name in ('typescript/src/integrations/error-catalog.ts', 'python/src/rightnow/error-catalog.json', 'README.md'):
+            self.assertEqual(rules.public_wording_rule_ids('"' + message + '"', name), [])
+            self.assertIn('public-wording', rules.public_wording_rule_ids(message + ' Uses ' + term + ' for mail.', name))
+        self.assertIn('public-wording', rules.public_wording_rule_ids(message.replace('not charged', 'charged'), 'README.md'))
+
 if __name__ == '__main__':
     unittest.main()

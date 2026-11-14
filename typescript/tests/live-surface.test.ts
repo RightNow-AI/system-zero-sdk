@@ -24,7 +24,7 @@ const apiCodes = names(`webhook_invalid webhook_limit_exceeded webhook_not_found
 `);
 const gatewayCodes = names(`
   auth_error account_suspended model_not_found unknown_endpoint method_not_allowed invalid_trace_header invalid_api_key invalid_idempotency_key
-  idempotency_conflict idempotency_replay_unavailable idempotency_replayed_error idempotency_unavailable limiter_unavailable
+  idempotency_conflict idempotency_replay_unavailable idempotency_replayed_error idempotency_unavailable idempotent_request_completed limiter_unavailable
   maintenance internal_error monthly_cap_reached model_timeout model_unavailable model_serving_unattested
 `);
 const rootNames = names(`WEBHOOK_ERROR_CODES WEBHOOK_MAX_BODY_BYTES WEBHOOK_TIMESTAMP_TOLERANCE_SECONDS WebhookCreateRequest WebhookDecisionData WebhookDeleted WebhookDelivery WebhookDeliveryRequestOptions WebhookEndpoint WebhookEndpointWithSecret WebhookErrorCode WebhookEvent WebhookEventType WebhookInputClass WebhookInvalidError WebhookLimitExceededError WebhookList WebhookMethod WebhookNotFoundError WebhookRequest WebhookRequestBehavior WebhookRequestOptions WebhookSignatureOptions WebhookStreamCloseReason WebhookStreamClosedData WebhookUnavailableError WebhookUsageUnits Webhooks mapWebhookError verifyWebhookSignature DecisionProvenance ProvenanceAttachmentClass ProvenanceReplyFields ProvenanceRoute provenanceFor DecisionId DECISION_RECORD_ERROR_CODES DecisionLookupOptions DecisionNotFoundError DecisionRecordErrorCode DecisionRecords DecisionRecordsRequest DecisionTrace DecisionTraceAttachment DecisionTraceTimings DecisionTraceUsage createDecisionRecords WireAbstainedAnswer AbstainedAnswer AbstainedBooleanAnswer AbstainedChoiceAnswer AbstainedScoreAnswer AbstentionReason POLICY_ERROR_CLASSES POLICY_ERROR_CODES Policy PolicyAbstention PolicyAnswer PolicyAnswerOrRefusal PolicyConfidenceFailedError PolicyDecideReplyFields PolicyDecideRequest PolicyDecisionResult PolicyError PolicyErrorCode PolicyMaxCostExceededError PolicyReply PolicyStreamRequest PolicyV1DecideReply asPolicyError isPolicyError policyDecisionFor policyDecisionsFor policyMaxCostMicrocents policyResponseError validatePolicy validateRequestPolicy Attachment InlineAttachment MEDIA_LIMITS MEDIA_MIMES MediaInput MediaKind VIDEO_PROFILE attachmentMagicMatches inlineAttachment validateAttachments videoAttachment ToolDefinition ToolSelectionMode ToolSelectionRequest ToolSelectionResult toolQuestions selectTool OrdinaryQuestion MediaQuestion LongContextQuestion OrdinaryRequest MediaRequest LongContextRequest EnabledDecideRequest LongContextLimits VideoRequest VideoAttachment
@@ -44,6 +44,7 @@ const rootNames = names(`WEBHOOK_ERROR_CODES WEBHOOK_MAX_BODY_BYTES WEBHOOK_TIME
   RightNowError SystemZeroError InvalidRequestError AuthenticationError PermissionError NotFoundError RateLimitError
   OverloadedError APIError ServerError APIConnectionError APITimeoutError PayloadTooLargeError InvalidCriteriaError ServiceUnavailableError CapabilityNotAvailableError RouteNotAvailableError ImageNotAvailableError AudioNotAvailableError
   DocumentNotAvailableError VideoNotAvailableError LongContextNotAvailableError LongRecordingNotAvailableError CommitteeNotAvailableError DeliberateNotAvailableError
+  KeyNotSupportedError
   ErrorFields ConnectionErrorFields responseError Idempotency idempotencyMode StreamMutationOptions
 `);
 const entries = {
@@ -62,7 +63,7 @@ const entries = {
 describe('public package surface', () => {
   it('publishes exactly the API error conveniences', () => {
     expect(apiCodes).toHaveLength(72);
-    expect(gatewayCodes).toHaveLength(19);
+    expect(gatewayCodes).toHaveLength(20);
     expect([...sdk.SYSTEM_ZERO_ERROR_CODES].sort()).toEqual(apiCodes);
     expect([...sdk.GATEWAY_ERROR_CODES].sort()).toEqual(gatewayCodes);
     expect(Object.values(sdk.ERROR_CODES).sort()).toEqual([...apiCodes, ...gatewayCodes].sort());

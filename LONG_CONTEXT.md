@@ -1,5 +1,7 @@
 ## LongContextRequest opt-in
 
+With a key from the API keys page (it starts with `rp_`), the long context classes are not available with it yet.
+
 Select the class for the state size explicitly. In TypeScript:
 
 ```ts

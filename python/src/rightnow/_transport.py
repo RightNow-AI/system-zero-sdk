@@ -223,7 +223,12 @@ def _request(
 ) -> ResponseResult[Any]:
     # The client imports this module to bind _request, so these helpers are deferred.
     from .client import _api_error, _checked_base_url, _long_context_unavailable, _validate_retry_budget
+    from .client import _RP_DECIDE_PATH, _RP_METHOD_MESSAGE, _rp_refusal
 
+    if getattr(self, "_rp_only", False) and not (method == "POST" and path == _RP_DECIDE_PATH):
+        raise _rp_refusal(_RP_METHOD_MESSAGE, None)
+    decide_call = method == "POST" and path in (self._wire.decide, _RP_DECIDE_PATH)
+    rp_decide = getattr(self, "_rp_only", False) and method == "POST" and path == _RP_DECIDE_PATH
     _checked_base_url(self.base_url)
     context_boundary = sys.exc_info()[1]
     mode = _idempotency_mode(self.idempotency if idempotency is _IDEMPOTENCY_UNSET else idempotency)
@@ -357,13 +362,20 @@ def _request(
                 workflow_marker = marker if isinstance(marker, bool) else None
                 # No replay after an invalid JSON success: the server already answered.
                 cold_pool = one_million and response.status_code == 503 and error.code == "service_unavailable"
+                # The route for a key that starts with rp_ marks neither of these with error.retryable. Its 429 refuses
+                # before any work, and its 409 idempotency_conflict says the same key is still running, so a keyed call
+                # sends the same key again and reads the first answer; an explicit false still vetoes.
+                rp_same_key = (rp_decide and not context.get("workflow_recovery") and marker is not False and
+                               response.headers.get("x-should-retry") != "false" and
+                               (response.status_code == 429 or
+                                response.status_code == 409 and error.code == "idempotency_conflict"))
                 if safe_replay:
-                    eligible = cold_pool or (
+                    eligible = cold_pool or rp_same_key or (
                         _recover_workflow(response.status_code, error.code, response.headers, workflow_marker, error.details)
                         if context.get("workflow_recovery") else
                         _retry_response(response.status_code, error.code, response.headers, workflow_marker))
                 else:
-                    eligible = (method == "POST" and path == self._wire.decide and not context.get("workflow_recovery") and
+                    eligible = (decide_call and not context.get("workflow_recovery") and
                                 (response.status_code == 429 or response.status_code == 503 and marker is True) and
                                 marker is not False and response.headers.get("x-should-retry") != "false")
                 should_retry = (not response.is_success and eligible and
@@ -397,7 +409,7 @@ def _request(
                 request_id=response.headers.get("x-request-id") if response is not None else None,
                 headers=dict(response.headers) if response is not None else None,
             )
-            transport_retryable = (safe_replay or method == "POST" and path == self._wire.decide and error.request_sent is False) and not started and isinstance(
+            transport_retryable = (safe_replay or decide_call and error.request_sent is False) and not started and isinstance(
                 cause, (httpx.TimeoutException, httpx.NetworkError, httpx.RemoteProtocolError),
             )
             error.retryable = transport_retryable

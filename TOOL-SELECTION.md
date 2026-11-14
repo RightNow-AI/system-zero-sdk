@@ -9,6 +9,8 @@ descriptions are read. Names must match `^[A-Za-z0-9_-]{1,64}$`, be unique, and
 must not be `none` or all digits. Descriptions have at most 1,024 characters.
 The default mode is `auto`, which adds `none` last. `required` omits `none`.
 
+With a key from the API keys page (it starts with `rp_`), attachments and the long context classes are not available with it yet.
+
 In TypeScript:
 
 ```ts
@@ -49,8 +51,8 @@ returns it with `forced: true`, null confidence and reply, and no request.
 Other results have `forced: false`. Legacy replies retain null confidence.
 
 If no selection is available, the helper raises `APIError` with
-“No decision, possibly refused.” A single-question refusal can currently arrive
-as a retryable HTTP 503. The helper lets the client's normal retry budget finish
+“No decision, possibly refused.” With an older key that starts with `rnsk_`, a
+single-question refusal can currently arrive as a retryable HTTP 503. The helper lets the client's normal retry budget finish
 and adds no retry loop; that outcome does not confirm a model refusal.
 
 On text, PDF and video, use at most 9 tools plus `none` in auto mode, or 10 tools

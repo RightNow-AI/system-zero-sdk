@@ -87,6 +87,10 @@
     "status": 503,
     "message": "Replay protection is temporarily unavailable. Retry this request with the same Idempotency-Key."
   },
+  "idempotent_request_completed": {
+    "status": 409,
+    "message": "This Idempotency-Key's request already finished and its answer was sent. The answer is not kept, so it cannot be sent again; this resend is not charged."
+  },
   "image_not_available": {
     "status": 404,
     "message": "Images are unavailable. Send the request without the image attachment."

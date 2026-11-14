@@ -4,7 +4,7 @@ import { randomUUID } from 'node:crypto';
 import type { IncomingMessage } from 'node:http';
 import { isIP } from 'node:net';
 import type { Attachment, JsonValue, StructuredJson } from './api-types.js';
-import { APIConnectionError, responseError, SystemZeroError } from './errors.js';
+import { APIConnectionError, KeyNotSupportedError, responseError, SystemZeroError } from './errors.js';
 import { validateAttachments } from './media.js';
 import { idempotencyMode, type Idempotency, retryAfterMs, shouldRetry } from './retry.js';
 import { validateRequestPolicy } from './policy.js';
@@ -263,6 +263,10 @@ export class RightNowStreamClient implements AsyncIterable<StreamEvent> {
     const key = options.apiKey ?? process.env.RIGHTNOW_API_KEY ?? process.env.SYSTEM_ZERO_API_KEY;
     if (!key) throw new Error('Supply an apiKey or set RIGHTNOW_API_KEY in the server environment.');
     if (typeof key !== 'string' || !/^[\x21-\x7e]+$/u.test(key)) throw new TypeError('apiKey must contain only visible ASCII characters.');
+    // A key that starts with rp_ is served for decide() alone; refused before any connection.
+    if (key.startsWith('rp_')) throw new KeyNotSupportedError('A key that starts with rp_ calls decide() only. Streaming, uploads, webhooks, decision lookups and the model list are not available with it yet.', {
+      status: 400, type: 'invalid_request_error', code: 'key_not_supported', param: null, retryable: false,
+    });
     const url = checkedStreamURL(options.streamURL ?? wireFor(this).streamURL);
     const timeout = options.timeout ?? 30_000;
     const reconnectTimeout = options.reconnectTimeout ?? 120_000;

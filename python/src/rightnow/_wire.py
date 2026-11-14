@@ -3,7 +3,7 @@ from dataclasses import dataclass as _dataclass, replace as _replace
 from typing import Literal as _Literal
 import sys as _sys
 
-_VERSION = "0.5.0"
+_VERSION = "0.5.1"
 _DEFAULT_BASE_URL = "https://api.rightnowai.co/v1"
 _DANGER_ZONE_HEADERS = ("SZ-Danger-Zone", "RightNow-Danger-Zone")
 _StreamProtocol = _Literal["system-zero.stream.v1", "rightnow-decision.stream.v1"]

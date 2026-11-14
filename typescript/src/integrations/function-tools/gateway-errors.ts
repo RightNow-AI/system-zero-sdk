@@ -23,6 +23,10 @@ export default {
     "status": 503,
     "message": "Replay protection is temporarily unavailable. Retry this request with the same Idempotency-Key."
   },
+  "idempotent_request_completed": {
+    "status": 409,
+    "message": "This Idempotency-Key's request already finished and its answer was sent. The answer is not kept, so it cannot be sent again; this resend is not charged."
+  },
   "internal_error": {
     "status": 500,
     "message": "The request failed unexpectedly. Retry the request. Keep the request id if the failure persists."

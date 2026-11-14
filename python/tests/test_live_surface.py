@@ -26,7 +26,7 @@ API_CODES = set("""
 """.split())
 GATEWAY_CODES = set("""
     auth_error account_suspended model_not_found unknown_endpoint method_not_allowed invalid_trace_header invalid_api_key invalid_idempotency_key
-    idempotency_conflict idempotency_replay_unavailable idempotency_replayed_error idempotency_unavailable limiter_unavailable
+    idempotency_conflict idempotency_replay_unavailable idempotency_replayed_error idempotency_unavailable idempotent_request_completed limiter_unavailable
     maintenance internal_error monthly_cap_reached model_timeout model_unavailable model_serving_unattested
 """.split())
 
@@ -45,6 +45,7 @@ EXPECTED = set("""tool_questions select_tool
     RightNowError InvalidRequestError AuthenticationError PermissionError NotFoundError RateLimitError
     OverloadedError APIError ServerError APIConnectionError APITimeoutError PayloadTooLargeError InvalidCriteriaError ServiceUnavailableError CapabilityNotAvailableError RouteNotAvailableError ImageNotAvailableError AudioNotAvailableError
     DocumentNotAvailableError VideoNotAvailableError LongContextNotAvailableError LongRecordingNotAvailableError CommitteeNotAvailableError DeliberateNotAvailableError
+    KeyNotSupportedError
 """.split())
 
 
@@ -68,7 +69,7 @@ API_CODES.update(['webhook_invalid', 'webhook_limit_exceeded', 'webhook_not_foun
 class PublicSurfaceTests(unittest.TestCase):
     def test_error_conveniences_equal_the_api_catalog(self):
         self.assertEqual(len(API_CODES), 72)
-        self.assertEqual(len(GATEWAY_CODES), 19)
+        self.assertEqual(len(GATEWAY_CODES), 20)
         self.assertEqual(set(rightnow.SYSTEM_ZERO_ERROR_CODES), API_CODES)
         self.assertEqual(len(rightnow.SYSTEM_ZERO_ERROR_CODES), len(API_CODES))
         self.assertEqual(set(rightnow.GATEWAY_ERROR_CODES), GATEWAY_CODES)

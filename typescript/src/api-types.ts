@@ -35,7 +35,7 @@ export type LegacyScoreAnswer = { "type": "score"; "score": number; "legend": Re
 
 export type LegacyAnswer = LegacyBooleanAnswer | LegacyChoiceAnswer | LegacyScoreAnswer;
 
-export type QuestionRefusalData = { "error": { "code": "injection_suspected" | "question_not_grounded"; "retryable": false; }; };
+export type QuestionRefusalData = { "error": { "code": "injection_suspected" | "question_not_grounded" | "decision_refused"; "retryable": false; }; };
 
 export type ModelList = { "object": "list"; "data": Array<Model>; };
 

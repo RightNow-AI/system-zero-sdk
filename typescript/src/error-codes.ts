@@ -81,6 +81,7 @@ export const GATEWAY_ERROR_CODES = [
   "idempotency_replay_unavailable",
   "idempotency_replayed_error",
   "idempotency_unavailable",
+  "idempotent_request_completed",
   "internal_error",
   "invalid_api_key",
   "invalid_idempotency_key",

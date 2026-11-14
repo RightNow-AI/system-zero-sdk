@@ -9,7 +9,7 @@ import type { DecideRequest, DecideReply, ModelList } from './api-types.js';
 import type { EnabledDecideRequest, VideoRequest } from './enabled-types.js';
 import { validateRequestPolicy, type Policy, type PolicyReply } from './policy.js';
 import { createDecisionRecords, type DecisionRecords } from './decision-records.js';
-import { APIConnectionError, APIError, APITimeoutError, InvalidRequestError, LongContextNotAvailableError, responseError, SystemZeroError } from './errors.js';
+import { APIConnectionError, APIError, APITimeoutError, InvalidRequestError, KeyNotSupportedError, LongContextNotAvailableError, responseError, SystemZeroError } from './errors.js';
 import { idempotencyMode, type Idempotency, retryWaitMs, shouldRecoverWorkflow, shouldRetry } from './retry.js';
 import { hasResponseStarted, nodeFetch, requestSent } from './transport.js';
 import { Webhooks } from './webhooks.js';
@@ -96,6 +96,139 @@ function longContextUnavailable(param: string): never {
   });
 }
 
+/**
+ * A key that starts with rp_ is served by POST /decisions alone, and only for decide(). That route takes the decision in its
+ * own request shape and answers in its own shape; the client writes the one and reads the other into the decide types, so a
+ * caller's code is the same for both kinds of key. Everything it does not serve is refused here, before any network call.
+ */
+const RP_PREFIX = 'rp_';
+const RP_DECIDE_PATH = '/decisions';
+/** The most questions that route takes in one call. */
+const RP_MAX_QUESTIONS = 32;
+/** The request members that route serves. prompt_cache_key is sent so one program works with both kinds of key; it is not used there yet. */
+const RP_MEMBERS = new Set(['model', 'state', 'questions', 'attachments', 'route', 'mode', 'prompt_cache_key']);
+const MILLION = 1_000_000;
+const RP_METHOD_MESSAGE = 'A key that starts with rp_ calls decide() only. Streaming, uploads, webhooks, decision lookups and the model list are not available with it yet.';
+
+function plainObject(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function rpRefusal(message: string, param: string | null): never {
+  throw new KeyNotSupportedError(message, { status: 400, type: 'invalid_request_error', code: 'key_not_supported', param, retryable: false });
+}
+
+function rpMember(name: string): never {
+  rpRefusal(`${name} is not available with a key that starts with rp_ yet. Send decide() without it.`, name);
+}
+
+/** The decide request in that route's shape: a boolean question is its noul question, and the model ids are its ids. */
+function rpBody(request: object, options: RequestOptions): string {
+  const value = request as Record<string, unknown>;
+  // That route never receives the class header: the call would be answered without it.
+  if (options.dangerZone !== undefined) rpMember('dangerZone');
+  // An undefined member is never sent (JSON drops it), so every check below reads undefined as absent; any defined value,
+  // null included, is checked.
+  // It refuses session_id and drops these members unread, so the call would be answered and charged without them.
+  for (const name of ['session_id', 'policy']) if (value[name] !== undefined) rpMember(name);
+  // Any other member would be answered and charged without it, so it is refused too.
+  for (const name of Object.keys(value)) if (!RP_MEMBERS.has(name) && value[name] !== undefined) rpMember(name);
+  const attachments = value.attachments;
+  if (attachments !== undefined && attachments !== null && !(Array.isArray(attachments) && attachments.length === 0)) rpMember('attachments');
+  for (const name of ['route', 'mode']) if (value[name] !== undefined && value[name] !== 'standard') rpMember(name);
+  const questions = value.questions;
+  if (plainObject(questions) && Object.keys(questions).length > RP_MAX_QUESTIONS) {
+    rpRefusal('A key that starts with rp_ takes at most 32 questions in one decide() call. Send the rest in another call.', 'questions');
+  }
+  const body: Record<string, unknown> = { ...value };
+  // That route refuses the attachments member whenever it is present; null or empty means none, so it is not sent.
+  delete body.attachments;
+  if (typeof value.model === 'string') body.model = value.model.replace(/^rightnow-decision(?=$|-\d+\.\d+\.\d+$)/u, 'system-zero');
+  if (plainObject(questions)) {
+    body.questions = Object.fromEntries(Object.entries(questions).map(([name, question]) =>
+      [name, plainObject(question) && question.type === 'boolean' ? { ...question, type: 'noul' } : question]));
+  }
+  return JSON.stringify(body);
+}
+
+function millionths(value: unknown): number | null {
+  return typeof value === 'number' && Number.isFinite(value) && value >= 0 && value <= 1 ? Math.round(value * MILLION) : null;
+}
+
+/** Outcomes by probability, highest first; a tie goes to the lower level of a score and to the lower key bytes otherwise. */
+function rankedOutcomes(units: Map<string, number>, score: boolean): string[] {
+  return [...units.keys()].sort((a, b) => units.get(b)! - units.get(a)!
+    || (score ? Number(a) - Number(b) : Buffer.compare(Buffer.from(a), Buffer.from(b))));
+}
+
+/**
+ * One answer of that route read as the decide answer. It names no calibration, so calibration_version is "unpublished" and
+ * calibrated is false. A refused question names no code, so the refusal's code is decision_refused. Any other shape is kept.
+ */
+function rpAnswer(answer: unknown): unknown {
+  if (!plainObject(answer)) return answer;
+  if (answer.type === 'refusal') return { error: { code: 'decision_refused', retryable: false } };
+  if (answer.type === 'noul') {
+    const units = millionths(answer.noul);
+    if (units === null) return answer;
+    const yes = units >= MILLION / 2;
+    return { type: 'boolean', probability: units / MILLION, confidence: Math.max(units, MILLION - units) / MILLION,
+      calibration_version: 'unpublished', decision: yes,
+      alternatives: [{ decision: !yes, confidence: Math.min(units, MILLION - units) / MILLION }], calibrated: false };
+  }
+  if ((answer.type === 'choice' || answer.type === 'score') && plainObject(answer.probabilities)) {
+    const units = new Map<string, number>();
+    for (const [key, probability] of Object.entries(answer.probabilities)) {
+      const amount = millionths(probability);
+      if (amount === null) return answer;
+      units.set(key, amount);
+    }
+    const score = answer.type === 'score';
+    const order = rankedOutcomes(units, score);
+    const selected = score ? order[0] : answer.choice;
+    if (typeof selected !== 'string' || !units.has(selected)) return answer;
+    const probabilities = Object.fromEntries([...units].map(([key, amount]) => [key, amount / MILLION]));
+    const fields = { confidence: units.get(selected)! / MILLION, calibration_version: 'unpublished', decision: selected,
+      alternatives: order.filter(key => key !== selected).map(key => ({ decision: key, confidence: units.get(key)! / MILLION })), calibrated: false };
+    return score ? { type: 'score', score: answer.score, legend: answer.legend, probabilities, ...fields }
+      : { type: 'choice', choice: selected, probabilities, ...fields };
+  }
+  return answer;
+}
+
+function tokenCount(value: unknown): number {
+  return typeof value === 'number' && Number.isSafeInteger(value) && value >= 0 ? value : 0;
+}
+
+/**
+ * That route's answer read as the decide reply. It sends no long input, no media items and no thought tokens: those
+ * counts are 0. context.tokens is its input token count, and created is its Date header, or this client's clock without
+ * one. usage.cost (USD) and usage.cost_nanocents are the call's charge as it states it.
+ */
+function rpReply(body: unknown, model: unknown, headers: Headers, now: () => number): PolicyReply {
+  if (!plainObject(body) || !plainObject(body.answers) || !plainObject(body.usage)) {
+    throw new APIError('RightNow returned invalid JSON.', { status: 200, type: 'api_error', headers, request_id: headers.get('x-request-id') });
+  }
+  const usage = body.usage;
+  const details = plainObject(usage.input_tokens_details) ? usage.input_tokens_details : {};
+  // It names the served version by the old ids; a caller who sent the decision model's ids reads those ids back.
+  const served = typeof body.model === 'string' && typeof model === 'string' && model.startsWith('rightnow-decision')
+    ? body.model.replace(/^system-zero(?=$|-)/u, 'rightnow-decision') : body.model;
+  const date = Date.parse(headers.get('date') ?? '');
+  return {
+    id: body.id, model: served, served_by: served,
+    created: Math.floor((Number.isFinite(date) ? date : now()) / 1000),
+    context: { route: 'direct', tokens: tokenCount(usage.input_tokens) },
+    answers: Object.fromEntries(Object.entries(body.answers).map(([name, answer]) => [name, rpAnswer(answer)])),
+    usage: {
+      input_tokens: tokenCount(usage.input_tokens), cached_input_tokens: tokenCount(details.cached_tokens),
+      media_tokens: tokenCount(usage.media_tokens), long_input_tokens: 0, media_items: 0, thought_tokens: 0,
+      ...(typeof usage.cost === 'number' ? { cost: usage.cost } : {}),
+      ...(typeof usage.cost_nanocents === 'string' ? { cost_nanocents: usage.cost_nanocents } : {}),
+    },
+  } as PolicyReply;
+}
+
 function requestHeaders(value?: HeadersInit): Headers {
   try { return new Headers(value); }
   catch { throw new TypeError('Request headers are invalid.'); }
@@ -178,6 +311,8 @@ export class RightNowClient {
   readonly models: { list: (options?: RequestOptions) => APIPromise<ModelList> };
   readonly webhooks: Webhooks;
   #apiKey: string;
+  /** The key starts with rp_: decide() goes to POST /decisions and every other method is refused. */
+  #rpOnly: boolean;
   #fetch: Fetch;
   #compressRequests: boolean;
   #now: () => number;
@@ -192,6 +327,7 @@ export class RightNowClient {
     if (typeof apiKey !== 'string' || !/^[\x21-\x7e]+$/u.test(apiKey)) throw new TypeError('apiKey must contain only visible ASCII characters.');
     const baseURL = checkedBaseURL(options.baseURL ?? DEFAULT_BASE_URL);
     this.#apiKey = apiKey;
+    this.#rpOnly = apiKey.startsWith(RP_PREFIX);
     clientSecrets.set(this, apiKey);
     const maxRetries = options.maxRetries ?? 5;
     if (!(Number.isSafeInteger(maxRetries) && maxRetries >= 0)) throw new RangeError('maxRetries must be a nonnegative safe integer.');
@@ -222,6 +358,7 @@ export class RightNowClient {
   }
 
   decide(request: DecideRequest | EnabledDecideRequest | VideoRequest, options: RequestOptions = {}): APIPromise<PolicyReply> {
+    if (this.#rpOnly) return this.#rpDecide(request, options);
     if (options.dangerZone === 'long_context_1m') {
       if (typeof request.state !== 'string') longContextUnavailable('state');
       if (!request.questions || Object.keys(request.questions).length !== 1) throw responseError(413, new Headers(), {
@@ -236,6 +373,7 @@ export class RightNowClient {
   }
 
   #request<T>(method: 'POST' | 'GET' | 'DELETE', path: string, body: string | undefined, options: RequestOptions, behavior: { idempotency?: boolean; maxRetries?: number } = {}): APIPromise<T> {
+    if (this.#rpOnly && !(method === 'POST' && path === RP_DECIDE_PATH)) rpRefusal(RP_METHOD_MESSAGE, null);
     const baseURL = checkedBaseURL(this.options.baseURL);
     const retryBudget = options.retryBudget ?? this.options.retryBudget;
     this.#checkRetryBudget(retryBudget);
@@ -292,17 +430,30 @@ export class RightNowClient {
           headers.set('content-length', String(compressed.byteLength));
         }
       } : undefined;
-    return new APIPromise(this.#send<T>(`${baseURL}${path}`, init, maxRetries, retryBudget, method === 'POST' && path === wireFor(this).paths.decide, context, prepare).catch((error: unknown) => {
+    return new APIPromise(this.#send<T>(`${baseURL}${path}`, init, maxRetries, retryBudget, method === 'POST' && (path === wireFor(this).paths.decide || path === RP_DECIDE_PATH), context, prepare, this.#rpOnly && method === 'POST' && path === RP_DECIDE_PATH).catch((error: unknown) => {
       if (error instanceof SystemZeroError) error.idempotencyKey = headers.get('idempotency-key');
       throw redact(error, this.#apiKey);
     }));
+  }
+
+  /** decide() with a key that starts with rp_: POST /decisions in that route's request shape, read back as the decide reply. */
+  #rpDecide(request: object, options: RequestOptions): APIPromise<PolicyReply> {
+    const body = rpBody(request, options);
+    const model = (request as { model?: unknown }).model;
+    return new APIPromise(this.#request<unknown>('POST', '/decisions', body, options).withResponse().then(response => ({
+      ...response,
+      data: rpReply(response.data, model, response.response.headers, this.#now),
+      // That route marks a stored answer it sends again with its own header of the same form.
+      metadata: { ...response.metadata, replayed: response.metadata.replayed
+        || [...response.response.headers].some(([name, value]) => /^x-[a-z]+-idempotent-replay$/u.test(name) && value === 'true') },
+    })));
   }
 
   #checkRetryBudget(retryBudget: number): void {
     if (!(retryBudget >= 0 && retryBudget <= 2_147_483_647 && Number.isFinite(retryBudget))) throw new RangeError('retryBudget must be between 0 and 2147483647 milliseconds.');
   }
 
-  async #send<T>(url: string, init: RequestInit, maxRetries: number, retryBudget: number, unkeyedDecision: boolean, context?: RetryContext, prepare?: (signal: AbortSignal) => Promise<void>): Promise<ResponseResult<T>> {
+  async #send<T>(url: string, init: RequestInit, maxRetries: number, retryBudget: number, unkeyedDecision: boolean, context?: RetryContext, prepare?: (signal: AbortSignal) => Promise<void>, rpDecide = false): Promise<ResponseResult<T>> {
     const started = this.#monotonic();
     const initialExternalRemaining = context?.remaining?.() ?? Infinity;
     const elapsed = () => Math.max(0, this.#monotonic() - started);
@@ -367,7 +518,14 @@ export class RightNowClient {
       const refusedBeforeWork = (response.status === 429 || response.status === 503 && retryable === true)
         && retryable !== false && response.headers.get('x-should-retry') !== 'false'
         && error.type !== 'authentication_error' && error.type !== 'permission_error';
-      const eligible = safeToRetry ? retry : unkeyedDecision && !context?.workflowRecovery && refusedBeforeWork;
+      // The route for a key that starts with rp_ marks neither of these with error.retryable. Its 429 refuses before any
+      // work, and its 409 idempotency_conflict says the same key is still running, so a keyed call sends the same key
+      // again and reads the first answer; an explicit false still vetoes.
+      const rpSameKey = rpDecide && !context?.workflowRecovery && retryable !== false
+        && response.headers.get('x-should-retry') !== 'false'
+        && error.type !== 'authentication_error' && error.type !== 'permission_error'
+        && (response.status === 429 || response.status === 409 && error.code === 'idempotency_conflict');
+      const eligible = safeToRetry ? retry || rpSameKey : unkeyedDecision && !context?.workflowRecovery && refusedBeforeWork;
       if (retryable === undefined && eligible) error = responseError(response.status, response.headers, body, true);
       if (!eligible) throw error;
       await waitToRetry(error, response.headers, attempt);

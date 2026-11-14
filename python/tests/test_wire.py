@@ -23,7 +23,7 @@ def test_current_wire(name, path, model, header, code_prefix):
         assert request.headers[header] == "accept"
         assert ("rightnow-danger-zone" if name == "system-zero" else "sz-danger-zone") not in request.headers
         prefix = "system-zero" if name == "system-zero" else "rightnow"
-        assert request.headers["user-agent"].startswith(prefix + "-python/0.5.0 python/")
+        assert request.headers["user-agent"].startswith(prefix + "-python/0.5.1 python/")
         return httpx.Response(200, json={})
 
     with Client(api_key="test-key", transport=httpx.MockTransport(respond)) as client:

@@ -87,6 +87,10 @@ export const SYSTEM_ZERO_ERRORS = {
     503,
     "Replay protection is temporarily unavailable. Retry this request with the same Idempotency-Key."
   ],
+  "idempotent_request_completed": [
+    409,
+    "This Idempotency-Key's request already finished and its answer was sent. The answer is not kept, so it cannot be sent again; this resend is not charged."
+  ],
   "image_not_available": [
     404,
     "Images are unavailable. Send the request without the image attachment."

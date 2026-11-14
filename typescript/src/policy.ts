@@ -34,9 +34,11 @@ export type PolicyV1DecideReply = Omit<V1DecideReply, 'answers' | 'policy'> & {
   answers: Record<string, AuthoritativeAnswer | AbstainedAnswer | QuestionRefusalData>;
   policy?: Policy;
 };
-export type PolicyReply = Omit<SystemZeroReply, 'answers' | 'policy'> & {
+export type PolicyReply = Omit<SystemZeroReply, 'answers' | 'policy' | 'usage'> & {
   answers: Record<string, PolicyAnswerOrRefusal>;
   policy?: Policy;
+  /** With a key that starts with rp_, cost (USD) and cost_nanocents state the call's charge. */
+  usage: SystemZeroReply['usage'] & { cost?: number; cost_nanocents?: string };
 };
 export type PolicyDecideReplyFields = Omit<PolicyReply, 'answers'>;
 

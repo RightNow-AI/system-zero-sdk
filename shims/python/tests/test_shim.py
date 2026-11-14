@@ -32,7 +32,7 @@ def test_compatibility_package(monkeypatch):
     with system_zero.SystemZero() as client:
         assert client._wire.name == 'system-zero'
         assert client.idempotency == 'auto'
-    assert 'rightnow-sdk==0.5.0' in (root / 'pyproject.toml').read_text(encoding='utf-8')
+    assert 'rightnow-sdk==0.5.1' in (root / 'pyproject.toml').read_text(encoding='utf-8')
 
 
 def test_all_clients_keep_legacy_wire(monkeypatch):
@@ -42,7 +42,7 @@ def test_all_clients_keep_legacy_wire(monkeypatch):
     request_body = {'model': 'system-zero', 'state': 'ready', 'questions': {'q': {'type': 'boolean', 'instructions': 'Ready?'}}}
     def respond(request):
         assert str(request.url) == 'https://api.rightnowai.co/v1/system-zero/decide'
-        assert request.headers['user-agent'].startswith('system-zero-python/0.5.0 python/')
+        assert request.headers['user-agent'].startswith('system-zero-python/0.5.1 python/')
         assert request.headers['sz-danger-zone'] == 'accept'
         assert 'rightnow-danger-zone' not in request.headers
         return httpx.Response(200, json={})
@@ -82,7 +82,7 @@ def test_legacy_tool_factories_own_legacy_clients(monkeypatch):
     def respond(request):
         calls.append(request)
         assert str(request.url) == 'https://api.rightnowai.co/v1/models'
-        assert request.headers['user-agent'].startswith('system-zero-python/0.5.0 python/')
+        assert request.headers['user-agent'].startswith('system-zero-python/0.5.1 python/')
         return httpx.Response(200, json={'object': 'list', 'data': []})
 
     monkeypatch.setattr(current_tools, 'SystemZero', lambda **options: rightnow.RightNow(

@@ -5,13 +5,13 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "rightnow-system-zero"
-version = "0.5.0"
+version = "0.5.1"
 description = "Compatibility shim for rightnow-sdk"
 license = "Apache-2.0"
 license-files = ["LICENSE", "NOTICE"]
 readme = "README.md"
 requires-python = ">=3.10"
-dependencies = ["rightnow-sdk==0.5.0"]
+dependencies = ["rightnow-sdk==0.5.1"]
 
 [tool.setuptools.packages.find]
 where = ["src"]

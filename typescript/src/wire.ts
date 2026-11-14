@@ -1,7 +1,7 @@
 /** Internal package-selected protocol names. Not a public client option. */
 export type WireName = 'system-zero' | 'rightnow-decision';
 
-export const VERSION = '0.5.0';
+export const VERSION = '0.5.1';
 export const DEFAULT_BASE_URL = 'https://api.rightnowai.co/v1';
 export const DANGER_ZONE_HEADERS = ['SZ-Danger-Zone', 'RightNow-Danger-Zone'] as const;
 const resourcePath = (resource: string) => '/system-zero/' + resource;

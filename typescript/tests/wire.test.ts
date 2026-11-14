@@ -15,7 +15,7 @@ it.each([
     const headers = new Headers(init!.headers);
     expect(headers.get(header)).toBe('accept');
     expect(headers.has(name === 'system-zero' ? 'RightNow-Danger-Zone' : 'SZ-Danger-Zone')).toBe(false);
-    expect(headers.get('user-agent')).toMatch(new RegExp(`^${name === 'system-zero' ? 'system-zero' : 'rightnow'}-typescript/0.5.0 node/`));
+    expect(headers.get('user-agent')).toMatch(new RegExp(`^${name === 'system-zero' ? 'system-zero' : 'rightnow'}-typescript/0.5.1 node/`));
     return Response.json({});
   });
   const client = new InternalClient({ apiKey: 'test-key', fetch, maxRetries: 0 }, name);

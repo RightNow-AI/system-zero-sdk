@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.1
+
+A key that starts with `rp_` works with decide: it calls `POST /v1/decisions` and returns the same reply type, with the charge in `usage.cost` (USD) and `usage.cost_nanocents`. Every other method, and the request members that route does not take, raise the new `KeyNotSupportedError` before any request. With that key, a keyed decide also sends the same key again after an HTTP 429, or an HTTP 409 `idempotency_conflict`, that carries no retry marker. Keys that start with `rnsk_` work exactly as before.
+
 ## 0.5.0
 
 Decision calls and stream states default to no generated replay key; opt into auto idempotency for safe automatic retries and 24-hour answer retention; 1M always sends a key, and compatibility packages retain auto mode.

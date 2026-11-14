@@ -148,6 +148,8 @@ export class LongContextNotAvailableError extends CapabilityNotAvailableError {
 export class LongRecordingNotAvailableError extends CapabilityNotAvailableError {}
 export class CommitteeNotAvailableError extends CapabilityNotAvailableError {}
 export class DeliberateNotAvailableError extends CapabilityNotAvailableError {}
+/** Raised before any network call: a key that starts with rp_ serves decide() only, without some request members. */
+export class KeyNotSupportedError extends InvalidRequestError {}
 
 const codeClasses = {
   payload_too_large: PayloadTooLargeError, invalid_criteria: InvalidCriteriaError,
@@ -172,7 +174,7 @@ const classes = {
 } as const;
 
 for (const kind of [RightNowError, APIConnectionError, APITimeoutError, StreamLimitError,
-  CapabilityNotAvailableError, ...Object.values(classes), ...Object.values(codeClasses)]) {
+  CapabilityNotAvailableError, KeyNotSupportedError, ...Object.values(classes), ...Object.values(codeClasses)]) {
   registerErrorPrototype(kind.prototype);
 }
 

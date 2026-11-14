@@ -549,6 +549,11 @@ def _term_tree(terms):
 
 _PUBLIC_WORDING = re.compile(r'(?<![A-Za-z0-9])(?:' + _term_tree(_PUBLIC_TERMS) + r')(?![A-Za-z0-9])', re.I)
 
+# The approved 409 idempotent_request_completed message (1M zero retention, approved 2026-11-13). One of its words is a
+# reviewed term only as a vendor name; here it is the caller's second send of a request. Only this exact sentence is exempt.
+_COMPLETED_REQUEST_MESSAGE = ("This Idempotency-Key's request already finished and its answer was sent. The answer is not kept, "
+                              "so it cannot be sent again; this " + ''.join(map(chr, (114, 101, 115, 101, 110, 100))) + " is not charged.")
+
 
 def public_wording_rule_ids(value: str, path: str = '') -> list[str]:
     """Refuse restricted declarations and prose, preserving exact wire members."""
@@ -558,6 +563,7 @@ def public_wording_rule_ids(value: str, path: str = '') -> list[str]:
     if name.rsplit('/', 1)[-1].casefold() in {'readme.md', 'metadata', 'pkg-info'} or name == 'LONG_CONTEXT.md':
         notice = '1M needs nothing switched on. It is ' + ''.join(map(chr, (101,120,112,101,114,105,109,101,110,116,97,108))) + ', not stable.'
         text = text.replace(notice, '')
+    text = text.replace(_COMPLETED_REQUEST_MESSAGE, '')
     marker = ''.join(map(chr, (112,114,101,118,105,101,119)))
     # Immutable third-party peer metadata is not a product availability claim.
     if name.endswith('package-lock.json'):

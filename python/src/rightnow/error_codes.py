@@ -24,6 +24,7 @@ class ErrorCode(str, Enum):
     IDEMPOTENCY_REPLAY_UNAVAILABLE = 'idempotency_replay_unavailable'
     IDEMPOTENCY_REPLAYED_ERROR = 'idempotency_replayed_error'
     IDEMPOTENCY_UNAVAILABLE = 'idempotency_unavailable'
+    IDEMPOTENT_REQUEST_COMPLETED = 'idempotent_request_completed'
     IMAGE_NOT_AVAILABLE = 'image_not_available'
     INJECTION_SUSPECTED = 'injection_suspected'
     INPUT_QUARANTINED = 'input_quarantined'
@@ -176,6 +177,7 @@ GATEWAY_ERROR_CODES = (
     'idempotency_replay_unavailable',
     'idempotency_replayed_error',
     'idempotency_unavailable',
+    'idempotent_request_completed',
     'internal_error',
     'invalid_api_key',
     'invalid_idempotency_key',

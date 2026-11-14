@@ -147,6 +147,9 @@ class CommitteeNotAvailableError(RouteNotAvailableError):
 
 class DeliberateNotAvailableError(RouteNotAvailableError):
     """The deliberate mode is held."""
+
+class KeyNotSupportedError(InvalidRequestError):
+    """Raised before any network call: a key that starts with rp_ serves decide only, without some request members."""
 MEDIA_ERROR_CLASSES = {'payload_too_large': PayloadTooLargeError, 'invalid_criteria': InvalidCriteriaError, 'service_unavailable': ServiceUnavailableError, 'long_context_not_available': LongContextNotAvailableError, 'long_recording_not_available': LongRecordingNotAvailableError, 'video_not_available': VideoNotAvailableError, 'image_not_available': ImageNotAvailableError, 'audio_not_available': AudioNotAvailableError, 'document_not_available': DocumentNotAvailableError, 'committee_not_available': CommitteeNotAvailableError, 'deliberate_not_available': DeliberateNotAvailableError}
 ERROR_CLASSES = {'invalid_request_error': InvalidRequestError, 'authentication_error': AuthenticationError, 'permission_error': PermissionError, 'not_found_error': NotFoundError, 'rate_limit_error': RateLimitError, 'overloaded_error': OverloadedError, 'api_error': APIError, 'server_error': ServerError}
 POLICY_ERROR_CLASSES = {'policy_max_cost_exceeded': PolicyMaxCostExceededError, 'policy_confidence_failed': PolicyConfidenceFailedError}

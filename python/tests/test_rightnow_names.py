@@ -152,4 +152,4 @@ with warnings.catch_warnings(record=True) as caught:
 '''
     result = subprocess.run([sys.executable, '-c', script, str(root / 'shims/python/src'), str(root / 'python/src')], capture_output=True, text=True, timeout=30)
     assert result.returncode == 0, result.stderr
-    assert 'rightnow-sdk==0.5.0' in (root / 'shims/python/pyproject.toml').read_text()
+    assert 'rightnow-sdk==0.5.1' in (root / 'shims/python/pyproject.toml').read_text()

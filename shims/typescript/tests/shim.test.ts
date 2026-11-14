@@ -47,7 +47,7 @@ it('wraps every client and preserves other root and subpath exports', () => {
   expect(oldStream.RightNowStreamClient.prototype).toBeInstanceOf(currentStream.RightNowStreamClient);
   expect(oldTools.NESTED_FUNCTION_TOOLS).toBe(currentTools.NESTED_FUNCTION_TOOLS);
   const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
-  expect(pkg.dependencies).toEqual({ '@rightnowai/rightnow': '0.5.0' });
+  expect(pkg.dependencies).toEqual({ '@rightnowai/rightnow': '0.5.1' });
 });
 
 it('keeps a lazily owned tool client on the legacy wire', async () => {
@@ -71,7 +71,7 @@ it.each([old.RightNowClient, old.SystemZeroClient])('keeps the complete legacy H
     expect(url).toBe('https://api.rightnowai.co/v1/system-zero/decide');
     expect(JSON.parse(init!.body as string).model).toBe('system-zero');
     const headers = new Headers(init!.headers);
-    expect(headers.get('user-agent')?.startsWith('system-zero-typescript/0.5.0 node/')).toBe(true);
+    expect(headers.get('user-agent')?.startsWith('system-zero-typescript/0.5.1 node/')).toBe(true);
     expect(headers.get('sz-danger-zone')).toBe('accept');
     expect(headers.has('rightnow-danger-zone')).toBe(false);
     expect(headers.get('idempotency-key')).toMatch(/^sz-sdk-/u);
